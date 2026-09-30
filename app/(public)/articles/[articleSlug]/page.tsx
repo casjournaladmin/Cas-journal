@@ -6,6 +6,8 @@ import { Container } from "@/components/ui/container";
 import { prisma } from "@/lib/db/prisma";
 import { formatLongDate } from "@/lib/formatting/dates";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

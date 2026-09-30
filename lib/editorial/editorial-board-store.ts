@@ -1,68 +1,14 @@
 import "server-only";
 
-import fs from "node:fs";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { isSuperAdmin } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
 import {
   type EditorialBoardMember,
   type EditorialMemberCategory,
   getDefaultEditorialBoard,
   resolveCanonicalJournalSlug,
 } from "@/lib/editorial/editorial-board-data";
-
-// Durable file-backed store structure for governance / board overrides
-interface PersistedJournalStore {
-  boards: Record<string, EditorialBoardMember[]>;
-}
-
-function isTestEnvironment(): boolean {
-  return (
-    process.env.NODE_ENV === "test" ||
-    process.execArgv.includes("--test") ||
-    process.env.npm_lifecycle_event === "test" ||
-    Boolean(process.env.TSX_TEST) ||
-    Boolean(process.env.TEST)
-  );
-}
-
-function getStoreFilePath(): string {
-  const fileName = isTestEnvironment()
-    ? "test-journal-settings.json"
-    : "journal-settings.json";
-  return path.join(process.cwd(), ".data", fileName);
-}
-
-function readPersistedStore(): PersistedJournalStore {
-  try {
-    const filePath = getStoreFilePath();
-    if (!fs.existsSync(filePath)) {
-      return { boards: {} };
-    }
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const parsed = JSON.parse(raw);
-    return {
-      boards:
-        parsed.boards && typeof parsed.boards === "object" ? parsed.boards : {},
-    };
-  } catch (error) {
-    console.error("Failed to read persisted journal settings:", error);
-    return { boards: {} };
-  }
-}
-
-function writePersistedStore(store: PersistedJournalStore): void {
-  try {
-    const filePath = getStoreFilePath();
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Failed to persist journal settings to disk:", error);
-  }
-}
 
 export function isAuthorizedForJournal(
   actor: Parameters<typeof isSuperAdmin>[0],
@@ -108,22 +54,57 @@ export function isAuthorizedForJournal(
   });
 }
 
-export async function getJournalEditorialBoard(
-  journalSlug: string,
-): Promise<EditorialBoardMember[]> {
-  const canonical = resolveCanonicalJournalSlug(journalSlug);
-  const store = readPersistedStore();
-  if (store.boards[canonical] && Array.isArray(store.boards[canonical])) {
-    return store.boards[canonical];
-  }
-  return getDefaultEditorialBoard(canonical);
-}
-
 function safeRevalidatePath(path: string) {
   try {
     revalidatePath(path);
   } catch {
     // Gracefully ignore outside Next.js request/RSC context (e.g. unit tests)
+  }
+}
+
+export async function getJournalEditorialBoard(
+  journalSlug: string,
+): Promise<EditorialBoardMember[]> {
+  const canonical = resolveCanonicalJournalSlug(journalSlug);
+  const dbMembers = await prisma.editorialBoardMember.findMany({
+    where: { journalSlug: canonical },
+    orderBy: { order: "asc" },
+  });
+
+  if (dbMembers.length > 0) {
+    return dbMembers.map((m) => ({
+      id: m.id,
+      name: m.name,
+      role: m.role,
+      affiliation: m.affiliation,
+      category: m.category as EditorialMemberCategory,
+      order: m.order,
+    }));
+  }
+
+  return getDefaultEditorialBoard(canonical);
+}
+
+async function ensureCustomBoardSeeded(canonical: string): Promise<void> {
+  const existingCount = await prisma.editorialBoardMember.count({
+    where: { journalSlug: canonical },
+  });
+  if (existingCount === 0) {
+    const defaultBoard = getDefaultEditorialBoard(canonical);
+    for (let i = 0; i < defaultBoard.length; i++) {
+      const m = defaultBoard[i];
+      await prisma.editorialBoardMember.create({
+        data: {
+          id: m.id,
+          journalSlug: canonical,
+          name: m.name,
+          role: m.role,
+          affiliation: m.affiliation,
+          category: m.category,
+          order: i + 1,
+        },
+      });
+    }
   }
 }
 
@@ -162,27 +143,42 @@ export async function addEditorialBoardMember({
     };
   }
 
-  const currentMembers = await getJournalEditorialBoard(canonical);
-  const newMember: EditorialBoardMember = {
-    id: `${canonical}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    name: name.trim(),
-    role: role.trim(),
-    affiliation: affiliation.trim() || "Imo State University, Owerri, Nigeria",
-    category,
-    order: currentMembers.length + 1,
-  };
+  await ensureCustomBoardSeeded(canonical);
 
-  const updatedMembers = [...currentMembers, newMember];
-  const store = readPersistedStore();
-  store.boards[canonical] = updatedMembers;
-  writePersistedStore(store);
+  const currentCount = await prisma.editorialBoardMember.count({
+    where: { journalSlug: canonical },
+  });
+
+  const memberId = `${canonical}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const created = await prisma.editorialBoardMember.create({
+    data: {
+      id: memberId,
+      journalSlug: canonical,
+      name: name.trim(),
+      role: role.trim(),
+      affiliation:
+        affiliation.trim() || "Imo State University, Owerri, Nigeria",
+      category,
+      order: currentCount + 1,
+    },
+  });
 
   safeRevalidatePath(`/journals/${canonical}`);
   safeRevalidatePath(`/journals/${journalSlug}`);
   safeRevalidatePath("/editorial-board");
   safeRevalidatePath("/admin/editorial-board");
 
-  return { success: true, member: newMember };
+  return {
+    success: true,
+    member: {
+      id: created.id,
+      name: created.name,
+      role: created.role,
+      affiliation: created.affiliation,
+      category: created.category as EditorialMemberCategory,
+      order: created.order,
+    },
+  };
 }
 
 export async function updateEditorialBoardMember({
@@ -211,24 +207,25 @@ export async function updateEditorialBoardMember({
     };
   }
 
-  const currentMembers = await getJournalEditorialBoard(canonical);
-  const memberIndex = currentMembers.findIndex((m) => m.id === memberId);
-  if (memberIndex === -1) {
+  await ensureCustomBoardSeeded(canonical);
+
+  const existing = await prisma.editorialBoardMember.findFirst({
+    where: { id: memberId, journalSlug: canonical },
+  });
+
+  if (!existing) {
     return { success: false, error: "Editorial board member not found." };
   }
 
-  const updatedMembers = [...currentMembers];
-  updatedMembers[memberIndex] = {
-    ...updatedMembers[memberIndex],
-    name: name.trim(),
-    role: role.trim(),
-    affiliation: affiliation.trim(),
-    category,
-  };
-
-  const store = readPersistedStore();
-  store.boards[canonical] = updatedMembers;
-  writePersistedStore(store);
+  await prisma.editorialBoardMember.update({
+    where: { id: memberId },
+    data: {
+      name: name.trim(),
+      role: role.trim(),
+      affiliation: affiliation.trim(),
+      category,
+    },
+  });
 
   safeRevalidatePath(`/journals/${canonical}`);
   safeRevalidatePath(`/journals/${journalSlug}`);
@@ -256,11 +253,19 @@ export async function deleteEditorialBoardMember({
     };
   }
 
-  const currentMembers = await getJournalEditorialBoard(canonical);
-  const updatedMembers = currentMembers.filter((m) => m.id !== memberId);
-  const store = readPersistedStore();
-  store.boards[canonical] = updatedMembers;
-  writePersistedStore(store);
+  await ensureCustomBoardSeeded(canonical);
+
+  const existing = await prisma.editorialBoardMember.findFirst({
+    where: { id: memberId, journalSlug: canonical },
+  });
+
+  if (!existing) {
+    return { success: false, error: "Editorial board member not found." };
+  }
+
+  await prisma.editorialBoardMember.delete({
+    where: { id: memberId },
+  });
 
   safeRevalidatePath(`/journals/${canonical}`);
   safeRevalidatePath(`/journals/${journalSlug}`);
@@ -286,9 +291,9 @@ export async function resetEditorialBoard({
     };
   }
 
-  const store = readPersistedStore();
-  delete store.boards[canonical];
-  writePersistedStore(store);
+  await prisma.editorialBoardMember.deleteMany({
+    where: { journalSlug: canonical },
+  });
 
   safeRevalidatePath(`/journals/${canonical}`);
   safeRevalidatePath(`/journals/${journalSlug}`);

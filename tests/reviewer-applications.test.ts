@@ -39,7 +39,7 @@ const authorActor = {
 };
 
 test("Reviewer Applications: Validation and Application Creation", async () => {
-  resetReviewerApplications();
+  await resetReviewerApplications();
   // 1. Missing required fields fails validation
   const invalidRes = await createReviewerApplication({
     fullName: "",
@@ -164,6 +164,7 @@ test("Reviewer Applications: Status Transition and Department Authorization", as
 });
 
 test("Reviewer Applications: Authenticated submission preserves applicantUserId", async () => {
+  const validUserUuid = "a0000000-0000-0000-0000-000000001234";
   const authRes = await createReviewerApplication({
     fullName: "Dr. Authenticated Scholar",
     academicTitle: "Dr.",
@@ -174,17 +175,17 @@ test("Reviewer Applications: Authenticated submission preserves applicantUserId"
     specializationKeywords: "Developmental Psychology",
     targetJournal: "njcp",
     statement: "Experienced reviewer.",
-    applicantUserId: "user-auth-uuid-1234",
+    applicantUserId: validUserUuid,
   });
 
   assert.equal(authRes.success, true);
   assert.ok(authRes.application);
-  assert.equal(authRes.application.applicantUserId, "user-auth-uuid-1234");
+  assert.equal(authRes.application.applicantUserId, validUserUuid);
   assert.equal(authRes.application.status, "PENDING");
 
   // Lookup for user by userId
   const foundByUserId = await getReviewerApplicationForUser({
-    id: "user-auth-uuid-1234",
+    id: validUserUuid,
   });
   assert.ok(foundByUserId);
   assert.equal(foundByUserId.id, authRes.application.id);

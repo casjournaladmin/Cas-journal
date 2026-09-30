@@ -472,7 +472,7 @@ model ReviewRound {
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   submission          Submission          @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  submissionVersion   SubmissionVersion   @relation(fields: [submissionVersionId], references: [id], onDelete: Restrict)
+  submissionVersion   SubmissionVersion   @relation(fields: [submissionVersionId], references: [id], onDelete: Cascade)
   assignments         ReviewAssignment[]
   decisions           EditorialDecision[]
   events              SubmissionEvent[]
@@ -674,5 +674,65 @@ model JournalActivation {
   journalSlug String   @id
   activatedAt DateTime @default(now())
   activatedBy String?
+}
+
+model Announcement {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  title         String
+  category      String    @default("GENERAL")
+  targetJournal String    @default("ALL")
+  content       String
+  imageUrl      String?
+  publishedAt   DateTime  @default(now())
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  authorName    String    @default("Editorial Directorate")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([targetJournal, isActive])
+  @@index([publishedAt])
+}
+
+model EditorialBoardMember {
+  id          String   @id @default(cuid())
+  journalSlug String
+  name        String
+  role        String
+  affiliation String
+  category    String   @default("BOARD_MEMBER")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([journalSlug, category])
+  @@index([journalSlug, order])
+}
+
+model ReviewerApplication {
+  id                     String    @id @default(cuid())
+  trackingCode           String    @unique
+  applicantUserId        String?   @db.Uuid
+  fullName               String
+  academicTitle          String
+  email                  String
+  phone                  String
+  affiliation            String
+  academicRank           String
+  specializationKeywords String
+  targetJournal          String
+  profileUrl             String?
+  statement              String
+  status                 String    @default("PENDING")
+  submittedAt            DateTime  @default(now())
+  reviewedAt             DateTime?
+  reviewedBy             String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([targetJournal, status])
+  @@index([email])
+  @@index([submittedAt])
 }
 

@@ -1,9 +1,8 @@
 import "server-only";
 
-import fs from "node:fs";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { isSuperAdmin } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
 import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
 import { isAuthorizedForJournal } from "@/lib/editorial/editorial-board-store";
 
@@ -22,10 +21,6 @@ export interface Announcement {
   expiresAt?: string; // ISO string
   isActive: boolean;
   authorName: string;
-}
-
-interface PersistedAnnouncementsStore {
-  announcements: Announcement[];
 }
 
 const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
@@ -68,57 +63,53 @@ const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
   },
 ];
 
-function isTestEnvironment(): boolean {
-  return (
-    process.env.NODE_ENV === "test" ||
-    process.execArgv.includes("--test") ||
-    process.env.npm_lifecycle_event === "test" ||
-    Boolean(process.env.TSX_TEST) ||
-    Boolean(process.env.TEST)
-  );
+function formatAnnouncement(raw: {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  targetJournal: string;
+  content: string;
+  imageUrl: string | null;
+  publishedAt: Date;
+  expiresAt: Date | null;
+  isActive: boolean;
+  authorName: string;
+}): Announcement {
+  return {
+    id: raw.id,
+    slug: raw.slug,
+    title: raw.title,
+    category: raw.category as AnnouncementCategory,
+    targetJournal: raw.targetJournal,
+    content: raw.content,
+    imageUrl: raw.imageUrl || undefined,
+    publishedAt: raw.publishedAt.toISOString(),
+    expiresAt: raw.expiresAt ? raw.expiresAt.toISOString() : undefined,
+    isActive: raw.isActive,
+    authorName: raw.authorName,
+  };
 }
 
-function getStoreFilePath(): string {
-  const fileName = isTestEnvironment()
-    ? "test-announcements.json"
-    : "announcements.json";
-  return path.join(process.cwd(), ".data", fileName);
-}
-
-function readPersistedStore(): PersistedAnnouncementsStore {
-  try {
-    const filePath = getStoreFilePath();
-    if (!fs.existsSync(filePath)) {
-      return { announcements: DEFAULT_ANNOUNCEMENTS };
-    }
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const parsed = JSON.parse(raw);
-    return {
-      announcements: Array.isArray(parsed.announcements)
-        ? parsed.announcements
-        : DEFAULT_ANNOUNCEMENTS,
-    };
-  } catch (error) {
-    console.error("Failed to read announcements store:", error);
-    return { announcements: DEFAULT_ANNOUNCEMENTS };
+export async function resetAnnouncements(): Promise<void> {
+  await prisma.announcement.deleteMany({});
+  for (const a of DEFAULT_ANNOUNCEMENTS) {
+    await prisma.announcement.create({
+      data: {
+        id: a.id,
+        slug: a.slug,
+        title: a.title,
+        category: a.category,
+        targetJournal: a.targetJournal,
+        content: a.content,
+        imageUrl: a.imageUrl || null,
+        publishedAt: new Date(a.publishedAt),
+        expiresAt: a.expiresAt ? new Date(a.expiresAt) : null,
+        isActive: a.isActive,
+        authorName: a.authorName,
+      },
+    });
   }
-}
-
-function writePersistedStore(store: PersistedAnnouncementsStore): void {
-  try {
-    const filePath = getStoreFilePath();
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Failed to persist announcements to disk:", error);
-  }
-}
-
-export function resetAnnouncements(): void {
-  writePersistedStore({ announcements: [...DEFAULT_ANNOUNCEMENTS] });
 }
 
 function slugify(text: string): string {
@@ -130,35 +121,44 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function safeRevalidate() {
+  try {
+    revalidatePath("/");
+    revalidatePath("/announcements");
+    revalidatePath("/admin/announcements");
+  } catch {
+    // Gracefully ignore outside Next.js request context (e.g. CLI/unit tests)
+  }
+}
+
 export async function getPublicAnnouncements(
   journalSlug?: string,
 ): Promise<Announcement[]> {
-  const store = readPersistedStore();
-  let items = store.announcements.filter((a) => a.isActive);
+  const now = new Date();
+  const canonical =
+    journalSlug && journalSlug !== "ALL"
+      ? resolveCanonicalJournalSlug(journalSlug)
+      : null;
 
-  if (journalSlug && journalSlug !== "ALL") {
-    const canonical = resolveCanonicalJournalSlug(journalSlug);
-    items = items.filter(
-      (a) => a.targetJournal === "ALL" || a.targetJournal === canonical,
-    );
-  }
+  const records = await prisma.announcement.findMany({
+    where: {
+      isActive: true,
+      ...(canonical ? { targetJournal: { in: ["ALL", canonical] } } : {}),
+      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+    },
+    orderBy: { publishedAt: "desc" },
+  });
 
-  // Filter out expired items
-  const now = new Date().toISOString();
-  items = items.filter((a) => !a.expiresAt || a.expiresAt > now);
-
-  return items.sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  return records.map(formatAnnouncement);
 }
 
 export async function getAnnouncementBySlug(
   slug: string,
 ): Promise<Announcement | null> {
-  const store = readPersistedStore();
-  const found = store.announcements.find((a) => a.slug === slug);
-  return found ?? null;
+  const record = await prisma.announcement.findUnique({
+    where: { slug },
+  });
+  return record ? formatAnnouncement(record) : null;
 }
 
 export async function getAnnouncements(
@@ -168,31 +168,32 @@ export async function getAnnouncements(
     includeInactive?: boolean;
   },
 ): Promise<Announcement[]> {
-  const store = readPersistedStore();
-  let items = store.announcements;
+  const isSuper = isSuperAdmin(actor);
+  const targetJournalFilter =
+    filter?.journalSlug && filter.journalSlug !== "ALL"
+      ? resolveCanonicalJournalSlug(filter.journalSlug)
+      : null;
 
-  if (!filter?.includeInactive) {
-    items = items.filter((a) => a.isActive);
+  const records = await prisma.announcement.findMany({
+    where: {
+      ...(filter?.includeInactive ? {} : { isActive: true }),
+      ...(targetJournalFilter
+        ? { targetJournal: { in: ["ALL", targetJournalFilter] } }
+        : {}),
+    },
+    orderBy: { publishedAt: "desc" },
+  });
+
+  const formatted = records.map(formatAnnouncement);
+
+  if (isSuper) {
+    return formatted;
   }
 
-  if (!isSuperAdmin(actor)) {
-    items = items.filter((a) => {
-      if (a.targetJournal === "ALL") return true;
-      return isAuthorizedForJournal(actor, a.targetJournal);
-    });
-  }
-
-  if (filter?.journalSlug && filter.journalSlug !== "ALL") {
-    const canonical = resolveCanonicalJournalSlug(filter.journalSlug);
-    items = items.filter(
-      (a) => a.targetJournal === "ALL" || a.targetJournal === canonical,
-    );
-  }
-
-  return items.sort(
-    (a, b) =>
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-  );
+  return formatted.filter((a) => {
+    if (a.targetJournal === "ALL") return true;
+    return isAuthorizedForJournal(actor, a.targetJournal);
+  });
 }
 
 export async function createAnnouncement({
@@ -238,40 +239,30 @@ export async function createAnnouncement({
     };
   }
 
-  const id = `ann-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const slug = `${slugify(title)}-${Date.now().toString(36)}`;
   const authorEmail = (actor as { email?: string })?.email;
   const authorName =
     customAuthorName?.trim() ||
     (authorEmail ? authorEmail.split("@")[0] : "Administrator");
 
-  const newAnn: Announcement = {
-    id,
-    slug,
-    title: title.trim(),
-    category,
-    targetJournal: normalizedJournal,
-    content: content.trim(),
-    imageUrl: imageUrl?.trim() || undefined,
-    publishedAt: new Date().toISOString(),
-    expiresAt: expiresAt?.trim() || undefined,
-    isActive: Boolean(isActive),
-    authorName,
-  };
+  const created = await prisma.announcement.create({
+    data: {
+      slug,
+      title: title.trim(),
+      category,
+      targetJournal: normalizedJournal,
+      content: content.trim(),
+      imageUrl: imageUrl?.trim() || null,
+      publishedAt: new Date(),
+      expiresAt: expiresAt?.trim() ? new Date(expiresAt.trim()) : null,
+      isActive: Boolean(isActive),
+      authorName,
+    },
+  });
 
-  const store = readPersistedStore();
-  store.announcements.unshift(newAnn);
-  writePersistedStore(store);
+  safeRevalidate();
 
-  try {
-    revalidatePath("/");
-    revalidatePath("/announcements");
-    revalidatePath("/admin/announcements");
-  } catch {
-    // ignore outside Next.js request context
-  }
-
-  return { success: true, announcement: newAnn };
+  return { success: true, announcement: formatAnnouncement(created) };
 }
 
 export async function updateAnnouncement({
@@ -295,16 +286,14 @@ export async function updateAnnouncement({
   isActive: boolean;
   actor: Parameters<typeof isSuperAdmin>[0];
 }): Promise<{ success: boolean; error?: string; announcement?: Announcement }> {
-  const store = readPersistedStore();
-  const annIndex = store.announcements.findIndex(
-    (a) => a.id === announcementId,
-  );
+  const existing = await prisma.announcement.findUnique({
+    where: { id: announcementId },
+  });
 
-  if (annIndex === -1) {
+  if (!existing) {
     return { success: false, error: "Announcement not found." };
   }
 
-  const existing = store.announcements[annIndex];
   const normalizedJournal =
     targetJournal === "ALL"
       ? "ALL"
@@ -322,31 +311,24 @@ export async function updateAnnouncement({
     };
   }
 
-  const updated: Announcement = {
-    ...existing,
-    title: title.trim(),
-    category,
-    targetJournal: normalizedJournal,
-    content: content.trim(),
-    imageUrl:
-      imageUrl !== undefined ? imageUrl.trim() || undefined : existing.imageUrl,
-    expiresAt: expiresAt?.trim() || undefined,
-    isActive: Boolean(isActive),
-  };
+  const updated = await prisma.announcement.update({
+    where: { id: announcementId },
+    data: {
+      title: title.trim(),
+      category,
+      targetJournal: normalizedJournal,
+      content: content.trim(),
+      ...(imageUrl !== undefined ? { imageUrl: imageUrl.trim() || null } : {}),
+      ...(expiresAt !== undefined
+        ? { expiresAt: expiresAt?.trim() ? new Date(expiresAt.trim()) : null }
+        : {}),
+      isActive: Boolean(isActive),
+    },
+  });
 
-  store.announcements[annIndex] = updated;
+  safeRevalidate();
 
-  writePersistedStore(store);
-
-  try {
-    revalidatePath("/");
-    revalidatePath("/announcements");
-    revalidatePath("/admin/announcements");
-  } catch {
-    // ignore outside Next.js request context
-  }
-
-  return { success: true, announcement: updated };
+  return { success: true, announcement: formatAnnouncement(updated) };
 }
 
 export async function deleteAnnouncement({
@@ -356,16 +338,14 @@ export async function deleteAnnouncement({
   announcementId: string;
   actor: Parameters<typeof isSuperAdmin>[0];
 }): Promise<{ success: boolean; error?: string }> {
-  const store = readPersistedStore();
-  const annIndex = store.announcements.findIndex(
-    (a) => a.id === announcementId,
-  );
+  const existing = await prisma.announcement.findUnique({
+    where: { id: announcementId },
+  });
 
-  if (annIndex === -1) {
+  if (!existing) {
     return { success: false, error: "Announcement not found." };
   }
 
-  const existing = store.announcements[annIndex];
   const isAuthorized =
     isSuperAdmin(actor) ||
     existing.targetJournal === "ALL" ||
@@ -378,16 +358,11 @@ export async function deleteAnnouncement({
     };
   }
 
-  store.announcements.splice(annIndex, 1);
-  writePersistedStore(store);
+  await prisma.announcement.delete({
+    where: { id: announcementId },
+  });
 
-  try {
-    revalidatePath("/");
-    revalidatePath("/announcements");
-    revalidatePath("/admin/announcements");
-  } catch {
-    // ignore outside Next.js request context
-  }
+  safeRevalidate();
 
   return { success: true };
 }
@@ -399,16 +374,14 @@ export async function toggleAnnouncementActive({
   announcementId: string;
   actor: Parameters<typeof isSuperAdmin>[0];
 }): Promise<{ success: boolean; error?: string; isActive?: boolean }> {
-  const store = readPersistedStore();
-  const annIndex = store.announcements.findIndex(
-    (a) => a.id === announcementId,
-  );
+  const existing = await prisma.announcement.findUnique({
+    where: { id: announcementId },
+  });
 
-  if (annIndex === -1) {
+  if (!existing) {
     return { success: false, error: "Announcement not found." };
   }
 
-  const existing = store.announcements[annIndex];
   const isAuthorized =
     isSuperAdmin(actor) ||
     existing.targetJournal === "ALL" ||
@@ -422,16 +395,12 @@ export async function toggleAnnouncementActive({
   }
 
   const newActive = !existing.isActive;
-  store.announcements[annIndex].isActive = newActive;
-  writePersistedStore(store);
+  const updated = await prisma.announcement.update({
+    where: { id: announcementId },
+    data: { isActive: newActive },
+  });
 
-  try {
-    revalidatePath("/");
-    revalidatePath("/announcements");
-    revalidatePath("/admin/announcements");
-  } catch {
-    // ignore outside Next.js request context
-  }
+  safeRevalidate();
 
-  return { success: true, isActive: newActive };
+  return { success: true, isActive: updated.isActive };
 }

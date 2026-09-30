@@ -303,7 +303,9 @@ export async function updateDirectLegacyArticle(
         number: input.volume,
       },
     },
-    update: {},
+    update: {
+      updatedAt: new Date(),
+    },
     create: {
       journalId: journal.id,
       number: input.volume,
@@ -319,7 +321,11 @@ export async function updateDirectLegacyArticle(
         number: input.issue,
       },
     },
-    update: {},
+    update: {
+      isPublished: true,
+      updatedAt: new Date(),
+      ...(input.publishedAt ? { publishedAt: input.publishedAt } : {}),
+    },
     create: {
       volumeId: volume.id,
       number: input.issue,

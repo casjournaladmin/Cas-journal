@@ -1485,8 +1485,37 @@ export async function deleteManuscriptSubmission(input: {
     }
   }
 
-  // 2. Remove binary files from Supabase Storage
-  if (storedFiles.length > 0) {
+  const storedFileIds = Array.from(new Set(storedFiles.map((sf) => sf.id)));
+
+  // 2. Disconnect linked request and delete submission + stored files atomically
+  await prisma.$transaction(async (tx) => {
+    if (submission.request) {
+      await tx.submissionRequest.update({
+        where: { id: submission.request.id },
+        data: {
+          submissionId: null,
+          status: ["MANUSCRIPT_SUBMITTED", "TRACKING_ASSIGNED"].includes(
+            submission.request.status,
+          )
+            ? "SUBMISSION_ENABLED"
+            : undefined,
+        },
+      });
+    }
+
+    await tx.submission.delete({
+      where: { id: submission.id },
+    });
+
+    if (storedFileIds.length > 0) {
+      await tx.storedFile.deleteMany({
+        where: { id: { in: storedFileIds } },
+      });
+    }
+  });
+
+  // 3. Post-commit: Remove binary files from Supabase Storage
+  if (storedFiles.length > 0 && process.env.SUPABASE_SECRET_KEY?.trim()) {
     try {
       const supabase = createAdminClient();
       const byBucket = new Map<string, string[]>();
@@ -1506,39 +1535,10 @@ export async function deleteManuscriptSubmission(input: {
       }
     } catch (storageErr) {
       console.error(
-        "Storage client error during manuscript deletion:",
+        "Storage client error during manuscript deletion post-commit:",
         storageErr,
       );
     }
-  }
-
-  const storedFileIds = Array.from(new Set(storedFiles.map((sf) => sf.id)));
-
-  // 3. Disconnect linked submission request if any
-  if (submission.request) {
-    await prisma.submissionRequest.update({
-      where: { id: submission.request.id },
-      data: {
-        submissionId: null,
-        status: ["MANUSCRIPT_SUBMITTED", "TRACKING_ASSIGNED"].includes(
-          submission.request.status,
-        )
-          ? "SUBMISSION_ENABLED"
-          : undefined,
-      },
-    });
-  }
-
-  // 4. Delete the submission record
-  await prisma.submission.delete({
-    where: { id: submission.id },
-  });
-
-  // 5. Clean up storedFile rows
-  if (storedFileIds.length > 0) {
-    await prisma.storedFile.deleteMany({
-      where: { id: { in: storedFileIds } },
-    });
   }
 
   return { success: true, journalSlug: submission.journal.slug };

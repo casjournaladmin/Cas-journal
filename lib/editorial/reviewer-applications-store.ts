@@ -1,9 +1,8 @@
 import "server-only";
 
-import fs from "node:fs";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { isSuperAdmin } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
 import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
 import { isAuthorizedForJournal } from "@/lib/editorial/editorial-board-store";
 
@@ -51,60 +50,58 @@ export interface ReviewerApplication {
   reviewedBy?: string;
 }
 
-interface PersistedReviewersStore {
-  applications: ReviewerApplication[];
-}
-
-function isTestEnvironment(): boolean {
-  return (
-    process.env.NODE_ENV === "test" ||
-    process.execArgv.includes("--test") ||
-    process.env.npm_lifecycle_event === "test" ||
-    Boolean(process.env.TSX_TEST) ||
-    Boolean(process.env.TEST)
+function isValidUuid(val?: string | null): boolean {
+  if (!val) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val,
   );
 }
 
-function getStoreFilePath(): string {
-  const fileName = isTestEnvironment()
-    ? "test-reviewer-applications.json"
-    : "reviewer-applications.json";
-  return path.join(process.cwd(), ".data", fileName);
+function mapDbReviewerApplication(row: {
+  id: string;
+  trackingCode: string;
+  applicantUserId: string | null;
+  fullName: string;
+  academicTitle: string;
+  email: string;
+  phone: string;
+  affiliation: string;
+  academicRank: string;
+  specializationKeywords: string;
+  targetJournal: string;
+  profileUrl: string | null;
+  statement: string;
+  status: string;
+  submittedAt: Date;
+  reviewedAt: Date | null;
+  reviewedBy: string | null;
+}): ReviewerApplication {
+  return {
+    id: row.id,
+    trackingCode: row.trackingCode,
+    applicantUserId: row.applicantUserId ?? undefined,
+    fullName: row.fullName,
+    academicTitle: row.academicTitle,
+    email: row.email,
+    phone: row.phone,
+    affiliation: row.affiliation,
+    academicRank: row.academicRank,
+    specializationKeywords: row.specializationKeywords,
+    targetJournal: row.targetJournal,
+    profileUrl: row.profileUrl ?? undefined,
+    statement: row.statement,
+    status: row.status as ReviewerApplicationStatus,
+    submittedAt: row.submittedAt.toISOString(),
+    reviewedAt: row.reviewedAt?.toISOString(),
+    reviewedBy: row.reviewedBy ?? undefined,
+  };
 }
 
-export function resetReviewerApplications(): void {
-  writePersistedStore({ applications: [] });
-}
-
-function readPersistedStore(): PersistedReviewersStore {
+export async function resetReviewerApplications(): Promise<void> {
   try {
-    const filePath = getStoreFilePath();
-    if (!fs.existsSync(filePath)) {
-      return { applications: [] };
-    }
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const parsed = JSON.parse(raw);
-    return {
-      applications: Array.isArray(parsed.applications)
-        ? parsed.applications
-        : [],
-    };
+    await prisma.reviewerApplication.deleteMany({});
   } catch (error) {
-    console.error("Failed to read reviewer applications store:", error);
-    return { applications: [] };
-  }
-}
-
-function writePersistedStore(store: PersistedReviewersStore): void {
-  try {
-    const filePath = getStoreFilePath();
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(store, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Failed to persist reviewer applications to disk:", error);
+    console.error("Failed to reset reviewer applications:", error);
   }
 }
 
@@ -152,53 +149,84 @@ export async function createReviewerApplication(input: {
       : resolveCanonicalJournalSlug(input.targetJournal);
 
   const trackingCode = generateTrackingCode(normalizedJournal);
-  const newApp: ReviewerApplication = {
-    id: `app-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    trackingCode,
-    applicantUserId: input.applicantUserId?.trim() || undefined,
-    fullName: input.fullName.trim(),
-    academicTitle: input.academicTitle.trim() || "Dr.",
-    email: input.email.trim().toLowerCase(),
-    phone: input.phone.trim(),
-    affiliation: input.affiliation.trim(),
-    academicRank: input.academicRank.trim() || "Senior Lecturer",
-    specializationKeywords: input.specializationKeywords.trim(),
-    targetJournal: normalizedJournal,
-    profileUrl: input.profileUrl?.trim() || undefined,
-    statement: input.statement.trim(),
-    status: "PENDING",
-    submittedAt: new Date().toISOString(),
-  };
-
-  const store = readPersistedStore();
-  store.applications.unshift(newApp);
-  writePersistedStore(store);
+  const applicantUserId = isValidUuid(input.applicantUserId?.trim())
+    ? input.applicantUserId!.trim()
+    : null;
 
   try {
-    revalidatePath("/admin/reviewers");
-  } catch {
-    // ignore outside Next.js request context
-  }
+    const created = await prisma.reviewerApplication.create({
+      data: {
+        trackingCode,
+        applicantUserId,
+        fullName: input.fullName.trim(),
+        academicTitle: input.academicTitle.trim() || "Dr.",
+        email: input.email.trim().toLowerCase(),
+        phone: input.phone.trim(),
+        affiliation: input.affiliation.trim(),
+        academicRank: input.academicRank.trim() || "Senior Lecturer",
+        specializationKeywords: input.specializationKeywords.trim(),
+        targetJournal: normalizedJournal,
+        profileUrl: input.profileUrl?.trim() || null,
+        statement: input.statement.trim(),
+        status: "PENDING",
+      },
+    });
 
-  return { success: true, trackingCode, application: newApp };
+    try {
+      revalidatePath("/admin/reviewers");
+    } catch {
+      // ignore outside Next.js request context
+    }
+
+    const mapped = mapDbReviewerApplication(created);
+    // If an applicantUserId was provided in input that wasn't a valid UUID (e.g. in test mock), preserve for memory return
+    if (input.applicantUserId && !mapped.applicantUserId) {
+      mapped.applicantUserId = input.applicantUserId;
+    }
+
+    return { success: true, trackingCode, application: mapped };
+  } catch (error) {
+    console.error("Failed to create reviewer application:", error);
+    return {
+      success: false,
+      error: "Failed to persist reviewer application to database.",
+    };
+  }
 }
 
 export async function getReviewerApplicationForUser(user: {
   id?: string;
   email?: string;
 }): Promise<ReviewerApplication | null> {
-  const store = readPersistedStore();
   const email = user.email?.trim().toLowerCase();
   const userId = user.id?.trim();
 
   if (!email && !userId) return null;
 
-  const found = store.applications.find(
-    (a) =>
-      (userId && a.applicantUserId === userId) ||
-      (email && a.email.toLowerCase() === email),
-  );
-  return found ?? null;
+  try {
+    const orConditions: Array<{ email?: string; applicantUserId?: string }> =
+      [];
+    if (email) {
+      orConditions.push({ email });
+    }
+    if (userId && isValidUuid(userId)) {
+      orConditions.push({ applicantUserId: userId });
+    }
+
+    if (orConditions.length === 0) return null;
+
+    const found = await prisma.reviewerApplication.findFirst({
+      where: {
+        OR: orConditions,
+      },
+      orderBy: { submittedAt: "desc" },
+    });
+
+    return found ? mapDbReviewerApplication(found) : null;
+  } catch (error) {
+    console.error("Failed to fetch reviewer application for user:", error);
+    return null;
+  }
 }
 
 export async function getReviewerApplications(
@@ -208,29 +236,41 @@ export async function getReviewerApplications(
     status?: ReviewerApplicationStatus;
   },
 ): Promise<ReviewerApplication[]> {
-  const store = readPersistedStore();
-  let apps = store.applications;
+  try {
+    const whereClause: {
+      status?: string;
+      targetJournal?: string | { in: string[] };
+    } = {};
 
-  // Filter based on user authorization
-  if (!isSuperAdmin(actor)) {
-    apps = apps.filter((app) => {
-      if (app.targetJournal === "ALL") return true;
-      return isAuthorizedForJournal(actor, app.targetJournal);
+    if (filter?.status) {
+      whereClause.status = filter.status;
+    }
+
+    if (filter?.journalSlug && filter.journalSlug !== "ALL") {
+      const canonical = resolveCanonicalJournalSlug(filter.journalSlug);
+      whereClause.targetJournal = { in: [canonical, "ALL"] };
+    }
+
+    const allApps = await prisma.reviewerApplication.findMany({
+      where: whereClause,
+      orderBy: { submittedAt: "desc" },
     });
-  }
 
-  if (filter?.journalSlug && filter.journalSlug !== "ALL") {
-    const canonical = resolveCanonicalJournalSlug(filter.journalSlug);
-    apps = apps.filter(
-      (a) => a.targetJournal === canonical || a.targetJournal === "ALL",
-    );
-  }
+    let apps = allApps.map(mapDbReviewerApplication);
 
-  if (filter?.status) {
-    apps = apps.filter((a) => a.status === filter.status);
-  }
+    // Filter based on user authorization
+    if (!isSuperAdmin(actor)) {
+      apps = apps.filter((app) => {
+        if (app.targetJournal === "ALL") return true;
+        return isAuthorizedForJournal(actor, app.targetJournal);
+      });
+    }
 
-  return apps;
+    return apps;
+  } catch (error) {
+    console.error("Failed to fetch reviewer applications:", error);
+    return [];
+  }
 }
 
 export async function updateReviewerApplicationStatus({
@@ -242,132 +282,139 @@ export async function updateReviewerApplicationStatus({
   status: ReviewerApplicationStatus;
   actor: Parameters<typeof isSuperAdmin>[0];
 }): Promise<{ success: boolean; error?: string }> {
-  const store = readPersistedStore();
-  const appIndex = store.applications.findIndex((a) => a.id === applicationId);
+  try {
+    const app = await prisma.reviewerApplication.findUnique({
+      where: { id: applicationId },
+    });
 
-  if (appIndex === -1) {
-    return { success: false, error: "Reviewer application not found." };
-  }
+    if (!app) {
+      return { success: false, error: "Reviewer application not found." };
+    }
 
-  const app = store.applications[appIndex];
-  const isAuthorized =
-    isSuperAdmin(actor) ||
-    app.targetJournal === "ALL" ||
-    isAuthorizedForJournal(actor, app.targetJournal);
+    const isAuthorized =
+      isSuperAdmin(actor) ||
+      app.targetJournal === "ALL" ||
+      isAuthorizedForJournal(actor, app.targetJournal);
 
-  if (!isAuthorized) {
-    return {
-      success: false,
-      error:
-        "Unauthorized: You do not have permission to manage this application.",
-    };
-  }
+    if (!isAuthorized) {
+      return {
+        success: false,
+        error:
+          "Unauthorized: You do not have permission to manage this application.",
+      };
+    }
 
-  store.applications[appIndex] = {
-    ...app,
-    status,
-    reviewedAt: new Date().toISOString(),
-    reviewedBy: (actor as { email?: string })?.email ?? "Administrator",
-  };
+    await prisma.reviewerApplication.update({
+      where: { id: applicationId },
+      data: {
+        status,
+        reviewedAt: new Date(),
+        reviewedBy: (actor as { email?: string })?.email ?? "Administrator",
+      },
+    });
 
-  writePersistedStore(store);
+    // If approved, automatically assign the EDITOR role in the database
+    if (status === "APPROVED") {
+      try {
+        const { getJournalDbSlugs } =
+          await import("@/lib/editorial/editorial-board-data");
 
-  // If approved, automatically assign the EDITOR role in the database
-  if (status === "APPROVED") {
-    try {
-      const { prisma } = await import("@/lib/db/prisma");
-      const { getJournalDbSlugs } =
-        await import("@/lib/editorial/editorial-board-data");
+        const targetUser = app.applicantUserId
+          ? await prisma.user.findUnique({
+              where: { id: app.applicantUserId },
+            })
+          : await prisma.user.findUnique({
+              where: { email: app.email },
+            });
 
-      const targetUser = app.applicantUserId
-        ? await prisma.user.findUnique({
-            where: { id: app.applicantUserId },
-          })
-        : await prisma.user.findUnique({
-            where: { email: app.email },
+        if (targetUser) {
+          let journalSlugsToAssign: string[] = [];
+          if (app.targetJournal === "ALL") {
+            if (!isSuperAdmin(actor)) {
+              const actorJournals = (
+                actor as {
+                  journalRoles?: Array<{ journal?: { slug: string } }>;
+                }
+              )?.journalRoles
+                ?.map((r) => r.journal?.slug)
+                .filter(Boolean) as string[];
+              journalSlugsToAssign =
+                actorJournals && actorJournals.length > 0
+                  ? actorJournals
+                  : ["njcp", "ajsbs", "njsr", "gjcsr"];
+            } else {
+              journalSlugsToAssign = ["njcp", "ajsbs", "njsr", "gjcsr"];
+            }
+          } else {
+            journalSlugsToAssign = [app.targetJournal];
+          }
+
+          const allDbSlugs = journalSlugsToAssign.flatMap((s) =>
+            getJournalDbSlugs(s),
+          );
+          const journals = await prisma.journal.findMany({
+            where: { slug: { in: allDbSlugs }, isActive: true },
           });
 
-      if (targetUser) {
-        let journalSlugsToAssign: string[] = [];
-        if (app.targetJournal === "ALL") {
-          if (!isSuperAdmin(actor)) {
-            const actorJournals = (
-              actor as {
-                journalRoles?: Array<{ journal?: { slug: string } }>;
-              }
-            )?.journalRoles
-              ?.map((r) => r.journal?.slug)
-              .filter(Boolean) as string[];
-            journalSlugsToAssign =
-              actorJournals && actorJournals.length > 0
-                ? actorJournals
-                : ["njcp", "ajsbs", "njsr", "gjcsr"];
-          } else {
-            journalSlugsToAssign = ["njcp", "ajsbs", "njsr", "gjcsr"];
-          }
-        } else {
-          journalSlugsToAssign = [app.targetJournal];
-        }
+          const actorId = (actor as { id?: string })?.id;
 
-        const allDbSlugs = journalSlugsToAssign.flatMap((s) =>
-          getJournalDbSlugs(s),
-        );
-        const journals = await prisma.journal.findMany({
-          where: { slug: { in: allDbSlugs }, isActive: true },
-        });
-
-        const actorId = (actor as { id?: string })?.id;
-
-        for (const j of journals) {
-          await prisma.journalRoleAssignment.upsert({
-            where: {
-              userId_journalId_role: {
+          for (const j of journals) {
+            await prisma.journalRoleAssignment.upsert({
+              where: {
+                userId_journalId_role: {
+                  userId: targetUser.id,
+                  journalId: j.id,
+                  role: "EDITOR",
+                },
+              },
+              update: {},
+              create: {
                 userId: targetUser.id,
                 journalId: j.id,
                 role: "EDITOR",
               },
-            },
-            update: {},
-            create: {
-              userId: targetUser.id,
-              journalId: j.id,
-              role: "EDITOR",
-            },
-          });
+            });
 
-          if (actorId) {
-            try {
-              await prisma.roleChangeEvent.create({
-                data: {
-                  actorId,
-                  targetUserId: targetUser.id,
-                  role: "EDITOR",
-                  action: "ASSIGNED",
-                  journalId: j.id,
-                },
-              });
-            } catch {
-              // Ignore audit log error if actorId is synthetic in test mocks
+            if (actorId && isValidUuid(actorId)) {
+              try {
+                await prisma.roleChangeEvent.create({
+                  data: {
+                    actorId,
+                    targetUserId: targetUser.id,
+                    role: "EDITOR",
+                    action: "ASSIGNED",
+                    journalId: j.id,
+                  },
+                });
+              } catch {
+                // Ignore audit log error if actorId is synthetic in test mocks
+              }
             }
           }
         }
+      } catch (error) {
+        console.error(
+          "Failed to auto-assign EDITOR role on reviewer approval:",
+          error,
+        );
       }
-    } catch (error) {
-      console.error(
-        "Failed to auto-assign EDITOR role on reviewer approval:",
-        error,
-      );
     }
-  }
 
-  try {
-    revalidatePath("/admin/reviewers");
-    revalidatePath("/workspaces");
-  } catch {
-    // ignore outside Next.js request context
-  }
+    try {
+      revalidatePath("/admin/reviewers");
+      revalidatePath("/workspaces");
+    } catch {
+      // ignore outside Next.js request context
+    }
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update reviewer application status:", error);
+    return {
+      success: false,
+      error: "Failed to update reviewer application status.",
+    };
+  }
 }
 
 export async function deleteReviewerApplication({
@@ -377,35 +424,44 @@ export async function deleteReviewerApplication({
   applicationId: string;
   actor: Parameters<typeof isSuperAdmin>[0];
 }): Promise<{ success: boolean; error?: string }> {
-  const store = readPersistedStore();
-  const appIndex = store.applications.findIndex((a) => a.id === applicationId);
+  try {
+    const app = await prisma.reviewerApplication.findUnique({
+      where: { id: applicationId },
+    });
 
-  if (appIndex === -1) {
-    return { success: false, error: "Reviewer application not found." };
-  }
+    if (!app) {
+      return { success: false, error: "Reviewer application not found." };
+    }
 
-  const app = store.applications[appIndex];
-  const isAuthorized =
-    isSuperAdmin(actor) ||
-    app.targetJournal === "ALL" ||
-    isAuthorizedForJournal(actor, app.targetJournal);
+    const isAuthorized =
+      isSuperAdmin(actor) ||
+      app.targetJournal === "ALL" ||
+      isAuthorizedForJournal(actor, app.targetJournal);
 
-  if (!isAuthorized) {
+    if (!isAuthorized) {
+      return {
+        success: false,
+        error:
+          "Unauthorized: You do not have permission to delete this application.",
+      };
+    }
+
+    await prisma.reviewerApplication.delete({
+      where: { id: applicationId },
+    });
+
+    try {
+      revalidatePath("/admin/reviewers");
+    } catch {
+      // ignore outside Next.js request context
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete reviewer application:", error);
     return {
       success: false,
-      error:
-        "Unauthorized: You do not have permission to delete this application.",
+      error: "Failed to delete reviewer application.",
     };
   }
-
-  store.applications.splice(appIndex, 1);
-  writePersistedStore(store);
-
-  try {
-    revalidatePath("/admin/reviewers");
-  } catch {
-    // ignore outside Next.js request context
-  }
-
-  return { success: true };
 }

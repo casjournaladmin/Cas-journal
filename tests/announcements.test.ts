@@ -39,7 +39,7 @@ const authorActor = {
 };
 
 test("Announcements: Public retrieval and filtering", async () => {
-  resetAnnouncements();
+  await resetAnnouncements();
   const publicAnnouncements = await getPublicAnnouncements();
   assert.ok(Array.isArray(publicAnnouncements));
   assert.ok(publicAnnouncements.length >= 3);
