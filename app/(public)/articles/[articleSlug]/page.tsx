@@ -6,6 +6,8 @@ import { Container } from "@/components/ui/container";
 import { prisma } from "@/lib/db/prisma";
 import { formatLongDate } from "@/lib/formatting/dates";
 
+import { buildGoogleScholarMetadata } from "@/lib/metadata/scholar";
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -32,43 +34,16 @@ export async function generateMetadata({
 
   if (!article || !article.isPublished) return { title: "Article Not Found" };
 
-  const journalName = article.issue.volume.journal.name;
-  const pubDate = article.publishedAt
-    ? article.publishedAt.toISOString().split("T")[0].replaceAll("-", "/")
-    : new Date().toISOString().split("T")[0].replaceAll("-", "/");
-
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com"
-  ).replace(/\/$/, "");
-  const pdfUrl = `${baseUrl}/api/articles/${article.slug}/pdf`;
-
-  const authorNames = article.authors.length
-    ? article.authors.map((a) => a.fullName)
-    : [];
-
-  const otherMeta: Record<string, string | string[]> = {
-    citation_title: article.title,
-    citation_publication_date: pubDate,
-    citation_journal_title: journalName,
-    citation_volume: String(article.issue.volume.number),
-    citation_issue: String(article.issue.number),
-    citation_pdf_url: pdfUrl,
-  };
-
-  if (authorNames.length > 0) {
-    otherMeta.citation_author = authorNames;
-  }
-  if (article.pageStart) otherMeta.citation_firstpage = article.pageStart;
-  if (article.pageEnd) otherMeta.citation_lastpage = article.pageEnd;
-  if (article.doi) otherMeta.citation_doi = article.doi;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com";
+  const scholarMeta = buildGoogleScholarMetadata(article, baseUrl);
 
   return {
-    title: `${article.title} | ${journalName}`,
-    description: article.abstract ?? undefined,
+    title: scholarMeta.title,
+    description: scholarMeta.description,
     alternates: {
       canonical: `/articles/${article.slug}`,
     },
-    other: otherMeta,
+    other: scholarMeta.other,
   };
 }
 
@@ -188,7 +163,7 @@ export default async function PublicArticlePage({
               </p>
             </div>
             <a
-              href={`/api/articles/${article.slug}/pdf`}
+              href={`/articles/${article.slug}/${article.slug}.pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="button-primary ml-auto inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold"

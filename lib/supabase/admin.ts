@@ -13,5 +13,10 @@ export function createAdminClient() {
     );
   return createClient(url, secretKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    realtime: {
+      transport: (typeof WebSocket !== "undefined"
+        ? WebSocket
+        : class {}) as unknown as typeof WebSocket,
+    },
   });
 }

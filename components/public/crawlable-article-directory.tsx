@@ -1,4 +1,5 @@
 import type { ArchiveIssueGroup } from "@/components/public/issue-archive-explorer";
+import { splitAuthorNames } from "@/lib/metadata/scholar";
 
 export function CrawlableArticleDirectory({
   issueGroups,
@@ -9,102 +10,114 @@ export function CrawlableArticleDirectory({
     return null;
   }
 
+  const totalArticles = issueGroups.reduce(
+    (acc, g) => acc + g.articles.length,
+    0,
+  );
+
   return (
-    <>
-      {/* Semantic Screen-Reader & Search Engine Crawler Directory (Rendered in initial SSR HTML) */}
-      <nav
-        aria-label="Academic Manuscript Directory"
-        className="sr-only"
-        data-crawler-index="google-scholar"
-      >
-        <h2>Published Academic Manuscripts and Table of Contents Directory</h2>
-        {issueGroups.map((group) => {
-          const journal = group.issue.volume.journal;
-          const volNumber = group.issue.volume.number;
-          const issueNumber = group.issue.number;
-          const year = group.issue.volume.year;
+    <section
+      aria-label="Academic Manuscript Directory"
+      data-crawler-index="google-scholar"
+      className="mt-12 rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 sm:p-8"
+    >
+      <details className="group" open>
+        <summary className="flex cursor-pointer items-center justify-between text-base font-bold text-[color:var(--color-foreground)] transition hover:text-[color:var(--color-accent)]">
+          <span className="flex items-center gap-2">
+            <span>📚 Complete Academic Manuscript Directory</span>
+            <span className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-2.5 py-0.5 font-mono text-xs font-medium text-[color:var(--color-accent)]">
+              {totalArticles} Articles across {issueGroups.length} Issues
+            </span>
+          </span>
+          <span className="text-xs font-semibold text-[color:var(--color-subtle)] transition-transform duration-200 group-open:rotate-180">
+            ▼
+          </span>
+        </summary>
 
-          return (
-            <section
-              key={`crawler-issue-${group.issue.id}`}
-              aria-label={`${journal.name} Vol ${volNumber} Issue ${issueNumber}`}
-            >
-              <h3>
-                {journal.name} — Volume {volNumber}, Issue {issueNumber} ({year}
-                )
-              </h3>
-              <ol>
-                {group.articles.map((article) => (
-                  <li key={`crawler-art-${article.id}`}>
-                    <a href={`/articles/${article.slug}`}>{article.title}</a>
-                    {article.authors && article.authors.length > 0 ? (
-                      <span>
-                        {" "}
-                        by {article.authors.map((a) => a.fullName).join(", ")}
-                      </span>
-                    ) : null}
-                    {article.pageStart && (
-                      <span>
-                        {" "}
-                        (pp. {article.pageStart}
-                        {article.pageEnd ? `–${article.pageEnd}` : ""})
-                      </span>
-                    )}
-                    {article.doi && <span> — DOI: {article.doi}</span>}
-                    <span>
-                      {" "}
-                      [
-                      <a href={`/api/articles/${article.slug}/pdf`}>Full PDF</a>
-                      ]
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          );
-        })}
-      </nav>
+        <p className="mt-3 text-xs leading-relaxed text-[color:var(--color-muted)]">
+          Comprehensive, crawlable index of published scholarly articles, tables
+          of contents, and full-text manuscripts across all volumes and issues.
+        </p>
 
-      {/* Non-JavaScript Fallback for Raw HTTP Crawlers & Bots */}
-      <noscript>
-        <div className="mx-auto my-8 max-w-4xl rounded-lg border border-slate-700 bg-slate-900/60 p-6 text-sm text-slate-300">
-          <h2 className="mb-4 text-base font-bold text-white">
-            Table of Contents & Archived Papers Directory
-          </h2>
-          <div className="space-y-6">
-            {issueGroups.map((group) => (
+        <div className="mt-6 space-y-8 divide-y divide-[color:var(--color-border)]">
+          {issueGroups.map((group) => {
+            const journal = group.issue.volume.journal;
+            const volNumber = group.issue.volume.number;
+            const issueNumber = group.issue.number;
+            const year = group.issue.volume.year;
+
+            return (
               <div
-                key={`noscript-issue-${group.issue.id}`}
-                className="space-y-2"
+                key={`crawler-issue-${group.issue.id}`}
+                className="pt-6 first:pt-0"
               >
-                <h3 className="font-semibold text-emerald-400">
-                  {group.issue.volume.journal.name} — Vol.{" "}
-                  {group.issue.volume.number}, Issue {group.issue.number} (
-                  {group.issue.volume.year})
-                </h3>
-                <ul className="list-inside list-disc space-y-1 pl-2">
-                  {group.articles.map((article) => (
-                    <li key={`noscript-art-${article.id}`}>
-                      <a
-                        href={`/articles/${article.slug}`}
-                        className="text-white hover:underline"
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[color:var(--color-accent)] uppercase">
+                  <span>{journal.name}</span>
+                  <span>·</span>
+                  <span>
+                    Volume {volNumber}, Issue {issueNumber} ({year})
+                  </span>
+                  <span>·</span>
+                  <span className="text-[color:var(--color-muted)]">
+                    {group.articles.length}{" "}
+                    {group.articles.length === 1 ? "article" : "articles"}
+                  </span>
+                </div>
+
+                <ol className="mt-3 space-y-2.5 text-xs">
+                  {group.articles.map((article, idx) => {
+                    const parsedAuthors = splitAuthorNames(
+                      article.authors || [],
+                    );
+                    return (
+                      <li
+                        key={`crawler-art-${article.id}`}
+                        className="flex flex-wrap items-baseline gap-x-2 text-[color:var(--color-foreground)]"
                       >
-                        {article.title}
-                      </a>
-                      {article.authors && article.authors.length > 0 ? (
-                        <span className="text-slate-400">
-                          {" "}
-                          — {article.authors.map((a) => a.fullName).join(", ")}
+                        <span className="font-mono text-[color:var(--color-subtle)]">
+                          {idx + 1}.
                         </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
+                        <a
+                          href={`/articles/${article.slug}`}
+                          className="font-semibold text-[color:var(--color-foreground)] hover:text-[color:var(--color-accent)] hover:underline"
+                        >
+                          {article.title}
+                        </a>
+                        {parsedAuthors.length > 0 ? (
+                          <span className="text-[color:var(--color-muted)]">
+                            by {parsedAuthors.join(", ")}
+                          </span>
+                        ) : null}
+                        {article.pageStart && (
+                          <span className="font-mono text-[color:var(--color-subtle)]">
+                            (pp. {article.pageStart}
+                            {article.pageEnd ? `–${article.pageEnd}` : ""})
+                          </span>
+                        )}
+                        {article.doi && (
+                          <span className="font-mono text-[color:var(--color-accent)]">
+                            DOI: {article.doi}
+                          </span>
+                        )}
+                        <span className="font-mono text-[11px]">
+                          [
+                          <a
+                            href={`/articles/${article.slug}/${article.slug}.pdf`}
+                            className="text-[color:var(--color-accent)] hover:underline"
+                          >
+                            PDF
+                          </a>
+                          ]
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </noscript>
-    </>
+      </details>
+    </section>
   );
 }
