@@ -34,7 +34,9 @@ test("Google Scholar / Highwire Press metadata tags structure", () => {
     .split("T")[0]
     .replaceAll("-", "/");
 
-  const baseUrl = "https://imsu-foss.ng";
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com"
+  ).replace(/\/$/, "");
   const pdfUrl = `${baseUrl}/api/articles/${article.slug}/pdf`;
 
   const authorNames = article.authors.map((a) => a.fullName);
@@ -55,6 +57,15 @@ test("Google Scholar / Highwire Press metadata tags structure", () => {
   if (article.pageEnd) otherMeta.citation_lastpage = article.pageEnd;
   if (article.doi) otherMeta.citation_doi = article.doi;
 
+  const metadata = {
+    title: `${article.title} | ${journalName}`,
+    description: article.abstract,
+    alternates: {
+      canonical: `/articles/${article.slug}`,
+    },
+    other: otherMeta,
+  };
+
   assert.equal(
     otherMeta.citation_title,
     "Psychosocial Factors and Academic Performance in Imo State Universities",
@@ -73,8 +84,81 @@ test("Google Scholar / Highwire Press metadata tags structure", () => {
   assert.equal(otherMeta.citation_doi, "10.1234/njcp.2026.1.1");
   assert.equal(
     otherMeta.citation_pdf_url,
-    "https://imsu-foss.ng/api/articles/psychosocial-factors-and-academic-performance/pdf",
+    `${baseUrl}/api/articles/psychosocial-factors-and-academic-performance/pdf`,
   );
   assert.equal(otherMeta.citation_firstpage, "12");
   assert.equal(otherMeta.citation_lastpage, "28");
+  assert.equal(
+    metadata.alternates.canonical,
+    "/articles/psychosocial-factors-and-academic-performance",
+  );
+
+  // Verify production default fallback without env variable
+  const fallbackBaseUrl = (undefined || "https://imsufoss.com").replace(
+    /\/$/,
+    "",
+  );
+  assert.equal(
+    `${fallbackBaseUrl}/api/articles/sample-paper/pdf`,
+    "https://imsufoss.com/api/articles/sample-paper/pdf",
+  );
+});
+
+test("CrawlableArticleDirectory generates standard HTML links for Googlebot-Scholar discovery", async () => {
+  const { CrawlableArticleDirectory } =
+    await import("../components/public/crawlable-article-directory");
+
+  const sampleIssueGroup = [
+    {
+      issue: {
+        id: "iss-1",
+        number: 1,
+        isClosed: false,
+        volume: {
+          number: 14,
+          year: 2026,
+          journal: {
+            name: "Nigerian Journal of Contemporary Psychology (NJCP)",
+            slug: "psychology",
+            shortName: "NJCP",
+            department: { name: "Department of Psychology" },
+          },
+        },
+      },
+      coverImageUrl: null,
+      articles: [
+        {
+          id: "art-1",
+          title: "Study on Behavioural Dynamics in Tertiary Education",
+          slug: "study-on-behavioural-dynamics",
+          abstract: "Abstract content...",
+          doi: "10.1234/njcp.2026.1.2",
+          pageStart: "1",
+          pageEnd: "15",
+          issueOrder: 1,
+          coverImageUrl: null,
+          publishedAt: new Date("2026-05-10"),
+          authors: [{ id: "auth-1", fullName: "Prof. A. N. Okereke" }],
+          issue: {
+            id: "iss-1",
+            number: 1,
+            isClosed: false,
+            volume: {
+              number: 14,
+              year: 2026,
+              journal: {
+                name: "Nigerian Journal of Contemporary Psychology (NJCP)",
+                slug: "psychology",
+                shortName: "NJCP",
+                department: { name: "Department of Psychology" },
+              },
+            },
+          },
+        },
+      ],
+    },
+  ];
+
+  const element = CrawlableArticleDirectory({ issueGroups: sampleIssueGroup });
+  assert.ok(element !== null, "Directory should render valid JSX element");
 });

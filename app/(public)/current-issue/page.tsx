@@ -4,6 +4,7 @@ import {
   IssueArchiveExplorer,
   type ArchiveIssueGroup,
 } from "@/components/public/issue-archive-explorer";
+import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
 import { prisma } from "@/lib/db/prisma";
 
 export const dynamic = "force-dynamic";
@@ -130,7 +131,10 @@ export default async function CurrentIssuePage() {
               </div>
             </div>
           ) : (
-            <IssueArchiveExplorer issueGroups={issueGroups} />
+            <>
+              <IssueArchiveExplorer issueGroups={issueGroups} />
+              <CrawlableArticleDirectory issueGroups={issueGroups} />
+            </>
           )}
         </Container>
       </section>

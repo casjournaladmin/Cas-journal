@@ -38,7 +38,7 @@ export async function generateMetadata({
     : new Date().toISOString().split("T")[0].replaceAll("-", "/");
 
   const baseUrl = (
-    process.env.NEXT_PUBLIC_APP_URL || "https://imsu-foss.ng"
+    process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com"
   ).replace(/\/$/, "");
   const pdfUrl = `${baseUrl}/api/articles/${article.slug}/pdf`;
 
@@ -65,6 +65,9 @@ export async function generateMetadata({
   return {
     title: `${article.title} | ${journalName}`,
     description: article.abstract ?? undefined,
+    alternates: {
+      canonical: `/articles/${article.slug}`,
+    },
     other: otherMeta,
   };
 }

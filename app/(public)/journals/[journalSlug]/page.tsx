@@ -26,6 +26,9 @@ export async function generateMetadata({
   return {
     title: `${meta.title} (${meta.shortName}) | IMSU FOSS Journals`,
     description: meta.aimsAndScope,
+    alternates: {
+      canonical: `/journals/${canonical}`,
+    },
   };
 }
 

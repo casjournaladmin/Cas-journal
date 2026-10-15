@@ -12,6 +12,12 @@ const geist = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com",
+  ),
+  alternates: {
+    canonical: "/",
+  },
   title: siteConfig.name,
   description: siteConfig.description,
   icons: {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { PublicSearchBar } from "@/components/public-search-bar";
 import { IssueArchiveExplorer } from "@/components/public/issue-archive-explorer";
+import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
 import { prisma } from "@/lib/db/prisma";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
@@ -352,7 +353,10 @@ export default async function ArchivesPage({
             </div>
           ) : (
             /* Mode A: Issue Periodicals Shelf Grid with Instant TOC & PDF Modal */
-            <IssueArchiveExplorer issueGroups={issueGroups} />
+            <>
+              <IssueArchiveExplorer issueGroups={issueGroups} />
+              <CrawlableArticleDirectory issueGroups={issueGroups} />
+            </>
           )}
         </Container>
       </section>

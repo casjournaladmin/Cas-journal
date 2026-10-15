@@ -13,13 +13,27 @@ export default function robots(): MetadataRoute.Robots {
           "/editorial-board",
           "/current-issue",
           "/archives",
+          "/journals/",
           "/articles/",
-          "/api/articles/", // Allows Google Scholar & public academic crawlers to index PDFs
-          "/api/issues/", // Allows crawling of public TOC files
+          "/announcements/",
           "/submit",
+          "/submissions",
+          "/apply-reviewer",
           "/contact",
+          "/api/articles/", // Allows Google Scholar & public academic crawlers to stream PDFs
+          "/api/issues/", // Allows crawling of public TOC files
         ],
-        disallow: ["/admin/", "/author/", "/editor/", "/workspaces/", "/api/"],
+        disallow: [
+          "/admin",
+          "/author",
+          "/editor",
+          "/workspaces",
+          "/account",
+          "/login",
+          "/unauthorized",
+          "/auth/",
+          "/api/",
+        ],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
