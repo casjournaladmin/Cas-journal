@@ -6,7 +6,6 @@ import {
   deleteAnnouncement,
   getAnnouncementBySlug,
   getPublicAnnouncements,
-  resetAnnouncements,
   toggleAnnouncementActive,
   updateAnnouncement,
 } from "@/lib/editorial/announcements-store";
@@ -39,7 +38,6 @@ const authorActor = {
 };
 
 test("Announcements: Public retrieval and filtering", async () => {
-  await resetAnnouncements();
   const publicAnnouncements = await getPublicAnnouncements();
   assert.ok(Array.isArray(publicAnnouncements));
   assert.ok(publicAnnouncements.length >= 3);

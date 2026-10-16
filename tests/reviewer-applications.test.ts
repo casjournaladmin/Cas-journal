@@ -7,7 +7,6 @@ import {
   formatAcademicName,
   getReviewerApplicationForUser,
   getReviewerApplications,
-  resetReviewerApplications,
   updateReviewerApplicationStatus,
 } from "@/lib/editorial/reviewer-applications-store";
 
@@ -39,7 +38,6 @@ const authorActor = {
 };
 
 test("Reviewer Applications: Validation and Application Creation", async () => {
-  await resetReviewerApplications();
   // 1. Missing required fields fails validation
   const invalidRes = await createReviewerApplication({
     fullName: "",
@@ -76,6 +74,14 @@ test("Reviewer Applications: Validation and Application Creation", async () => {
   assert.ok(validRes.application);
   assert.equal(validRes.application.status, "PENDING");
   assert.equal(validRes.application.targetJournal, "njcp");
+
+  // Scoped cleanup
+  if (validRes.application?.id) {
+    await deleteReviewerApplication({
+      applicationId: validRes.application.id,
+      actor: superAdminActor,
+    });
+  }
 });
 
 test("Reviewer Applications: List and Scoped Retrieval", async () => {
@@ -161,6 +167,12 @@ test("Reviewer Applications: Status Transition and Department Authorization", as
     actor: superAdminActor,
   });
   assert.equal(superDeleteAllowed.success, true);
+
+  // Clean up initial test application
+  await deleteReviewerApplication({
+    applicationId: appId,
+    actor: superAdminActor,
+  });
 });
 
 test("Reviewer Applications: Authenticated submission preserves applicantUserId", async () => {
@@ -196,6 +208,14 @@ test("Reviewer Applications: Authenticated submission preserves applicantUserId"
   });
   assert.ok(foundByEmail);
   assert.equal(foundByEmail.id, authRes.application.id);
+
+  // Clean up authenticated test application
+  if (authRes.application?.id) {
+    await deleteReviewerApplication({
+      applicationId: authRes.application.id,
+      actor: superAdminActor,
+    });
+  }
 });
 
 test("Reviewer Applications: formatAcademicName prevents duplicate titles", () => {

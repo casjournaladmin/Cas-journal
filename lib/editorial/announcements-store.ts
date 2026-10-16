@@ -2,6 +2,7 @@ import "server-only";
 
 import { revalidatePath } from "next/cache";
 import { isSuperAdmin } from "@/lib/auth/permissions";
+import { assertSafeDatabaseForDestructiveOps } from "@/lib/db/guard";
 import { prisma } from "@/lib/db/prisma";
 import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
 import { isAuthorizedForJournal } from "@/lib/editorial/editorial-board-store";
@@ -92,6 +93,7 @@ function formatAnnouncement(raw: {
 }
 
 export async function resetAnnouncements(): Promise<void> {
+  assertSafeDatabaseForDestructiveOps("resetAnnouncements");
   await prisma.announcement.deleteMany({});
   for (const a of DEFAULT_ANNOUNCEMENTS) {
     await prisma.announcement.create({

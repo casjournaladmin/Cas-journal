@@ -11,6 +11,7 @@ import {
   toggleAnnouncementActiveAction,
   updateAnnouncementAction,
 } from "@/app/admin/announcements/actions";
+import { AnnouncementImage } from "@/components/announcements/announcement-image";
 import { formatShortDate } from "@/lib/formatting/dates";
 
 const CATEGORIES: Array<{ value: AnnouncementCategory; label: string }> = [
@@ -277,14 +278,11 @@ export function AnnouncementsManager({
               </p>
 
               {item.imageUrl ? (
-                <div className="mt-3 overflow-hidden rounded-md border border-[color:var(--color-border)]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="max-h-56 w-full object-cover"
-                  />
-                </div>
+                <AnnouncementImage
+                  src={item.imageUrl}
+                  alt={item.title}
+                  className="mt-3"
+                />
               ) : null}
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--color-border)] pt-3">

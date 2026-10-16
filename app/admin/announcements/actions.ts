@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/authorization";
+import { prisma } from "@/lib/db/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   createAnnouncement,
@@ -10,6 +11,7 @@ import {
   type AnnouncementCategory,
   type Announcement,
 } from "@/lib/editorial/announcements-store";
+import { uploadAnnouncementImage } from "@/lib/editorial/announcement-images";
 
 export type AdminAnnouncementActionState = {
   success?: boolean;
@@ -37,32 +39,11 @@ export async function createAnnouncementAction(
   let imageUrl: string | undefined = undefined;
   const imageFile = formData.get("image") as File | null;
   if (imageFile && imageFile.size > 0) {
-    try {
-      const supabase = createAdminClient();
-      const imgArrayBuffer = await imageFile.arrayBuffer();
-      const imgBuffer = Buffer.from(imgArrayBuffer);
-      const imgFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const imgPath = `announcements/${Date.now()}_${imgFileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("published-articles")
-        .upload(imgPath, imgBuffer, {
-          contentType: imageFile.type || "image/jpeg",
-          upsert: true,
-          duplex: "half",
-        });
-
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage
-          .from("published-articles")
-          .getPublicUrl(imgPath);
-        imageUrl = publicUrlData.publicUrl;
-      } else {
-        console.error("Failed to upload announcement image:", uploadError);
-      }
-    } catch (err) {
-      console.error("Storage upload exception:", err);
+    const uploadResult = await uploadAnnouncementImage(imageFile);
+    if (uploadResult.error) {
+      return { error: uploadResult.error };
     }
+    imageUrl = uploadResult.url;
   }
 
   return createAnnouncement({
@@ -101,32 +82,11 @@ export async function updateAnnouncementAction(
   if (removeImage) {
     imageUrl = "";
   } else if (imageFile && imageFile.size > 0) {
-    try {
-      const supabase = createAdminClient();
-      const imgArrayBuffer = await imageFile.arrayBuffer();
-      const imgBuffer = Buffer.from(imgArrayBuffer);
-      const imgFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const imgPath = `announcements/${Date.now()}_${imgFileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("published-articles")
-        .upload(imgPath, imgBuffer, {
-          contentType: imageFile.type || "image/jpeg",
-          upsert: true,
-          duplex: "half",
-        });
-
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage
-          .from("published-articles")
-          .getPublicUrl(imgPath);
-        imageUrl = publicUrlData.publicUrl;
-      } else {
-        console.error("Failed to upload announcement image:", uploadError);
-      }
-    } catch (err) {
-      console.error("Storage upload exception:", err);
+    const uploadResult = await uploadAnnouncementImage(imageFile);
+    if (uploadResult.error) {
+      return { error: uploadResult.error };
     }
+    imageUrl = uploadResult.url;
   }
 
   return updateAnnouncement({
@@ -150,6 +110,31 @@ export async function deleteAnnouncementAction(
   if (!user) return { error: "Authentication required." };
 
   const announcementId = formData.get("announcementId")?.toString() ?? "";
+
+  // Attempt to remove binary image from storage bucket if present
+  try {
+    const existing = await prisma.announcement.findUnique({
+      where: { id: announcementId },
+      select: { imageUrl: true },
+    });
+    if (
+      existing?.imageUrl &&
+      existing.imageUrl.includes("/published-articles/")
+    ) {
+      const match = existing.imageUrl.match(
+        /published-articles\/(announcements\/[^?#]+)/,
+      );
+      if (match?.[1]) {
+        const supabase = createAdminClient();
+        await supabase.storage.from("published-articles").remove([match[1]]);
+      }
+    }
+  } catch (cleanupErr) {
+    console.warn(
+      "Storage cleanup failed on announcement deletion:",
+      cleanupErr,
+    );
+  }
 
   return deleteAnnouncement({
     announcementId,

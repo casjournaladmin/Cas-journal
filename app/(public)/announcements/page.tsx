@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
+import { AnnouncementImage } from "@/components/announcements/announcement-image";
 import { getPublicAnnouncements } from "@/lib/editorial/announcements-store";
 import { formatLongDate } from "@/lib/formatting/dates";
 
@@ -74,7 +75,7 @@ export default async function AnnouncementsPage({
             </div>
           ) : (
             <div className="space-y-6">
-              {announcements.map((item) => (
+              {announcements.map((item, index) => (
                 <article
                   key={item.id}
                   className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 shadow-sm transition hover:border-[color:var(--color-accent)]/50 sm:p-7"
@@ -113,14 +114,11 @@ export default async function AnnouncementsPage({
                   </h2>
 
                   {item.imageUrl ? (
-                    <div className="mt-4 overflow-hidden rounded-md border border-[color:var(--color-border)]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="max-h-80 w-full object-cover"
-                      />
-                    </div>
+                    <AnnouncementImage
+                      src={item.imageUrl}
+                      alt={item.title}
+                      priority={index < 2}
+                    />
                   ) : null}
 
                   <div className="mt-3 text-sm leading-relaxed whitespace-pre-line text-[color:var(--color-muted)]">
