@@ -175,7 +175,7 @@ test("Phase 3: Role management policy isolates Journal Admins to their specific 
 });
 
 test("Phase 3: Page range is never auto-invented when not provided", () => {
-  const rawInputEmpty = "";
+  const rawInputEmpty: string = "";
   const partsEmpty = rawInputEmpty ? rawInputEmpty.split("-") : [];
   const pageStartEmpty = partsEmpty[0]?.trim() || null;
   const pageEndEmpty = partsEmpty[1]?.trim() || null;

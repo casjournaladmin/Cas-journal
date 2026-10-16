@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getPostLoginDestination } from "@/lib/auth/workspaces";
@@ -27,10 +28,19 @@ export async function signInWithGoogle(formData: FormData) {
   let destination: string | null = null;
 
   try {
+    const headerList = await headers();
+    const host = headerList.get("x-forwarded-host") || headerList.get("host");
+    const proto =
+      headerList.get("x-forwarded-proto") ||
+      (host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
+        ? "http"
+        : "https");
+    const origin = host ? `${proto}://${host}` : undefined;
+
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: getOAuthCallbackUrl(returnTo) },
+      options: { redirectTo: getOAuthCallbackUrl(returnTo, origin) },
     });
     if (!error && data.url) destination = data.url;
   } catch {

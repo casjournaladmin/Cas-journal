@@ -140,12 +140,47 @@ export async function createDirectLegacyArticleAction(
         .filter(Boolean)
     : [];
 
-  const authors = authorNamesStr
-    ? authorNamesStr
-        .split(",")
-        .map((name) => ({ fullName: name.trim() }))
-        .filter((a) => a.fullName.length > 0)
-    : [{ fullName: user.displayName }];
+  let authors: Array<{
+    fullName: string;
+    affiliation?: string | null;
+    email?: string | null;
+    orcid?: string | null;
+  }> = [];
+
+  const authorsJson = formData.get("authorsJson") as string | null;
+  if (authorsJson) {
+    try {
+      const parsed = JSON.parse(authorsJson);
+      if (Array.isArray(parsed)) {
+        authors = parsed
+          .map(
+            (a: {
+              fullName?: string;
+              affiliation?: string;
+              email?: string;
+              orcid?: string;
+            }) => ({
+              fullName: (a.fullName || "").trim(),
+              affiliation: (a.affiliation || "").trim() || null,
+              email: (a.email || "").trim() || null,
+              orcid: (a.orcid || "").trim() || null,
+            }),
+          )
+          .filter((a) => a.fullName.length > 0);
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  if (authors.length === 0) {
+    authors = authorNamesStr
+      ? authorNamesStr
+          .split(",")
+          .map((name) => ({ fullName: name.trim() }))
+          .filter((a) => a.fullName.length > 0)
+      : [{ fullName: user.displayName }];
+  }
 
   const supabase = createAdminClient();
 
@@ -438,6 +473,7 @@ export async function updateArticleAction(
     fullName: string;
     affiliation?: string | null;
     email?: string | null;
+    orcid?: string | null;
   }> = [];
 
   const authorsJson = formData.get("authorsJson") as string | null;
@@ -451,10 +487,12 @@ export async function updateArticleAction(
               fullName?: string;
               affiliation?: string;
               email?: string;
+              orcid?: string;
             }) => ({
               fullName: (a.fullName || "").trim(),
               affiliation: (a.affiliation || "").trim() || null,
               email: (a.email || "").trim() || null,
+              orcid: (a.orcid || "").trim() || null,
             }),
           )
           .filter((a) => a.fullName.length > 0);

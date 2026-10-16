@@ -116,6 +116,31 @@ test("OAuth callback keeps only the safe submission return path", () => {
   }
 });
 
+test("OAuth callback respects dynamic local origin override and rejects untrusted origins", () => {
+  const previous = process.env.NEXT_PUBLIC_APP_URL;
+  process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+  try {
+    assert.equal(
+      getOAuthCallbackUrl(
+        canonicalSubmissionEntryPath,
+        "http://localhost:3001",
+      ),
+      "http://localhost:3001/auth/callback?next=%2Fauthor%2Fsubmissions%2Fnew",
+    );
+    assert.equal(
+      getOAuthCallbackUrl(null, "http://127.0.0.1:3002"),
+      "http://127.0.0.1:3002/auth/callback",
+    );
+    assert.equal(
+      getOAuthCallbackUrl(null, "https://malicious-site.com"),
+      "http://localhost:3000/auth/callback",
+    );
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = previous;
+  }
+});
+
 test("direct submission route renders the 1-page submission form", () => {
   assert.match(
     source("app/author/submissions/new/page.tsx"),

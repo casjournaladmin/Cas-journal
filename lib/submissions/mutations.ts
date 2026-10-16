@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { finalizeRequestSubmission } from "@/lib/requests/mutations";
 import type { SubmissionAuthorInput } from "@/lib/submissions/types";
 import { validateAuthors, validateDetails } from "@/lib/submissions/validation";
+import { normalizeOrcid } from "@/lib/utils/orcid";
 
 export class SubmissionMutationError extends Error {
   constructor(
@@ -158,7 +159,7 @@ export async function saveDraftAuthors(input: {
         fullName: author.fullName.trim(),
         email: author.email.trim() || null,
         affiliation: author.affiliation.trim() || null,
-        orcid: author.orcid.trim().toUpperCase() || null,
+        orcid: author.orcid ? normalizeOrcid(author.orcid) : null,
         position: index + 1,
         isCorrespondingAuthor: author.isCorrespondingAuthor,
       })),

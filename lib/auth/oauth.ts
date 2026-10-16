@@ -14,8 +14,39 @@ export function getApplicationUrl() {
   return url;
 }
 
-export function getOAuthCallbackUrl(returnTo: unknown) {
-  const callback = new URL("/auth/callback", getApplicationUrl());
+export function getOAuthCallbackUrl(
+  returnTo: unknown,
+  originOverride?: string | null,
+) {
+  let base: URL;
+
+  if (originOverride) {
+    try {
+      const parsed = new URL(originOverride);
+      const isLocal =
+        parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+      const appUrl = getApplicationUrl();
+      const isConfiguredHost = parsed.host === appUrl.host;
+
+      if (
+        (isLocal || isConfiguredHost) &&
+        (parsed.protocol === "http:" || parsed.protocol === "https:")
+      ) {
+        parsed.pathname = "/";
+        parsed.search = "";
+        parsed.hash = "";
+        base = parsed;
+      } else {
+        base = appUrl;
+      }
+    } catch {
+      base = getApplicationUrl();
+    }
+  } else {
+    base = getApplicationUrl();
+  }
+
+  const callback = new URL("/auth/callback", base);
   const safeReturn = getSafeLoginReturnPath(returnTo);
   if (safeReturn) callback.searchParams.set("next", safeReturn);
   return callback.toString();

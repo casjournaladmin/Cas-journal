@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   createDirectLegacyArticleAction,
@@ -25,6 +25,52 @@ export function AdminLegacyUploadForm({
     createDirectLegacyArticleAction,
     initialState,
   );
+
+  const [authors, setAuthors] = useState<
+    Array<{
+      fullName: string;
+      affiliation: string;
+      email: string;
+      orcid: string;
+    }>
+  >([{ fullName: "", affiliation: "", email: "", orcid: "" }]);
+
+  const addAuthor = () => {
+    setAuthors([
+      ...authors,
+      { fullName: "", affiliation: "", email: "", orcid: "" },
+    ]);
+  };
+
+  const removeAuthor = (index: number) => {
+    if (authors.length <= 1) return;
+    setAuthors(authors.filter((_, i) => i !== index));
+  };
+
+  const updateAuthor = (
+    index: number,
+    field: "fullName" | "affiliation" | "email" | "orcid",
+    value: string,
+  ) => {
+    const updated = [...authors];
+    updated[index][field] = value;
+    setAuthors(updated);
+  };
+
+  const moveAuthor = (index: number, direction: "up" | "down") => {
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === authors.length - 1)
+    ) {
+      return;
+    }
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    const updated = [...authors];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+    setAuthors(updated);
+  };
 
   return (
     <form action={action} className="space-y-6">
@@ -158,16 +204,101 @@ export function AdminLegacyUploadForm({
         </label>
       </div>
 
-      <label className="block text-xs font-semibold text-[color:var(--color-foreground)]">
-        Author Names (Comma-separated) *
-        <input
-          name="authorNames"
-          type="text"
-          placeholder="e.g. Dr. John Doe, Prof. Jane Smith"
-          className="app-field mt-1.5"
-          required
-        />
-      </label>
+      <input type="hidden" name="authorsJson" value={JSON.stringify(authors)} />
+
+      {/* Authors Manager */}
+      <div className="space-y-3 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xs font-bold text-[color:var(--color-foreground)]">
+              Article Authors, Affiliations &amp; ORCID *
+            </h3>
+            <p className="text-[11px] text-[color:var(--color-muted)]">
+              Add contributing authors in published order with optional
+              affiliations and ORCID iDs.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addAuthor}
+            className="rounded-[var(--radius-md)] border border-[color:var(--color-accent)] bg-[color:var(--color-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-accent)] hover:opacity-90"
+          >
+            + Add Collaborating Author
+          </button>
+        </div>
+
+        <div className="space-y-2.5 pt-2">
+          {authors.map((author, index) => (
+            <div
+              key={index}
+              className="flex flex-col gap-2 rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-3 sm:flex-row sm:items-center"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-surface)] text-[11px] font-bold text-[color:var(--color-accent)]">
+                {index + 1}
+              </span>
+
+              <input
+                type="text"
+                value={author.fullName}
+                onChange={(e) =>
+                  updateAuthor(index, "fullName", e.target.value)
+                }
+                placeholder="Full Name (e.g. Prof. Jane Doe) *"
+                className="app-field flex-1 text-xs"
+                required
+              />
+
+              <input
+                type="text"
+                value={author.affiliation}
+                onChange={(e) =>
+                  updateAuthor(index, "affiliation", e.target.value)
+                }
+                placeholder="Affiliation (Department, University)"
+                className="app-field flex-1 text-xs"
+              />
+
+              <input
+                type="text"
+                value={author.orcid}
+                onChange={(e) => updateAuthor(index, "orcid", e.target.value)}
+                placeholder="ORCID iD (0000-0000-0000-0000)"
+                className="app-field flex-1 text-xs"
+              />
+
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => moveAuthor(index, "up")}
+                  disabled={index === 0}
+                  className="rounded p-1 text-xs text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)] disabled:opacity-30"
+                  title="Move Up"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveAuthor(index, "down")}
+                  disabled={index === authors.length - 1}
+                  className="rounded p-1 text-xs text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)] disabled:opacity-30"
+                  title="Move Down"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeAuthor(index)}
+                  disabled={authors.length <= 1}
+                  className="rounded p-1 text-xs text-red-400 hover:bg-red-500/10 disabled:opacity-30"
+                  title="Remove Author"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <label className="block text-xs font-semibold text-[color:var(--color-foreground)]">
         Abstract (Optional)

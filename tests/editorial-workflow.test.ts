@@ -337,7 +337,10 @@ test("26. multiple correction versions increment version numbers accurately and 
   const v2 = { versionNumber: 2, kind: "REVISION" as const };
   const v3 = { versionNumber: 3, kind: "REVISION" as const };
 
-  const versions = [v1];
+  const versions: Array<{
+    versionNumber: number;
+    kind: "ORIGINAL" | "REVISION";
+  }> = [v1];
   const versionsAfterCorrection1 = appendPreserved(versions, v2);
   const versionsAfterCorrection2 = appendPreserved(
     versionsAfterCorrection1,

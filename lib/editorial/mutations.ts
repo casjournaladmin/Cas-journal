@@ -1177,7 +1177,13 @@ export async function publishArticle(input: {
       keywords: true,
       journalId: true,
       authors: {
-        select: { fullName: true, email: true, position: true },
+        select: {
+          fullName: true,
+          email: true,
+          affiliation: true,
+          orcid: true,
+          position: true,
+        },
         orderBy: { position: "asc" },
       },
     },
@@ -1326,6 +1332,8 @@ export async function publishArticle(input: {
           create: submission.authors.map((author) => ({
             fullName: author.fullName,
             email: author.email,
+            affiliation: author.affiliation,
+            orcid: author.orcid,
             position: author.position,
           })),
         },
@@ -1347,6 +1355,8 @@ export async function publishArticle(input: {
           create: submission.authors.map((author) => ({
             fullName: author.fullName,
             email: author.email,
+            affiliation: author.affiliation,
+            orcid: author.orcid,
             position: author.position,
           })),
         },

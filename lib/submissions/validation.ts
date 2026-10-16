@@ -6,9 +6,9 @@ import type {
   AuthorSubmissionDTO,
   SubmissionAuthorInput,
 } from "@/lib/submissions/types";
+import { isValidOrcid } from "@/lib/utils/orcid";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/i;
 
 export function normalizeKeywords(value: string) {
   return [...new Set(value.split(/[,\n]/).map((item) => item.trim()))].filter(
@@ -69,9 +69,16 @@ export function validateAuthors(authors: SubmissionAuthorInput[]) {
         `${label} needs a valid email address.`;
     }
 
-    if (author.orcid && !orcidPattern.test(author.orcid.trim())) {
-      fieldErrors[`author-${index}-orcid`] =
-        `${label}'s ORCID should look like 0000-0000-0000-0000.`;
+    if (author.orcid && author.orcid.trim()) {
+      if (!isValidOrcid(author.orcid.trim())) {
+        fieldErrors[`author-${index}-orcid`] =
+          `${label}'s ORCID should look like 0000-0000-0000-0000 or https://orcid.org/0000-0000-0000-0000.`;
+      }
+    }
+
+    if (author.affiliation && author.affiliation.trim().length > 300) {
+      fieldErrors[`author-${index}-affiliation`] =
+        `${label}'s affiliation is too long (maximum 300 characters).`;
     }
   });
 

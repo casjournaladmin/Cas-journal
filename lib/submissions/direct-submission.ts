@@ -16,6 +16,7 @@ import {
   validateInitialManuscriptFile,
 } from "@/lib/submissions/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeOrcid } from "@/lib/utils/orcid";
 
 export class DirectSubmissionError extends Error {
   constructor(
@@ -181,7 +182,7 @@ export async function createDirectArticleSubmission(input: {
             fullName: authorInput.fullName.trim(),
             email: authorInput.email?.trim() || null,
             affiliation: authorInput.affiliation?.trim() || null,
-            orcid: authorInput.orcid?.trim().toUpperCase() || null,
+            orcid: authorInput.orcid ? normalizeOrcid(authorInput.orcid) : null,
             position: index + 1,
             isCorrespondingAuthor: authorInput.isCorrespondingAuthor,
           })),

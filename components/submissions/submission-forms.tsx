@@ -420,7 +420,7 @@ export function AuthorsStepForm({
         }
         className="button-secondary mt-5"
       >
-        Add another author
+        + Add Collaborating Author
       </button>
       <div className="mt-6">
         <FormMessage state={state} />

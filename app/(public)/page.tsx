@@ -12,61 +12,64 @@ import { getJournalOrderPriority } from "@/lib/editorial/editorial-board-data";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [publishedArticles, allActiveJournals, activationMap] =
-    await Promise.all([
-      prisma.article.findMany({
-        where: { isPublished: true },
-        orderBy: { publishedAt: "desc" },
-        include: {
-          issue: {
-            include: {
-              volume: {
-                include: {
-                  journal: {
-                    select: {
-                      name: true,
-                      slug: true,
-                      department: { select: { name: true } },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          authors: { orderBy: { position: "asc" } },
-        },
-      }),
-      prisma.journal.findMany({
-        where: { isActive: true },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          shortName: true,
-          description: true,
-          department: { select: { name: true } },
-          volumes: {
-            select: {
-              issues: {
-                select: {
-                  _count: {
-                    select: { articles: { where: { isPublished: true } } },
+  const [
+    currentIssueArticle,
+    publishedArticlesCount,
+    allActiveJournals,
+    activationMap,
+  ] = await Promise.all([
+    prisma.article.findFirst({
+      where: { isPublished: true },
+      orderBy: { publishedAt: "desc" },
+      include: {
+        issue: {
+          include: {
+            volume: {
+              include: {
+                journal: {
+                  select: {
+                    name: true,
+                    slug: true,
+                    department: { select: { name: true } },
                   },
                 },
               },
             },
           },
         },
-        orderBy: { name: "asc" },
-      }),
-      getJournalActivationMap(),
-    ]);
+        authors: { orderBy: { position: "asc" } },
+      },
+    }),
+    prisma.article.count({ where: { isPublished: true } }),
+    prisma.journal.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        shortName: true,
+        description: true,
+        department: { select: { name: true } },
+        volumes: {
+          select: {
+            issues: {
+              select: {
+                _count: {
+                  select: { articles: { where: { isPublished: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
+    getJournalActivationMap(),
+  ]);
 
   const activeJournals = allActiveJournals.filter(
     (j) => activationMap[j.slug] === true,
   );
-
-  const currentIssueArticle = publishedArticles[0] || null;
 
   const disciplines = activeJournals
     .map((j) => {
@@ -141,7 +144,7 @@ export default async function Home() {
                     className="button-secondary inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold"
                   >
                     <span>
-                      Browse Catalog ({publishedArticles.length} Papers)
+                      Browse Catalog ({publishedArticlesCount} Papers)
                     </span>
                   </Link>
                 </div>

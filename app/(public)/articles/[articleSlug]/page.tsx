@@ -1,29 +1,32 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/ui/container";
+import { CitationBlock } from "@/components/articles/citation-block";
+import { type CitationArticleMetadata } from "@/lib/citations/generator";
 import { prisma } from "@/lib/db/prisma";
 import { formatLongDate } from "@/lib/formatting/dates";
+import { getOrcidUrl } from "@/lib/utils/orcid";
 
 import { buildGoogleScholarMetadata } from "@/lib/metadata/scholar";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ articleSlug: string }>;
-}): Promise<Metadata> {
-  const { articleSlug } = await params;
-  const article = await prisma.article.findUnique({
+const getArticleBySlug = cache(async (articleSlug: string) => {
+  return prisma.article.findUnique({
     where: { slug: articleSlug },
     include: {
       issue: {
         include: {
           volume: {
             include: {
-              journal: true,
+              journal: {
+                include: {
+                  department: { select: { name: true } },
+                },
+              },
             },
           },
         },
@@ -31,6 +34,15 @@ export async function generateMetadata({
       authors: { orderBy: { position: "asc" } },
     },
   });
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ articleSlug: string }>;
+}): Promise<Metadata> {
+  const { articleSlug } = await params;
+  const article = await getArticleBySlug(articleSlug);
 
   if (!article || !article.isPublished) return { title: "Article Not Found" };
 
@@ -53,31 +65,40 @@ export default async function PublicArticlePage({
   params: Promise<{ articleSlug: string }>;
 }) {
   const { articleSlug } = await params;
-  const article = await prisma.article.findUnique({
-    where: { slug: articleSlug },
-    include: {
-      issue: {
-        include: {
-          volume: {
-            include: {
-              journal: {
-                select: {
-                  name: true,
-                  slug: true,
-                  department: { select: { name: true } },
-                },
-              },
-            },
-          },
-        },
-      },
-      authors: { orderBy: { position: "asc" } },
-    },
-  });
+  const article = await getArticleBySlug(articleSlug);
 
   if (!article || !article.isPublished) {
     notFound();
   }
+
+  const distinctAffiliations = Array.from(
+    new Set(
+      article.authors
+        .map((a) => a.affiliation?.trim())
+        .filter((aff): aff is string => Boolean(aff)),
+    ),
+  );
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com";
+  const citationMeta: CitationArticleMetadata = {
+    title: article.title,
+    journalName: article.issue.volume.journal.name,
+    journalSlug: article.issue.volume.journal.slug,
+    volume: article.issue.volume.number,
+    issue: article.issue.number,
+    year: article.issue.volume.year,
+    publishedAt: article.publishedAt,
+    pageStart: article.pageStart,
+    pageEnd: article.pageEnd,
+    doi: article.doi,
+    canonicalUrl: `${baseUrl}/articles/${article.slug}`,
+    authors: article.authors.map((a) => ({
+      fullName: a.fullName,
+      affiliation: a.affiliation,
+      orcid: a.orcid,
+      position: a.position,
+    })),
+  };
 
   return (
     <Container className="py-10 sm:py-14">
@@ -119,10 +140,73 @@ export default async function PublicArticlePage({
           </h1>
 
           {article.authors.length ? (
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-[color:var(--color-subtle)]">
-              {article.authors.map((author) => (
-                <span key={author.id}>{author.fullName}</span>
-              ))}
+            <div className="mt-4 space-y-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-semibold text-[color:var(--color-subtle)]">
+                {article.authors.map((author) => {
+                  const orcidUrl = getOrcidUrl(author.orcid);
+                  const affIndex = author.affiliation?.trim()
+                    ? distinctAffiliations.indexOf(author.affiliation.trim())
+                    : -1;
+
+                  return (
+                    <span
+                      key={author.id}
+                      className="inline-flex items-center gap-1.5"
+                    >
+                      <span className="text-[color:var(--color-foreground)]">
+                        {author.fullName}
+                      </span>
+                      {affIndex !== -1 ? (
+                        <sup
+                          className="text-[10px] font-bold text-[color:var(--color-accent)]"
+                          title={author.affiliation || undefined}
+                        >
+                          {affIndex + 1}
+                        </sup>
+                      ) : null}
+                      {orcidUrl ? (
+                        <a
+                          href={orcidUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`ORCID profile for ${author.fullName}`}
+                          title={`ORCID iD: ${author.orcid}`}
+                          className="inline-flex items-center text-[#a6ce39] transition hover:opacity-80"
+                        >
+                          <svg
+                            className="size-3.5"
+                            viewBox="0 0 256 256"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M256 128c0 70.7-57.3 128-128 128S0 198.7 0 128 57.3 0 128 0s128 57.3 128 128z"
+                              fill="#A6CE39"
+                            />
+                            <path
+                              d="M86.3 186.2H70.9V79.1h15.4v107.1zM78.6 65.8c-5.4 0-9.8-4.4-9.8-9.8s4.4-9.8 9.8-9.8 9.8 4.4 9.8 9.8-4.4 9.8-9.8 9.8zM196.4 132.8c0 30.6-18.7 53.4-53.1 53.4h-35V79.1h36.2c33.3 0 51.9 22.8 51.9 53.7zm-15.5 0c0-22.3-11.4-38.6-36.4-38.6h-21.1v77.2h21.1c25.4 0 36.4-16.3 36.4-38.6z"
+                              fill="#FFF"
+                            />
+                          </svg>
+                        </a>
+                      ) : null}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {distinctAffiliations.length > 0 ? (
+                <div className="space-y-0.5 pt-1 text-xs text-[color:var(--color-muted)]">
+                  {distinctAffiliations.map((aff, index) => (
+                    <div key={index} className="flex items-start gap-1.5">
+                      <span className="font-semibold text-[color:var(--color-accent)]">
+                        {index + 1}
+                      </span>
+                      <span>{aff}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -182,6 +266,9 @@ export default async function PublicArticlePage({
               </p>
             </div>
           ) : null}
+
+          {/* Citation Generator */}
+          <CitationBlock metadata={citationMeta} />
 
           <div className="mt-8 flex flex-col gap-2 border-t border-[color:var(--color-border)] pt-4 text-xs text-[color:var(--color-subtle)] sm:flex-row sm:items-center sm:justify-between">
             <span suppressHydrationWarning>

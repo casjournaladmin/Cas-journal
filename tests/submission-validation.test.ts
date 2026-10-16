@@ -47,6 +47,7 @@ function completeSubmission(): AuthorSubmissionDTO {
       isActive: true,
       department: { name: "Social Sciences", isActive: true },
     },
+    request: null,
     authors: [{ ...author, id: "author-a", position: 1 }],
     files: [
       {
@@ -221,7 +222,10 @@ test("final review rejects inactive journals, missing files, and declarations", 
       ...complete,
       journal: {
         ...complete.journal,
-        department: { ...complete.journal.department, isActive: false },
+        department: {
+          name: complete.journal.department?.name ?? "Social Sciences",
+          isActive: false,
+        },
       },
     }).some((issue) => issue.includes("no longer accepting")),
   );

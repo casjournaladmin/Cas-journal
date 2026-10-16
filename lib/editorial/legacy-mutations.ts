@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeOrcid } from "@/lib/utils/orcid";
 
 export type DirectLegacyArticleInput = {
   adminId: string;
@@ -27,6 +28,7 @@ export type DirectLegacyArticleInput = {
     fullName: string;
     email?: string | null;
     affiliation?: string | null;
+    orcid?: string | null;
   }>;
 };
 
@@ -142,6 +144,7 @@ export async function publishDirectLegacyArticle(
           fullName: author.fullName,
           email: author.email || null,
           affiliation: author.affiliation || null,
+          orcid: author.orcid ? normalizeOrcid(author.orcid) : null,
         })),
       },
       files: {
@@ -262,6 +265,7 @@ export type UpdateDirectLegacyArticleInput = {
     fullName: string;
     email?: string | null;
     affiliation?: string | null;
+    orcid?: string | null;
   }>;
 };
 
@@ -453,6 +457,7 @@ export async function updateDirectLegacyArticle(
         fullName: author.fullName,
         email: author.email || null,
         affiliation: author.affiliation || null,
+        orcid: author.orcid ? normalizeOrcid(author.orcid) : null,
       })),
     });
   }

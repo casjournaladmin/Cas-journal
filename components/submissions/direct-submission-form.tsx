@@ -177,7 +177,7 @@ export function DirectArticleSubmissionForm({
             onClick={addAuthor}
             className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
           >
-            + Add Author
+            + Add Collaborating Author
           </button>
         </div>
 
@@ -188,9 +188,23 @@ export function DirectArticleSubmissionForm({
               className="rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3.5"
             >
               <div className="flex items-center justify-between pb-2.5">
-                <span className="font-mono text-xs font-semibold text-[color:var(--color-accent)]">
-                  Author {index + 1}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-xs font-semibold text-[color:var(--color-accent)]">
+                    Author {index + 1}
+                  </span>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-[color:var(--color-muted)]">
+                    <input
+                      type="radio"
+                      name="correspondingAuthorRadio"
+                      checked={author.isCorrespondingAuthor}
+                      onChange={() =>
+                        updateAuthor(index, "isCorrespondingAuthor", true)
+                      }
+                      className="size-3.5 accent-[color:var(--color-accent)]"
+                    />
+                    <span>Corresponding author</span>
+                  </label>
+                </div>
                 {authors.length > 1 ? (
                   <button
                     type="button"
@@ -232,6 +246,36 @@ export function DirectArticleSubmissionForm({
                     placeholder="e.g. ngozi.okafor@imsu.edu.ng"
                     className="app-field mt-1 text-xs"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-[color:var(--color-subtle)]">
+                    Institutional Affiliation
+                  </label>
+                  <input
+                    type="text"
+                    value={author.affiliation}
+                    onChange={(e) =>
+                      updateAuthor(index, "affiliation", e.target.value)
+                    }
+                    placeholder="e.g. Department of Psychology, Imo State University"
+                    className="app-field mt-1 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-[color:var(--color-subtle)]">
+                    ORCID iD (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={author.orcid}
+                    onChange={(e) =>
+                      updateAuthor(index, "orcid", e.target.value)
+                    }
+                    placeholder="0000-0000-0000-0000 or https://orcid.org/..."
+                    className="app-field mt-1 text-xs"
                   />
                 </div>
               </div>

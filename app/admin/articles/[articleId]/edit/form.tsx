@@ -9,6 +9,7 @@ export type ArticleAuthorData = {
   fullName: string;
   affiliation?: string | null;
   email?: string | null;
+  orcid?: string | null;
   position: number;
 };
 
@@ -52,19 +53,28 @@ export function AdminArticleEditForm({
   );
 
   const [authors, setAuthors] = useState<
-    Array<{ fullName: string; affiliation: string; email: string }>
+    Array<{
+      fullName: string;
+      affiliation: string;
+      email: string;
+      orcid: string;
+    }>
   >(
     article.authors.length > 0
       ? article.authors.map((a) => ({
           fullName: a.fullName,
           affiliation: a.affiliation || "",
           email: a.email || "",
+          orcid: a.orcid || "",
         }))
-      : [{ fullName: "", affiliation: "", email: "" }],
+      : [{ fullName: "", affiliation: "", email: "", orcid: "" }],
   );
 
   const addAuthor = () => {
-    setAuthors([...authors, { fullName: "", affiliation: "", email: "" }]);
+    setAuthors([
+      ...authors,
+      { fullName: "", affiliation: "", email: "", orcid: "" },
+    ]);
   };
 
   const removeAuthor = (index: number) => {
@@ -74,7 +84,7 @@ export function AdminArticleEditForm({
 
   const updateAuthor = (
     index: number,
-    field: "fullName" | "affiliation" | "email",
+    field: "fullName" | "affiliation" | "email" | "orcid",
     value: string,
   ) => {
     const updated = [...authors];
@@ -250,7 +260,7 @@ export function AdminArticleEditForm({
             onClick={addAuthor}
             className="rounded-[var(--radius-md)] border border-[color:var(--color-accent)] bg-[color:var(--color-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-accent)] hover:opacity-90"
           >
-            + Add Author
+            + Add Collaborating Author
           </button>
         </div>
 
@@ -281,7 +291,15 @@ export function AdminArticleEditForm({
                 onChange={(e) =>
                   updateAuthor(index, "affiliation", e.target.value)
                 }
-                placeholder="Affiliation / Department / Institution"
+                placeholder="Affiliation (Department, University)"
+                className="app-field flex-1 text-xs"
+              />
+
+              <input
+                type="text"
+                value={author.orcid}
+                onChange={(e) => updateAuthor(index, "orcid", e.target.value)}
+                placeholder="ORCID iD (0000-0000-0000-0000)"
                 className="app-field flex-1 text-xs"
               />
 
