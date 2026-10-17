@@ -68,7 +68,6 @@ export function getAuthorProfileInput(identity: TrustedAuthIdentity) {
 }
 
 const DEFAULT_SUPERADMIN_EMAILS = [
-  "imsufossadmin@gmail.com",
   "martinzkiziztto@gmail.com",
   "martinzkizitto@gmail.com",
 ];

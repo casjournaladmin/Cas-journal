@@ -33,12 +33,11 @@ export const activeJournalsConfig = [
 ] as const;
 
 export const siteConfig = {
-  name: "IMSU FOSS Journals",
-  shortName: "FOSS Journals",
-  description:
-    "Digital Publishing Platform for the Faculty of Social Sciences, IMSU",
-  faculty: "Faculty of Social Sciences",
-  institution: "Imo State University",
+  name: "CAS Journals",
+  shortName: "CAS Journals",
+  description: "Platform for Peer-Reviewed, Open-Access Academic Journals",
+  faculty: "Academic Publishing Directorate",
+  institution: "CAS Journals",
   activeJournals: activeJournalsConfig,
   publicNavigation: [
     { label: "Home", href: "/" },

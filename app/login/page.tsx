@@ -19,14 +19,14 @@ export default async function LoginPage({
       <section className="relative hidden min-h-screen overflow-hidden bg-[color:var(--color-accent)] px-10 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-14 xl:py-12">
         <div className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-[var(--radius-sm)] bg-white font-serif text-base font-semibold text-[color:var(--color-accent)]">
-            FJ
+            CJ
           </span>
           <div>
             <p className="text-sm font-semibold tracking-[-0.01em]">
-              IMSU FOSS Journals
+              CAS Journals
             </p>
             <p className="mt-0.5 text-[10px] font-medium tracking-[0.1em] text-white/55 uppercase">
-              Faculty of Social Sciences
+              Academic Publishing Platform
             </p>
           </div>
         </div>
@@ -37,13 +37,13 @@ export default async function LoginPage({
             Scholarship deserves a publishing experience built with care.
           </p>
           <p className="mt-7 max-w-lg text-sm leading-7 text-white/65">
-            A secure editorial platform for the Faculty of Social Sciences, Imo
-            State University.
+            A secure editorial platform for peer-reviewed, open-access academic
+            journals.
           </p>
         </div>
 
         <div className="flex items-center justify-between border-t border-white/12 pt-6 text-[11px] font-medium tracking-[0.04em] text-white/45">
-          <span>Owerri, Nigeria</span>
+          <span>CAS Journals</span>
           <span>Academic publishing, considered</span>
         </div>
       </section>

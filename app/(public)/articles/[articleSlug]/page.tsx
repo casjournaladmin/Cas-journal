@@ -46,7 +46,7 @@ export async function generateMetadata({
 
   if (!article || !article.isPublished) return { title: "Article Not Found" };
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const scholarMeta = buildGoogleScholarMetadata(article, baseUrl);
 
   return {
@@ -79,7 +79,7 @@ export default async function PublicArticlePage({
     ),
   );
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const citationMeta: CitationArticleMetadata = {
     title: article.title,
     journalName: article.issue.volume.journal.name,

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://imsufoss.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   // Static core routes
   const staticRoutes: MetadataRoute.Sitemap = [
