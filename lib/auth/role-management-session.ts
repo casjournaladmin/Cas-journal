@@ -9,7 +9,8 @@ import {
 } from "@/lib/auth/role-management";
 import { prisma } from "@/lib/db/prisma";
 
-import { getBreakGlassSuperAdminEmails } from "@/lib/auth/provisioning";
+import { getHiddenBreakGlassEmails } from "@/lib/auth/provisioning";
+import { sortJournalsByCanonicalOrder } from "@/lib/editorial/editorial-board-data";
 
 export { RoleManagementError } from "@/lib/auth/role-management";
 
@@ -30,14 +31,24 @@ export async function searchRoleManagementUsers(query: string) {
     actor.journalRoles.some(({ role }) => role === "JOURNAL_ADMIN");
   if (!canManage) throw new RoleManagementError("You cannot manage access.");
 
-  const breakGlassEmails = Array.from(getBreakGlassSuperAdminEmails());
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const { ensureCasDevUsersInDatabase } =
+        await import("@/lib/auth/dev-database-users");
+      await ensureCasDevUsersInDatabase();
+    } catch {
+      // Ignore background seeding error
+    }
+  }
+
+  const hiddenBreakGlassEmails = Array.from(getHiddenBreakGlassEmails());
   const search = query.trim();
   const whereCondition =
     search.length >= 2
       ? {
           id: { not: actor.id },
-          ...(breakGlassEmails.length > 0
-            ? { email: { notIn: breakGlassEmails } }
+          ...(hiddenBreakGlassEmails.length > 0
+            ? { email: { notIn: hiddenBreakGlassEmails } }
             : {}),
           OR: [
             { displayName: { contains: search, mode: "insensitive" as const } },
@@ -51,8 +62,8 @@ export async function searchRoleManagementUsers(query: string) {
         }
       : {
           id: { not: actor.id },
-          ...(breakGlassEmails.length > 0
-            ? { email: { notIn: breakGlassEmails } }
+          ...(hiddenBreakGlassEmails.length > 0
+            ? { email: { notIn: hiddenBreakGlassEmails } }
             : {}),
         };
 
@@ -80,11 +91,9 @@ export async function searchRoleManagementUsers(query: string) {
       },
     },
     orderBy: { displayName: "asc" },
-    take: 12,
+    take: 50,
   });
 }
-
-import { sortJournalsByCanonicalOrder } from "@/lib/editorial/editorial-board-data";
 
 export async function listRoleManagementJournals() {
   const actor = await requireAuthenticatedUser();
@@ -107,4 +116,30 @@ export async function listRoleManagementJournals() {
   });
 
   return sortJournalsByCanonicalOrder(journals);
+}
+
+export async function listRecentRoleChangeEvents(limit = 20) {
+  const actor = await requireAuthenticatedUser();
+  if (!actor.globalRoles.some(({ role }) => role === "SUPER_ADMIN")) {
+    return [];
+  }
+
+  const hiddenBreakGlassEmails = Array.from(getHiddenBreakGlassEmails());
+
+  return prisma.roleChangeEvent.findMany({
+    where:
+      hiddenBreakGlassEmails.length > 0
+        ? {
+            actor: { email: { notIn: hiddenBreakGlassEmails } },
+            targetUser: { email: { notIn: hiddenBreakGlassEmails } },
+          }
+        : undefined,
+    include: {
+      actor: { select: { displayName: true, email: true } },
+      targetUser: { select: { displayName: true, email: true } },
+      journal: { select: { name: true, shortName: true, slug: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
 }

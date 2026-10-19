@@ -1,19 +1,35 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useState, useTransition } from "react";
 import { applyAsReviewerAction } from "@/app/(public)/apply-reviewer/actions";
+import { activeJournalsConfig } from "@/lib/config/site";
+
+export type ReviewerJournalOption = {
+  slug: string;
+  name: string;
+  shortName: string | null;
+};
+
+const DEFAULT_JOURNAL_OPTIONS: ReviewerJournalOption[] =
+  activeJournalsConfig.map((j) => ({
+    slug: j.slug,
+    name: j.name,
+    shortName: j.shortName,
+  }));
 
 export function ReviewerApplicationForm({
   defaultJournal = "ALL",
   initialFullName = "",
   initialEmail = "",
   applicantUserId,
+  journals = DEFAULT_JOURNAL_OPTIONS,
 }: {
   defaultJournal?: string;
   initialFullName?: string;
   initialEmail?: string;
   applicantUserId?: string;
+  journals?: ReviewerJournalOption[];
 }) {
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,8 +55,8 @@ export function ReviewerApplicationForm({
 
   if (submittedCode) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-emerald-500/40 bg-[color:var(--color-surface-raised)] p-8 text-center shadow-xl">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+      <div className="rounded-2xl border border-sky-400/40 bg-[color:var(--color-surface-raised)] p-8 text-center shadow-xl">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-sky-500/20 text-[#0284c7]">
           <span className="text-2xl">✓</span>
         </div>
         <h2 className="mt-4 font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
@@ -48,11 +64,11 @@ export function ReviewerApplicationForm({
         </h2>
         <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-[color:var(--color-muted)]">
           Thank you for applying to serve as a peer reviewer and editorial
-          referee for IMSU Faculty of Social Sciences Journals. Your academic
-          credentials and specialization profile have been registered.
+          referee for CAS Journals. Your academic credentials and specialization
+          profile have been registered.
         </p>
 
-        <div className="mt-6 inline-block rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-6 py-3">
+        <div className="mt-6 inline-block rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-6 py-3">
           <p className="font-mono text-[11px] text-[color:var(--color-subtle)] uppercase">
             Application Reference Code
           </p>
@@ -78,7 +94,7 @@ export function ReviewerApplicationForm({
             href="/archives"
             className="button-secondary px-5 py-2.5 text-xs font-semibold"
           >
-            Browse Faculty Archives
+            Browse Archives
           </Link>
         </div>
       </div>
@@ -88,10 +104,10 @@ export function ReviewerApplicationForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 shadow-xl sm:p-8"
+      className="space-y-6 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 shadow-sm sm:p-8"
     >
       {errorMessage ? (
-        <div className="rounded-[var(--radius-md)] border border-red-500/30 bg-red-500/15 p-3.5 text-xs font-semibold text-red-400">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/15 p-3.5 text-xs font-semibold text-red-600 dark:text-red-400">
           {errorMessage}
         </div>
       ) : null}
@@ -140,7 +156,7 @@ export function ReviewerApplicationForm({
             name="fullName"
             defaultValue={initialFullName}
             required
-            placeholder="e.g. Nkwam C. Uwaoma"
+            placeholder="e.g. Sarah Okonjo"
             className="app-field mt-1 w-full text-xs"
           />
         </div>
@@ -157,7 +173,7 @@ export function ReviewerApplicationForm({
             name="email"
             defaultValue={initialEmail}
             required
-            placeholder="scholar@university.edu.ng"
+            placeholder="reviewer@university.edu"
             className="app-field mt-1 w-full text-xs"
           />
         </div>
@@ -169,7 +185,7 @@ export function ReviewerApplicationForm({
           <input
             type="tel"
             name="phone"
-            placeholder="+234 803 000 0000"
+            placeholder="+234 800 000 0000"
             className="app-field mt-1 w-full text-xs"
           />
         </div>
@@ -185,7 +201,7 @@ export function ReviewerApplicationForm({
             type="text"
             name="affiliation"
             required
-            placeholder="e.g. Department of Psychology, Imo State University"
+            placeholder="e.g. Department of Political Science, University of..."
             className="app-field mt-1 w-full text-xs"
           />
         </div>
@@ -215,19 +231,12 @@ export function ReviewerApplicationForm({
             defaultValue={defaultJournal}
             className="app-field mt-1 w-full text-xs"
           >
-            <option value="ALL">All Faculty of Social Sciences Journals</option>
-            <option value="ajsbs">
-              African Journal of Social and Behavioural Sciences (AJSBS)
-            </option>
-            <option value="njsr">
-              Nwaebere Journal of Scientific Research (NJSR)
-            </option>
-            <option value="gjcsr">
-              Global Journal of Contemporary Social Research (GJCSR)
-            </option>
-            <option value="njcp">
-              Nigerian Journal of Contemporary Psychology (NJCP)
-            </option>
+            <option value="ALL">All CAS Journals</option>
+            {journals.map((j) => (
+              <option key={j.slug} value={j.slug}>
+                {j.name} ({j.shortName})
+              </option>
+            ))}
           </select>
         </div>
 
@@ -253,7 +262,7 @@ export function ReviewerApplicationForm({
           type="text"
           name="specializationKeywords"
           required
-          placeholder="e.g. Clinical Psychology, Cognitive Behavioural Therapy, Psychometrics, Health Psychology"
+          placeholder="e.g. Political Philosophy, Public Policy, Comparative Politics, Research Methodology"
           className="app-field mt-1 w-full text-xs"
         />
         <p className="mt-1 text-[11px] text-[color:var(--color-subtle)]">

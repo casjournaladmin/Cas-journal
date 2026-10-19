@@ -8,10 +8,11 @@ import {
   signInWithGoogle,
   type LoginState,
 } from "@/app/login/actions";
+import { DevIdentitySwitcher } from "@/components/auth/dev-identity-switcher";
 
 const initialState: LoginState = {};
 
-function DevelopmentSubmitButton() {
+function EmailSubmitButton() {
   const { pending } = useFormStatus();
 
   return (
@@ -20,7 +21,9 @@ function DevelopmentSubmitButton() {
       disabled={pending}
       className="button-secondary relative mt-1 w-full disabled:cursor-wait disabled:opacity-75"
     >
-      <span className={pending ? "opacity-0" : "opacity-100"}>Sign in</span>
+      <span className={pending ? "opacity-0" : "opacity-100"}>
+        Sign in with Email
+      </span>
       {pending ? (
         <span className="absolute inset-0 flex items-center justify-center gap-2">
           <svg
@@ -87,15 +90,15 @@ function GoogleSubmitButton() {
 export function LoginForm({
   returnTo,
   oauthError,
-  showDevelopmentAccess = false,
+  showEmailLogin = true,
 }: {
   returnTo?: string;
   oauthError?: string;
-  showDevelopmentAccess?: boolean;
+  showEmailLogin?: boolean;
 }) {
   const [state, formAction] = useActionState(loginWithPassword, initialState);
-  const [emailInput, setEmailInput] = useState("superadmin@example.com");
-  const [passwordInput, setPasswordInput] = useState("password123456");
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
 
   return (
     <div className="mt-9">
@@ -116,82 +119,13 @@ export function LoginForm({
         ) : null}
       </div>
 
-      {showDevelopmentAccess ? (
-        <details
-          className="mt-5 border-t border-[color:var(--color-border)] pt-5"
-          open
-        >
-          <summary className="cursor-pointer text-xs font-semibold text-[color:var(--color-subtle)]">
-            Development access (Preset Credentials)
+      {showEmailLogin ? (
+        <details className="mt-3 border-t border-[color:var(--color-border)] pt-4">
+          <summary className="cursor-pointer text-xs font-semibold text-[color:var(--color-subtle)] hover:text-[color:var(--color-foreground)]">
+            Or sign in with email and password
           </summary>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 text-[11px]">
-            <button
-              type="button"
-              onClick={() => {
-                setEmailInput("superadmin@example.com");
-                setPasswordInput("password123456");
-              }}
-              className="rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 text-left hover:border-[color:var(--color-accent)]"
-            >
-              <span className="block font-semibold text-[color:var(--color-foreground)]">
-                🔑 Super Admin
-              </span>
-              <span className="text-[10px] text-[color:var(--color-subtle)]">
-                superadmin@example.com
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEmailInput("admin@example.com");
-                setPasswordInput("password123456");
-              }}
-              className="rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 text-left hover:border-[color:var(--color-accent)]"
-            >
-              <span className="block font-semibold text-[color:var(--color-foreground)]">
-                ✍️ Journal Admin
-              </span>
-              <span className="text-[10px] text-[color:var(--color-subtle)]">
-                admin@example.com
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEmailInput("editor@example.com");
-                setPasswordInput("password123456");
-              }}
-              className="rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 text-left hover:border-[color:var(--color-accent)]"
-            >
-              <span className="block font-semibold text-[color:var(--color-foreground)]">
-                🔍 Editor
-              </span>
-              <span className="text-[10px] text-[color:var(--color-subtle)]">
-                editor@example.com
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEmailInput("author@example.com");
-                setPasswordInput("password123456");
-              }}
-              className="rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 text-left hover:border-[color:var(--color-accent)]"
-            >
-              <span className="block font-semibold text-[color:var(--color-foreground)]">
-                📝 Author
-              </span>
-              <span className="text-[10px] text-[color:var(--color-subtle)]">
-                author@example.com
-              </span>
-            </button>
-          </div>
-
-          <form action={formAction} className="mt-5 space-y-4" noValidate>
+          <form action={formAction} className="mt-4 space-y-4" noValidate>
             {returnTo ? (
               <input type="hidden" name="returnTo" value={returnTo} />
             ) : null}
@@ -211,6 +145,7 @@ export function LoginForm({
                 required
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="author@institution.edu"
                 className="app-field mt-2"
               />
             </div>
@@ -242,10 +177,12 @@ export function LoginForm({
                 </p>
               ) : null}
             </div>
-            <DevelopmentSubmitButton />
+            <EmailSubmitButton />
           </form>
         </details>
       ) : null}
+
+      <DevIdentitySwitcher returnTo={returnTo} />
     </div>
   );
 }

@@ -15,7 +15,7 @@ export interface Announcement {
   slug: string;
   title: string;
   category: AnnouncementCategory;
-  targetJournal: string; // "ALL" | "njcp" | "ajsbs" | "njsr" | "gjcsr"
+  targetJournal: string; // "ALL" | "existentia" | "cjmr" | "izu" | "polis"
   content: string;
   imageUrl?: string;
   publishedAt: string; // ISO string
@@ -24,45 +24,7 @@ export interface Announcement {
   authorName: string;
 }
 
-const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: "ann-call-for-papers-2026",
-    slug: "call-for-papers-2026-volume-11",
-    title: "Call for Papers: 2026 Volume 11 Manuscript Submissions Now Open",
-    category: "CALL_FOR_PAPERS",
-    targetJournal: "ALL",
-    content:
-      "The Faculty of Social Sciences Journals (NJCP, AJSBS, NJSR, GJCSR) invite original empirical research papers, theoretical reviews, and methodological contributions for the 2026 publication volumes. Submissions undergo rapid, double-blind peer review with permanent CrossRef DOIs and Google Scholar indexing.",
-    publishedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-    isActive: true,
-    authorName: "Editorial Directorate",
-  },
-  {
-    id: "ann-special-issue-ajsbs",
-    slug: "special-issue-african-social-behavioural-resilience",
-    title:
-      "Special Issue: African Social & Behavioural Resilience in the 21st Century",
-    category: "SPECIAL_ISSUE",
-    targetJournal: "ajsbs",
-    content:
-      "The African Journal of Social and Behavioural Sciences (AJSBS) announces a special themed section examining community resilience, institutional dynamics, and behavioral adaptations in Sub-Saharan Africa. Manuscripts formatted in APA 7th edition are welcomed from scholars across the continent and diaspora.",
-    publishedAt: new Date(Date.now() - 14 * 86400000).toISOString(),
-    isActive: true,
-    authorName: "Prof. Ikechukwu J.D. Nwosu",
-  },
-  {
-    id: "ann-review-speed-njcp",
-    slug: "peer-review-turnaround-target",
-    title: "Editorial Notice: 21-Day Expedited First-Decision Benchmark",
-    category: "EDITORIAL_UPDATE",
-    targetJournal: "njcp",
-    content:
-      "The Nigerian Journal of Contemporary Psychology (NJCP) editorial board has instituted a 21-day review benchmark for initial editorial decisions on submitted manuscripts. Authors can track progress live through their Author Operating Portal.",
-    publishedAt: new Date(Date.now() - 21 * 86400000).toISOString(),
-    isActive: true,
-    authorName: "Prof Nkwam C. Uwaoma",
-  },
-];
+const DEFAULT_ANNOUNCEMENTS: Announcement[] = [];
 
 function formatAnnouncement(raw: {
   id: string;

@@ -142,5 +142,15 @@ export async function logout() {
     if (!(error instanceof SupabaseConfigurationError)) throw error;
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      cookieStore.delete("cas_dev_identity");
+    } catch {
+      // Ignore cookie deletion failure
+    }
+  }
+
   redirect("/login");
 }

@@ -277,7 +277,7 @@ export default async function PublicArticlePage({
                 ? formatLongDate(article.publishedAt)
                 : "Recently"}
             </span>
-            <span>IMSU FOSS Open Access Academic Journal</span>
+            <span>CAS Journals · Open Access Academic Publishing</span>
           </div>
         </div>
       </div>

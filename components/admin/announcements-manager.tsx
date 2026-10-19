@@ -12,7 +12,21 @@ import {
   updateAnnouncementAction,
 } from "@/app/admin/announcements/actions";
 import { AnnouncementImage } from "@/components/announcements/announcement-image";
+import { activeJournalsConfig } from "@/lib/config/site";
 import { formatShortDate } from "@/lib/formatting/dates";
+
+export type AnnouncementJournalOption = {
+  slug: string;
+  name: string;
+  shortName: string;
+};
+
+const DEFAULT_JOURNAL_OPTIONS: AnnouncementJournalOption[] =
+  activeJournalsConfig.map((j) => ({
+    slug: j.slug,
+    name: j.name,
+    shortName: j.shortName,
+  }));
 
 const CATEGORIES: Array<{ value: AnnouncementCategory; label: string }> = [
   { value: "CALL_FOR_PAPERS", label: "Call for Papers" },
@@ -23,8 +37,10 @@ const CATEGORIES: Array<{ value: AnnouncementCategory; label: string }> = [
 
 export function AnnouncementsManager({
   initialAnnouncements,
+  journals = DEFAULT_JOURNAL_OPTIONS,
 }: {
   initialAnnouncements: Announcement[];
+  journals?: AnnouncementJournalOption[];
 }) {
   const [announcements, setAnnouncements] =
     useState<Announcement[]>(initialAnnouncements);
@@ -368,19 +384,12 @@ export function AnnouncementsManager({
                     defaultValue="ALL"
                     className="app-field mt-1 w-full text-xs"
                   >
-                    <option value="ALL">All Faculty Journals</option>
-                    <option value="ajsbs">
-                      African Journal of Social and Behavioural Sciences (AJSBS)
-                    </option>
-                    <option value="njsr">
-                      Nwaebere Journal of Scientific Research (NJSR)
-                    </option>
-                    <option value="gjcsr">
-                      Global Journal of Contemporary Social Research (GJCSR)
-                    </option>
-                    <option value="njcp">
-                      Nigerian Journal of Contemporary Psychology (NJCP)
-                    </option>
+                    <option value="ALL">All CAS Journals</option>
+                    {journals.map((j) => (
+                      <option key={j.slug} value={j.slug}>
+                        {j.name} ({j.shortName})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -502,19 +511,12 @@ export function AnnouncementsManager({
                     defaultValue={editingItem.targetJournal}
                     className="app-field mt-1 w-full text-xs"
                   >
-                    <option value="ALL">All Faculty Journals</option>
-                    <option value="ajsbs">
-                      African Journal of Social and Behavioural Sciences (AJSBS)
-                    </option>
-                    <option value="njsr">
-                      Nwaebere Journal of Scientific Research (NJSR)
-                    </option>
-                    <option value="gjcsr">
-                      Global Journal of Contemporary Social Research (GJCSR)
-                    </option>
-                    <option value="njcp">
-                      Nigerian Journal of Contemporary Psychology (NJCP)
-                    </option>
+                    <option value="ALL">All CAS Journals</option>
+                    {journals.map((j) => (
+                      <option key={j.slug} value={j.slug}>
+                        {j.name} ({j.shortName})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

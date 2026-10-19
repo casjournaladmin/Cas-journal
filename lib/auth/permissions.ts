@@ -2,7 +2,15 @@ import type { GlobalRole, JournalRole } from "@prisma/client";
 
 export type AuthorizationSubject = {
   globalRoles: Array<{ role: GlobalRole }>;
-  journalRoles: Array<{ journalId: string; role: JournalRole }>;
+  journalRoles: Array<{
+    journalId: string;
+    role: JournalRole;
+    journal?: {
+      id?: string;
+      slug?: string;
+      [key: string]: unknown;
+    } | null;
+  }>;
 };
 
 export type ApplicationArea = "admin" | "editor" | "author";
@@ -17,14 +25,16 @@ export function isSuperAdmin(subject: AuthorizationSubject) {
 
 export function hasJournalRole(
   subject: AuthorizationSubject,
-  journalId: string,
+  journalIdOrSlug: string,
   roles: JournalRole | JournalRole[],
 ) {
   const allowedRoles = Array.isArray(roles) ? roles : [roles];
 
   return subject.journalRoles.some(
     (assignment) =>
-      assignment.journalId === journalId &&
+      (assignment.journalId === journalIdOrSlug ||
+        assignment.journal?.id === journalIdOrSlug ||
+        assignment.journal?.slug === journalIdOrSlug) &&
       allowedRoles.includes(assignment.role),
   );
 }

@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { Container } from "@/components/ui/container";
 import { PublicSearchBar } from "@/components/public-search-bar";
-import { IssueArchiveExplorer } from "@/components/public/issue-archive-explorer";
 import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
+import { IssueArchiveExplorer } from "@/components/public/issue-archive-explorer";
+import { Container } from "@/components/ui/container";
+import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
-import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
-
 import { getJournalOrderPriority } from "@/lib/editorial/editorial-board-data";
 
 export const dynamic = "force-dynamic";
@@ -19,42 +18,38 @@ export default async function ArchivesPage({
   const trimmedQ = q?.trim() || "";
   const isSearchMode = trimmedQ.length > 0;
 
-  const [allActiveJournals, activationMap] = await Promise.all([
-    prisma.journal.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        shortName: true,
-        department: { select: { name: true } },
-      },
-      orderBy: { name: "asc" },
-    }),
-    getJournalActivationMap(),
-  ]);
+  const allActiveJournals = await prisma.journal.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      shortName: true,
+      department: { select: { name: true } },
+    },
+    orderBy: { name: "asc" },
+  });
 
-  const activeJournals = allActiveJournals
-    .filter((j) => activationMap[j.slug] === true)
-    .sort((a, b) => {
-      const diff =
-        getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug);
-      if (diff !== 0) return diff;
-      return a.name.localeCompare(b.name);
-    });
-
-  const activeJournalSlugs = activeJournals.map((j) => j.slug);
+  const catalogJournals =
+    allActiveJournals.length > 0
+      ? allActiveJournals.sort((a, b) => {
+          const diff =
+            getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug);
+          if (diff !== 0) return diff;
+          return a.name.localeCompare(b.name);
+        })
+      : activeJournalsConfig.map((j) => ({
+          id: j.slug,
+          name: j.name,
+          slug: j.slug,
+          shortName: j.shortName,
+          department: { name: j.badge },
+        }));
 
   const articles = await prisma.article.findMany({
     where: {
       isPublished: true,
-      ...(journal
-        ? { issue: { volume: { journal: { slug: journal } } } }
-        : {
-            issue: {
-              volume: { journal: { slug: { in: activeJournalSlugs } } },
-            },
-          }),
+      ...(journal ? { issue: { volume: { journal: { slug: journal } } } } : {}),
       ...(isSearchMode
         ? {
             OR: [
@@ -111,9 +106,8 @@ export default async function ArchivesPage({
     },
   });
 
-  const activeJournalObj = activeJournals.find((j) => j.slug === journal);
+  const activeJournalObj = catalogJournals.find((j) => j.slug === journal);
 
-  // Group articles by issue for Issue Collection Mode
   type PublishedArticle = (typeof articles)[0];
   type IssueGroup = {
     issue: PublishedArticle["issue"];
@@ -144,38 +138,33 @@ export default async function ArchivesPage({
   }
 
   return (
-    <div className="space-y-12 py-12 sm:py-16">
-      {/* Header */}
-      <section>
-        <Container>
-          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                Digital Archives & Periodical Shelf
-              </p>
-              <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-4xl">
-                {activeJournalObj
-                  ? activeJournalObj.name
-                  : "All Published Volumes & Issues"}
-              </h1>
-              <p className="mt-2 text-sm text-[color:var(--color-muted)]">
-                {activeJournalObj
-                  ? activeJournalObj.department
-                    ? `Department: ${activeJournalObj.department.name}`
-                    : "Faculty of Social Sciences Journal"
-                  : "Explore peer-reviewed volumes, instant Tables of Contents, and in-page document readers."}
-              </p>
-            </div>
-            <div className="w-full max-w-md">
-              <PublicSearchBar />
-            </div>
+    <div className="space-y-12 pb-24">
+      {/* CAS Page Hero */}
+      <header className="cas-page-hero">
+        <div className="cas-page-hero-inner">
+          <div className="cas-breadcrumbs">
+            <Link href="/">Home</Link>
+            <span className="sep">/</span>
+            <span>Archive</span>
           </div>
-        </Container>
-      </section>
+          <h1 className="cas-page-title">
+            {activeJournalObj ? activeJournalObj.name : "Journal Archives"}
+          </h1>
+          <p className="cas-page-desc">
+            {activeJournalObj
+              ? `Published volumes, issues, and full-text articles for ${activeJournalObj.name} (${activeJournalObj.shortName}).`
+              : "Past volumes, published issues, and full-text open-access repository across CAS Journals."}
+          </p>
+        </div>
+      </header>
 
-      {/* Filter Ribbon */}
+      {/* Search & Filter Ribbon */}
       <section>
-        <Container>
+        <Container className="space-y-6">
+          <div className="mx-auto max-w-xl">
+            <PublicSearchBar />
+          </div>
+
           <div className="flex items-center gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-4">
             <Link
               href={
@@ -185,13 +174,13 @@ export default async function ArchivesPage({
               }
               className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
                 !journal
-                  ? "bg-[color:var(--color-accent)] text-black"
+                  ? "bg-[color:var(--color-accent)] text-white"
                   : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
               }`}
             >
               All Journals
             </Link>
-            {activeJournals.map((j) => {
+            {catalogJournals.map((j) => {
               const href = trimmedQ
                 ? `/archives?journal=${j.slug}&q=${encodeURIComponent(trimmedQ)}`
                 : `/archives?journal=${j.slug}`;
@@ -201,11 +190,11 @@ export default async function ArchivesPage({
                   href={href}
                   className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
                     journal === j.slug
-                      ? "bg-[color:var(--color-accent)] text-black"
+                      ? "bg-[color:var(--color-accent)] text-white"
                       : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
                   }`}
                 >
-                  {(j.slug === "psychology" ? "NJCP" : j.shortName) || j.name}
+                  {j.shortName || j.name}
                 </Link>
               );
             })}
@@ -217,44 +206,44 @@ export default async function ArchivesPage({
       <section>
         <Container>
           {articles.length === 0 ? (
-            /* Empty State */
-            <div className="rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-12 text-center">
-              <span className="inline-block rounded-full bg-amber-500/10 px-3 py-1 font-mono text-xs font-semibold text-amber-300">
+            <div className="rounded-2xl border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-12 text-center">
+              <span className="inline-block rounded-full bg-sky-500/10 px-3 py-1 font-mono text-xs font-semibold text-[#0284c7]">
                 {isSearchMode
                   ? "No Search Matches"
                   : status === "upcoming" || activeJournalObj
-                    ? "Volume in Preparation / Coming Soon"
-                    : "No Published Issues Yet"}
+                    ? "Volume 1 (2026) in Preparation"
+                    : "Inaugural Archive Repository"}
               </span>
               <h3 className="mt-4 font-serif text-xl font-semibold text-[color:var(--color-foreground)]">
                 {isSearchMode
                   ? `No articles found matching "${trimmedQ}"`
                   : activeJournalObj
-                    ? `Papers for ${activeJournalObj.name} are currently under peer review.`
-                    : "No published issues found in this selection."}
+                    ? `Articles for the inaugural volume of ${activeJournalObj.name} are currently under editorial review.`
+                    : "The CAS Journals archive repository will populate as Volume 1 issues are published."}
               </h3>
-              <p className="mt-2 text-xs text-[color:var(--color-muted)]">
+              <p className="mx-auto mt-2 max-w-lg text-xs text-[color:var(--color-muted)]">
                 {isSearchMode
                   ? "Try searching with different keywords, author names, or title phrases."
-                  : "Newly accepted and published articles from editors will appear here automatically."}
+                  : "All published papers are preserved with permanent Crossref DOIs, downloadable PDFs, and full bibliographic metadata under CC-BY 4.0."}
               </p>
               <div className="mt-6 flex justify-center gap-4">
-                <Link
-                  href="/archives"
-                  className="button-secondary inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold"
-                >
-                  Clear Filters & Show All
-                </Link>
+                {(journal || isSearchMode) && (
+                  <Link
+                    href="/archives"
+                    className="button-secondary inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold"
+                  >
+                    Clear Filters &amp; Show All
+                  </Link>
+                )}
                 <Link
                   href="/submit"
                   className="button-primary inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold"
                 >
-                  Submit Paper to this Journal →
+                  Submit Your Paper →
                 </Link>
               </div>
             </div>
           ) : isSearchMode ? (
-            /* Mode B: Direct Search Results */
             <div className="space-y-6">
               <div className="flex flex-col gap-3 border-b border-[color:var(--color-border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="font-mono text-xs text-[color:var(--color-subtle)]">
@@ -274,14 +263,14 @@ export default async function ArchivesPage({
                   className="button-secondary inline-flex items-center gap-1.5 self-start px-3 py-1.5 text-xs font-semibold sm:self-auto"
                 >
                   <span>✕</span>
-                  <span>Clear Search & Browse Issue Shelf</span>
+                  <span>Clear Search &amp; Browse Issue Shelf</span>
                 </Link>
               </div>
 
               {articles.map((article) => (
                 <article
                   key={article.id}
-                  className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 transition hover:border-[color:var(--color-accent)]"
+                  className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 transition hover:border-[color:var(--color-accent)]"
                 >
                   <div className="grid gap-6 md:grid-cols-[160px_1fr]">
                     {article.coverImageUrl ? (
@@ -352,7 +341,6 @@ export default async function ArchivesPage({
               ))}
             </div>
           ) : (
-            /* Mode A: Issue Periodicals Shelf Grid with Instant TOC & PDF Modal */
             <>
               <IssueArchiveExplorer issueGroups={issueGroups} />
               <CrawlableArticleDirectory issueGroups={issueGroups} />

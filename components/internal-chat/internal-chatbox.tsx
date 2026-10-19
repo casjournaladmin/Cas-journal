@@ -86,7 +86,7 @@ export function InternalChatBox({
         timer = setTimeout(async () => {
           await fetchMessages();
           schedulePoll();
-        }, 4000);
+        }, 15000);
       }
     };
 
@@ -226,16 +226,16 @@ export function InternalChatBox({
   };
 
   return (
-    <div className="flex h-[620px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]">
+    <div className="flex h-[620px] flex-col overflow-hidden rounded-[var(--radius-lg)] border border-sky-200/90 bg-[#f0f9ff]/40 shadow-sm dark:border-sky-800/80 dark:bg-[#021827]">
       {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-3 sm:px-5">
+      <div className="flex items-center justify-between border-b border-sky-200/80 bg-white px-4 py-3 sm:px-5 dark:border-sky-800/60 dark:bg-[#032b45]">
         <div className="flex items-center gap-2">
-          <span className="size-2 animate-pulse rounded-full bg-[color:var(--color-accent)]" />
-          <h2 className="text-xs font-semibold tracking-wide text-[color:var(--color-foreground)] uppercase">
+          <span className="size-2 animate-pulse rounded-full bg-[#0284c7]" />
+          <h2 className="text-xs font-semibold tracking-wide text-[#032b45] uppercase dark:text-sky-100">
             Internal Staff Chat (Editors & Admins Only)
           </h2>
         </div>
-        <span className="text-[11px] text-[color:var(--color-subtle)]">
+        <span className="text-[11px] font-medium text-[#075985] dark:text-sky-300">
           Private Journal Discussion
         </span>
       </div>
@@ -246,12 +246,12 @@ export function InternalChatBox({
         className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center text-[color:var(--color-subtle)]">
+          <div className="flex h-full flex-col items-center justify-center text-center text-slate-500 dark:text-sky-300">
             <span className="text-3xl">💬</span>
-            <p className="mt-2 text-xs font-medium">
+            <p className="mt-2 text-xs font-semibold text-[#032b45] dark:text-sky-200">
               No messages in this journal staff channel yet.
             </p>
-            <p className="mt-0.5 text-[11px]">
+            <p className="mt-0.5 text-[11px] text-[#075985] dark:text-sky-400">
               Post general editorial notes, reviewer updates, or coordination
               messages.
             </p>
@@ -267,29 +267,45 @@ export function InternalChatBox({
                 <div
                   className={`max-w-[85%] rounded-[var(--radius-lg)] px-4 py-2.5 text-xs sm:max-w-[75%] ${
                     mine
-                      ? "rounded-br-xs border border-[color:var(--color-accent)]/40 bg-[#0d2822] text-[color:var(--color-foreground)]"
-                      : "rounded-bl-xs border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-foreground)]"
+                      ? "rounded-br-xs border border-[#0284c7] bg-[#032b45] text-white shadow-xs"
+                      : "rounded-bl-xs border border-sky-200 bg-white text-[#032b45] shadow-xs dark:border-sky-800 dark:bg-[#053554] dark:text-sky-50"
                   }`}
                 >
-                  <div className="flex items-center gap-2 border-b border-white/5 pb-1 text-[10px]">
+                  <div
+                    className={`flex items-center gap-2 border-b pb-1 text-[10px] ${
+                      mine
+                        ? "border-sky-700/60"
+                        : "border-sky-100 dark:border-sky-900/40"
+                    }`}
+                  >
                     <span
                       className={`font-bold ${
                         mine
-                          ? "text-[color:var(--color-accent)]"
-                          : "text-[color:var(--color-foreground)]"
+                          ? "text-sky-300"
+                          : "text-[#075985] dark:text-sky-300"
                       }`}
                     >
                       {mine ? "You" : message.sender?.displayName}
                     </span>
                     {message.sender?.roleLabel ? (
-                      <span className="py-0.2 rounded bg-black/30 px-1.5 text-[9px] font-semibold text-[color:var(--color-subtle)]">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${
+                          mine
+                            ? "bg-white/15 text-sky-100"
+                            : "bg-sky-100 text-[#075985] dark:bg-sky-900/60 dark:text-sky-200"
+                        }`}
+                      >
                         {message.sender.roleLabel}
                       </span>
                     ) : null}
                   </div>
 
                   {message.body ? (
-                    <p className="mt-1.5 leading-relaxed whitespace-pre-wrap">
+                    <p
+                      className={`mt-1.5 leading-relaxed whitespace-pre-wrap ${
+                        mine ? "text-white" : "text-[#032b45] dark:text-sky-50"
+                      }`}
+                    >
                       {message.body}
                     </p>
                   ) : null}
@@ -300,13 +316,23 @@ export function InternalChatBox({
                       href={`/api/editor/${journalSlug}/internal-chat/attachments/${att.id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-2 flex items-center gap-2 rounded bg-black/20 px-2.5 py-1.5 text-xs text-[color:var(--color-accent)] hover:underline"
+                      className={`mt-2 flex items-center gap-2 rounded px-2.5 py-1.5 text-xs transition ${
+                        mine
+                          ? "bg-white/10 text-sky-200 hover:bg-white/20 hover:text-white"
+                          : "bg-sky-50 text-[#0284c7] hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60"
+                      }`}
                     >
                       <span>📎</span>
-                      <span className="max-w-[200px] truncate">
+                      <span className="max-w-[200px] truncate font-medium">
                         {att.originalFileName}
                       </span>
-                      <span className="text-[10px] text-[color:var(--color-subtle)]">
+                      <span
+                        className={`text-[10px] ${
+                          mine
+                            ? "text-sky-300/80"
+                            : "text-[color:var(--color-subtle)]"
+                        }`}
+                      >
                         ({Math.round(att.sizeBytes / 1024)} KB)
                       </span>
                     </a>
@@ -314,7 +340,11 @@ export function InternalChatBox({
                 </div>
                 <span
                   suppressHydrationWarning
-                  className="mt-1 px-1 text-[10px] text-[color:var(--color-subtle)]"
+                  className={`mt-1 px-1 text-[10px] ${
+                    mine
+                      ? "text-[#075985] dark:text-sky-400"
+                      : "text-slate-500 dark:text-sky-400"
+                  }`}
                 >
                   {dateFormatter.format(new Date(message.createdAt))} ·{" "}
                   {timeFormatter.format(new Date(message.createdAt))}
@@ -327,25 +357,26 @@ export function InternalChatBox({
 
       {/* Upload progress indicator */}
       {uploadProgress !== null ? (
-        <div className="border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-1.5 text-[11px] text-[color:var(--color-accent)]">
+        <div className="border-t border-sky-200 bg-sky-50 px-4 py-1.5 text-[11px] font-medium text-[#0284c7] dark:border-sky-800 dark:bg-sky-950/60">
           Uploading attachments: {uploadProgress}%
         </div>
       ) : null}
 
       {/* Attachment chips */}
       {attachments.length > 0 ? (
-        <div className="flex flex-wrap gap-2 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-2">
+        <div className="flex flex-wrap gap-2 border-t border-sky-200/80 bg-white px-4 py-2 dark:border-sky-800/60 dark:bg-[#032b45]">
           {attachments.map((file, idx) => (
             <span
               key={`${file.name}-${idx}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--color-accent)] bg-[color:var(--color-surface-raised)] px-2.5 py-0.5 text-[11px] text-[color:var(--color-foreground)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-2.5 py-0.5 text-[11px] font-medium text-[#032b45] dark:border-sky-700 dark:bg-sky-950/60 dark:text-sky-200"
             >
               <span>📎</span>
               <span className="max-w-[150px] truncate">{file.name}</span>
               <button
                 type="button"
                 onClick={() => handleRemoveAttachment(idx)}
-                className="text-[color:var(--color-subtle)] hover:text-[color:var(--color-danger)]"
+                className="cursor-pointer text-slate-400 hover:text-[color:var(--color-danger)]"
+                title={`Remove ${file.name}`}
               >
                 ✕
               </button>
@@ -357,7 +388,7 @@ export function InternalChatBox({
       {/* Composer Input Bar */}
       <form
         onSubmit={handleSubmit}
-        className="border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3 sm:p-4"
+        className="border-t border-sky-200/80 bg-white p-3 sm:p-4 dark:border-sky-800/60 dark:bg-[#032b45]"
       >
         <input
           ref={fileInputRef}
@@ -372,7 +403,7 @@ export function InternalChatBox({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-subtle)] hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-md)] border border-sky-200 bg-sky-50 text-[#075985] transition hover:border-[#0284c7] hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/60"
             title="Attach file (DOCX, PDF, image)"
           >
             <span className="text-base font-bold">+</span>
@@ -388,21 +419,21 @@ export function InternalChatBox({
               }
             }}
             placeholder="Type private message to journal team (Enter to send)..."
-            className="app-field max-h-32 min-h-[38px] flex-1 resize-none py-2 text-xs leading-5"
+            className="max-h-32 min-h-[38px] flex-1 resize-none rounded-[var(--radius-md)] border border-sky-200 bg-white px-3 py-2 text-xs leading-5 text-[#032b45] placeholder:text-slate-400 focus:border-[#0284c7] focus:ring-1 focus:ring-[#0284c7] focus:outline-none dark:border-sky-800 dark:bg-[#021e31] dark:text-sky-100 dark:placeholder:text-sky-400/60"
             rows={1}
           />
 
           <button
             type="submit"
             disabled={pending || (!text.trim() && attachments.length === 0)}
-            className="button-primary shrink-0 px-4 py-2 text-xs font-semibold disabled:opacity-50"
+            className="shrink-0 cursor-pointer rounded-[var(--radius-md)] bg-[#032b45] px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-[#075985] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {pending ? "Sending…" : "Send"}
           </button>
         </div>
 
         {error ? (
-          <p className="mt-2 text-xs text-[color:var(--color-danger)]">
+          <p className="mt-2 text-xs font-medium text-[color:var(--color-danger)]">
             {error}
           </p>
         ) : null}

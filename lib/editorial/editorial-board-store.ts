@@ -18,35 +18,15 @@ export function isAuthorizedForJournal(
   if (isSuperAdmin(actor)) return true;
   if (!actor.journalRoles || !Array.isArray(actor.journalRoles)) return false;
 
+  const normalized = resolveCanonicalJournalSlug(canonicalSlug);
+
   return actor.journalRoles.some((r) => {
     if (r.role !== "JOURNAL_ADMIN") return false;
-    if (r.journalId === canonicalSlug) return true;
+    if (r.journalId.trim().toLowerCase() === normalized) return true;
     if (
       "journal" in r &&
-      (r.journal as { slug?: string })?.slug === canonicalSlug
-    ) {
-      return true;
-    }
-    // Map aliases
-    if (
-      canonicalSlug === "njcp" &&
-      (r.journalId === "psychology" ||
-        ("journal" in r &&
-          (r.journal as { slug?: string })?.slug === "psychology"))
-    ) {
-      return true;
-    }
-    if (
-      canonicalSlug === "njsr" &&
-      (r.journalId === "njsbr" ||
-        ("journal" in r && (r.journal as { slug?: string })?.slug === "njsbr"))
-    ) {
-      return true;
-    }
-    if (
-      canonicalSlug === "gjcsr" &&
-      (r.journalId === "gjsbr" ||
-        ("journal" in r && (r.journal as { slug?: string })?.slug === "gjsbr"))
+      (r.journal as { slug?: string })?.slug?.trim().toLowerCase() ===
+        normalized
     ) {
       return true;
     }
@@ -66,23 +46,26 @@ export async function getJournalEditorialBoard(
   journalSlug: string,
 ): Promise<EditorialBoardMember[]> {
   const canonical = resolveCanonicalJournalSlug(journalSlug);
+  if (!canonical) return [];
+
   const dbMembers = await prisma.editorialBoardMember.findMany({
     where: { journalSlug: canonical },
     orderBy: { order: "asc" },
   });
 
-  if (dbMembers.length > 0) {
-    return dbMembers.map((m) => ({
-      id: m.id,
-      name: m.name,
-      role: m.role,
-      affiliation: m.affiliation,
-      category: m.category as EditorialMemberCategory,
-      order: m.order,
-    }));
+  if (dbMembers.length === 0) {
+    return getDefaultEditorialBoard(canonical);
   }
 
-  return getDefaultEditorialBoard(canonical);
+  return dbMembers.map((m) => ({
+    id: m.id,
+    journalSlug: m.journalSlug,
+    name: m.name,
+    role: m.role,
+    affiliation: m.affiliation,
+    category: m.category as EditorialMemberCategory,
+    order: m.order,
+  }));
 }
 
 async function ensureCustomBoardSeeded(canonical: string): Promise<void> {
@@ -156,8 +139,7 @@ export async function addEditorialBoardMember({
       journalSlug: canonical,
       name: name.trim(),
       role: role.trim(),
-      affiliation:
-        affiliation.trim() || "Imo State University, Owerri, Nigeria",
+      affiliation: affiliation.trim(),
       category,
       order: currentCount + 1,
     },
@@ -172,6 +154,7 @@ export async function addEditorialBoardMember({
     success: true,
     member: {
       id: created.id,
+      journalSlug: created.journalSlug,
       name: created.name,
       role: created.role,
       affiliation: created.affiliation,
@@ -206,8 +189,6 @@ export async function updateEditorialBoardMember({
         "Unauthorized: Managing Editor permissions required for this journal.",
     };
   }
-
-  await ensureCustomBoardSeeded(canonical);
 
   const existing = await prisma.editorialBoardMember.findFirst({
     where: { id: memberId, journalSlug: canonical },
@@ -252,8 +233,6 @@ export async function deleteEditorialBoardMember({
         "Unauthorized: Managing Editor permissions required for this journal.",
     };
   }
-
-  await ensureCustomBoardSeeded(canonical);
 
   const existing = await prisma.editorialBoardMember.findFirst({
     where: { id: memberId, journalSlug: canonical },

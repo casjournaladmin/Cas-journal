@@ -18,209 +18,156 @@ import {
   updateEditorialBoardMember,
 } from "@/lib/editorial/editorial-board-store";
 
-test("Canonical journal ordering enforces AJSBS first and NJCP last across platform", () => {
-  assert.equal(CANONICAL_JOURNAL_ORDER[0], "ajsbs");
-  assert.ok(CANONICAL_JOURNAL_ORDER.includes("njcp"));
-  assert.ok(
-    CANONICAL_JOURNAL_ORDER.indexOf("ajsbs") <
-      CANONICAL_JOURNAL_ORDER.indexOf("njsr"),
-  );
-  assert.ok(
-    CANONICAL_JOURNAL_ORDER.indexOf("njsr") <
-      CANONICAL_JOURNAL_ORDER.indexOf("gjcsr"),
-  );
-  assert.ok(
-    CANONICAL_JOURNAL_ORDER.indexOf("gjcsr") <
-      CANONICAL_JOURNAL_ORDER.indexOf("njcp"),
-  );
+test("Canonical journal ordering enforces Existentia first across platform", () => {
+  assert.equal(CANONICAL_JOURNAL_ORDER[0], "existentia");
+  assert.deepEqual(CANONICAL_JOURNAL_ORDER, [
+    "existentia",
+    "cjmr",
+    "izu",
+    "polis",
+  ]);
 
   const rawList = [
     {
-      slug: "njcp",
-      name: "Nigerian Journal of Contemporary Psychology (NJCP)",
+      slug: "polis",
+      name: "The Polis: Journal of Political Studies",
     },
     {
-      slug: "gjcsr",
-      name: "Global Journal of Contemporary Social Research (GJCSR)",
+      slug: "cjmr",
+      name: "Concrescence Journal of Multi-Disciplinary Research",
     },
     {
-      slug: "ajsbs",
-      name: "African Journal of Social and Behavioural Sciences (AJSBS)",
+      slug: "existentia",
+      name: "Existentia: Concrescence Journal of Arts and Humanities",
     },
-    { slug: "njsr", name: "Nwaebere Journal of Scientific Research (NJSR)" },
+    {
+      slug: "izu",
+      name: "Izu: Journal of Critical Perspectives",
+    },
   ];
 
   const sorted = sortJournalsByCanonicalOrder(rawList);
   assert.deepEqual(
     sorted.map((j) => j.slug),
-    ["ajsbs", "njsr", "gjcsr", "njcp"],
+    ["existentia", "cjmr", "izu", "polis"],
   );
 });
 
-test("Slug alias resolution maps legacy and canonical slugs properly", () => {
-  assert.equal(resolveCanonicalJournalSlug("njcp"), "njcp");
-  assert.equal(resolveCanonicalJournalSlug("psychology"), "njcp");
-  assert.equal(resolveCanonicalJournalSlug("PSYCHOLOGY"), "njcp");
+test("Slug normalization maps canonical slugs properly", () => {
+  assert.equal(resolveCanonicalJournalSlug("existentia"), "existentia");
+  assert.equal(resolveCanonicalJournalSlug("EXISTENTIA"), "existentia");
 
-  assert.equal(resolveCanonicalJournalSlug("ajsbs"), "ajsbs");
-  assert.equal(resolveCanonicalJournalSlug("AJSBS"), "ajsbs");
+  assert.equal(resolveCanonicalJournalSlug("cjmr"), "cjmr");
+  assert.equal(resolveCanonicalJournalSlug("CJMR"), "cjmr");
 
-  assert.equal(resolveCanonicalJournalSlug("njsr"), "njsr");
-  assert.equal(resolveCanonicalJournalSlug("njsbr"), "njsr");
-  assert.equal(resolveCanonicalJournalSlug("NJSBR"), "njsr");
+  assert.equal(resolveCanonicalJournalSlug("izu"), "izu");
+  assert.equal(resolveCanonicalJournalSlug("IZU"), "izu");
 
-  assert.equal(resolveCanonicalJournalSlug("gjcsr"), "gjcsr");
-  assert.equal(resolveCanonicalJournalSlug("gjsbr"), "gjcsr");
-  assert.equal(resolveCanonicalJournalSlug("GJSBR"), "gjcsr");
+  assert.equal(resolveCanonicalJournalSlug("polis"), "polis");
+  assert.equal(resolveCanonicalJournalSlug("POLIS"), "polis");
 });
 
-test("Database slug mapper expands aliases for relation queries", () => {
-  assert.deepEqual(getJournalDbSlugs("njcp"), ["njcp", "psychology"]);
-  assert.deepEqual(getJournalDbSlugs("psychology"), ["njcp", "psychology"]);
-  assert.deepEqual(getJournalDbSlugs("njsr"), ["njsr", "njsbr"]);
-  assert.deepEqual(getJournalDbSlugs("gjcsr"), ["gjcsr", "gjsbr"]);
-  assert.deepEqual(getJournalDbSlugs("ajsbs"), ["ajsbs"]);
+test("Database slug mapper expands slugs for queries", () => {
+  assert.deepEqual(getJournalDbSlugs("existentia"), ["existentia"]);
+  assert.deepEqual(getJournalDbSlugs("cjmr"), ["cjmr"]);
+  assert.deepEqual(getJournalDbSlugs("izu"), ["izu"]);
+  assert.deepEqual(getJournalDbSlugs("polis"), ["polis"]);
 });
 
-test("Institutional Journal Metadata and ISSN isolation (Only AJSBS has registered ISSN & ISSN-L)", () => {
-  // AJSBS: African Journal of Social and Behavioural Sciences
-  const ajsbsMeta = getJournalMetadata("ajsbs");
-  assert.ok(ajsbsMeta);
+test("CAS Journal Metadata isolation", () => {
+  const existentiaMeta = getJournalMetadata("existentia");
+  assert.ok(existentiaMeta);
   assert.equal(
-    ajsbsMeta.title,
-    "African Journal of Social and Behavioural Sciences",
+    existentiaMeta.title,
+    "Existentia: Concrescence Journal of Arts and Humanities",
   );
-  assert.equal(ajsbsMeta.shortName, "AJSBS");
-  assert.equal(ajsbsMeta.issnPrint, "2141-209X");
-  assert.equal(ajsbsMeta.issnOnline, "2141-209X");
-  assert.equal(ajsbsMeta.issnL, "2141-209X");
+  assert.equal(existentiaMeta.shortName, "EXISTENTIA");
 
-  // NJCP: Nigerian Journal of Contemporary Psychology (No ISSN)
-  const njcpMeta = getJournalMetadata("njcp");
-  assert.ok(njcpMeta);
-  assert.equal(njcpMeta.title, "Nigerian Journal of Contemporary Psychology");
-  assert.equal(njcpMeta.shortName, "NJCP");
-  assert.equal(njcpMeta.issnPrint, undefined);
-  assert.equal(njcpMeta.issnOnline, undefined);
-  assert.equal(njcpMeta.issnL, undefined);
-
-  // NJSR: Nwaebere Journal of Scientific Research (No ISSN)
-  const njsrMeta = getJournalMetadata("njsr");
-  assert.ok(njsrMeta);
-  assert.equal(njsrMeta.title, "Nwaebere Journal of Scientific Research");
-  assert.equal(njsrMeta.shortName, "NJSR");
-  assert.equal(njsrMeta.issnPrint, undefined);
-  assert.equal(njsrMeta.issnOnline, undefined);
-  assert.equal(njsrMeta.issnL, undefined);
-
-  // GJCSR: Global Journal of Contemporary Social Research (No ISSN)
-  const gjcsrMeta = getJournalMetadata("gjcsr");
-  assert.ok(gjcsrMeta);
+  const cjmrMeta = getJournalMetadata("cjmr");
+  assert.ok(cjmrMeta);
   assert.equal(
-    gjcsrMeta.title,
-    "Global Journal of Contemporary Social Research",
+    cjmrMeta.title,
+    "Concrescence Journal of Multi-Disciplinary Research",
   );
-  assert.equal(gjcsrMeta.shortName, "GJCSR");
-  assert.equal(gjcsrMeta.issnPrint, undefined);
-  assert.equal(gjcsrMeta.issnOnline, undefined);
-  assert.equal(gjcsrMeta.issnL, undefined);
+  assert.equal(cjmrMeta.shortName, "CJMR");
+
+  const izuMeta = getJournalMetadata("izu");
+  assert.ok(izuMeta);
+  assert.equal(izuMeta.title, "Izu: Journal of Critical Perspectives");
+  assert.equal(izuMeta.shortName, "IZU");
+
+  const polisMeta = getJournalMetadata("polis");
+  assert.ok(polisMeta);
+  assert.equal(polisMeta.title, "The Polis: Journal of Political Studies");
+  assert.equal(polisMeta.shortName, "POLIS");
 });
 
-test("Exact Institutional Editorial Board for Nigerian Journal of Contemporary Psychology (NJCP)", () => {
-  const meta = getJournalMetadata("njcp");
+test("Exact Editorial Board for Existentia", () => {
+  const meta = getJournalMetadata("existentia");
   assert.ok(meta);
-  assert.equal(meta.title, "Nigerian Journal of Contemporary Psychology");
-  assert.equal(meta.shortName, "NJCP");
-  assert.equal(meta.department, "Department of Psychology");
+  assert.equal(
+    meta.title,
+    "Existentia: Concrescence Journal of Arts and Humanities",
+  );
+  assert.equal(meta.shortName, "EXISTENTIA");
 
-  const board = getDefaultEditorialBoard("njcp");
-  assert.ok(board.length >= 14);
+  const board = getDefaultEditorialBoard("existentia");
+  assert.equal(board.length, 2);
 
-  // Chief Editor
-  const chief = board.find((m) => m.category === "CHIEF_EDITOR");
+  // Editor-in-Chief
+  const chief = board.find((m) => m.category === "EDITOR_IN_CHIEF");
   assert.ok(chief);
-  assert.equal(chief.name, "Prof Nkwam C. Uwaoma");
-  assert.equal(chief.role, "Chief Editor");
+  assert.equal(chief.name, "Prof Izu M. Onyeocha");
+  assert.equal(chief.role, "Editor-in-Chief");
 
   // Deputy Editor
   const deputy = board.find((m) => m.category === "DEPUTY_EDITOR");
   assert.ok(deputy);
-  assert.equal(deputy.name, "Ethelbert Njoku PhD");
-
-  // Associate Editor
-  const assoc = board.find((m) => m.category === "ASSOCIATE_EDITOR");
-  assert.ok(assoc);
-  assert.equal(assoc.name, "Ann Ukachi Madukwe PhD");
-
-  // Managing Editor
-  const managing = board.find((m) => m.category === "MANAGING_EDITOR");
-  assert.ok(managing);
-  assert.equal(managing.name, "Richards E. Ebeh, PhD");
-
-  // Editorial Board Members
-  const boardMemberNames = board
-    .filter((m) => m.category === "BOARD_MEMBER")
-    .map((m) => m.name);
-  assert.ok(boardMemberNames.includes("Prof Charles I. Mbaeze"));
-  assert.ok(boardMemberNames.includes("Prof Cletus N. Offor"));
-  assert.ok(boardMemberNames.includes("Ngozi Sydney-Agbor, PhD"));
-  assert.ok(boardMemberNames.includes("Leonard C. Onwukwe, PhD"));
-  assert.ok(boardMemberNames.includes("Helen Ihuoma Nnamdi-Annozie, PhD"));
-  assert.ok(boardMemberNames.includes("Miracle Ifeoma Mbagwu, PhD"));
-
-  // Consulting Editors
-  const consultingNames = board
-    .filter((m) => m.category === "CONSULTING_EDITOR")
-    .map((m) => m.name);
-  assert.ok(consultingNames.includes("Prof R.N. Ugokwe-Ossai"));
-  assert.ok(consultingNames.includes("Prof Benjamin O. Ehighie"));
-  assert.ok(consultingNames.includes("Prof Ike Ernest Onyishi"));
-  assert.ok(consultingNames.includes("Prof Nnamdi Obikeze"));
+  assert.equal(deputy.name, "Chidi K. Ogonnaya, PhD");
+  assert.equal(deputy.role, "Deputy Editor");
 });
 
-test("Default editorial board configurations for AJSBS, NJSR, GJCSR", () => {
-  const ajsbsBoard = getDefaultEditorialBoard("ajsbs");
-  assert.ok(ajsbsBoard.length > 0);
+test("Default editorial board configurations for CJMR, Izu, Polis", () => {
+  const cjmrBoard = getDefaultEditorialBoard("cjmr");
+  assert.equal(cjmrBoard.length, 6);
   assert.equal(
-    ajsbsBoard.find((m) => m.category === "CHIEF_EDITOR")?.name,
-    "Prof. Ikechukwu J.D. Nwosu",
+    cjmrBoard.find((m) => m.category === "EDITOR_IN_CHIEF")?.name,
+    "Uche Oputa, PhD",
+  );
+  assert.ok(
+    cjmrBoard.some((m) => m.name === "Chidi K. Ogonnaya, PhD"),
+  );
+  assert.ok(
+    cjmrBoard.some((m) => m.name === "Bellarmine Nneji, PhD"),
   );
 
-  const njsrBoard = getDefaultEditorialBoard("njsr");
-  assert.equal(njsrBoard.length, 14);
+  const izuBoard = getDefaultEditorialBoard("izu");
+  assert.equal(izuBoard.length, 2);
   assert.equal(
-    njsrBoard.find((m) => m.category === "CHIEF_EDITOR")?.name,
-    "Prof Okee Okoro",
+    izuBoard.find((m) => m.category === "EDITOR_IN_CHIEF")?.name,
+    "Prof Izu M. Onyeocha",
   );
   assert.equal(
-    njsrBoard.find((m) => m.category === "DEPUTY_EDITOR")?.name,
-    "Leonard C. Onwukwe, PhD",
-  );
-  assert.equal(
-    njsrBoard.find((m) => m.category === "MANAGING_EDITOR")?.name,
-    "Richards E. Ebeh, PhD",
+    izuBoard.find((m) => m.category === "ASSOCIATE_EDITOR")?.name,
+    "Chidi K. Ogonnaya, PhD",
   );
 
-  const gjcsrBoard = getDefaultEditorialBoard("gjcsr");
-  assert.equal(gjcsrBoard.length, 13);
+  const polisBoard = getDefaultEditorialBoard("polis");
+  assert.equal(polisBoard.length, 6);
   assert.equal(
-    gjcsrBoard.find((m) => m.category === "CHIEF_EDITOR")?.name,
-    "Prof Nkwam C. Uwaoma",
+    polisBoard.find((m) => m.category === "EDITOR_IN_CHIEF")?.name,
+    "Chidi K. Ogonnaya, PhD",
   );
   assert.equal(
-    gjcsrBoard.find((m) => m.category === "DEPUTY_EDITOR")?.name,
-    "Chinedu N. Nwokorie, PhD",
-  );
-  assert.equal(
-    gjcsrBoard.find((m) => m.category === "MANAGING_EDITOR")?.name,
-    "Richards E. Ebeh, PhD",
+    polisBoard.find((m) => m.category === "ASSOCIATE_EDITOR")?.name,
+    "Christian Nwadinihu, PhD",
   );
 });
 
 test("Editorial board store supports adding, editing, deleting, and resetting members safely", async () => {
   const superAdminActor = {
     id: "admin-1",
-    email: "superadmin@imsu-foss.ng",
+    email: "casjournaladmin@gmail.com",
     globalRoles: [
       { role: "SUPER_ADMIN" as const },
       { role: "AUTHOR" as const },
@@ -228,12 +175,12 @@ test("Editorial board store supports adding, editing, deleting, and resetting me
     journalRoles: [],
   };
 
-  const initialBoard = await getJournalEditorialBoard("njcp");
+  const initialBoard = await getJournalEditorialBoard("existentia");
   const initialCount = initialBoard.length;
 
   // 1. Add member
   const addRes = await addEditorialBoardMember({
-    journalSlug: "njcp",
+    journalSlug: "existentia",
     name: "Dr. Test Guest Scholar",
     role: "Visiting Research Fellow",
     affiliation: "University of Cambridge",
@@ -244,7 +191,7 @@ test("Editorial board store supports adding, editing, deleting, and resetting me
   assert.equal(addRes.success, true);
   assert.ok(addRes.member);
 
-  const updatedBoard = await getJournalEditorialBoard("njcp");
+  const updatedBoard = await getJournalEditorialBoard("existentia");
   assert.equal(updatedBoard.length, initialCount + 1);
   const added = updatedBoard.find((m) => m.id === addRes.member?.id);
   assert.ok(added);
@@ -252,7 +199,7 @@ test("Editorial board store supports adding, editing, deleting, and resetting me
 
   // 2. Update member
   const updateRes = await updateEditorialBoardMember({
-    journalSlug: "njcp",
+    journalSlug: "existentia",
     memberId: added.id,
     name: "Prof. Test Guest Scholar Updated",
     role: "Senior Visiting Professor",
@@ -262,39 +209,39 @@ test("Editorial board store supports adding, editing, deleting, and resetting me
   });
   assert.equal(updateRes.success, true);
 
-  const boardAfterUpdate = await getJournalEditorialBoard("njcp");
+  const boardAfterUpdate = await getJournalEditorialBoard("existentia");
   const updatedItem = boardAfterUpdate.find((m) => m.id === added.id);
   assert.equal(updatedItem?.name, "Prof. Test Guest Scholar Updated");
 
   // 3. Delete member
   const deleteRes = await deleteEditorialBoardMember({
-    journalSlug: "njcp",
+    journalSlug: "existentia",
     memberId: added.id,
     actor: superAdminActor,
   });
   assert.equal(deleteRes.success, true);
 
-  const boardAfterDelete = await getJournalEditorialBoard("njcp");
+  const boardAfterDelete = await getJournalEditorialBoard("existentia");
   assert.equal(boardAfterDelete.length, initialCount);
 
   // 4. Reset board
   const resetRes = await resetEditorialBoard({
-    journalSlug: "njcp",
+    journalSlug: "existentia",
     actor: superAdminActor,
   });
   assert.equal(resetRes.success, true);
 });
 
-test("Department-scoped authorization enforces boundary on governance mutations", async () => {
-  const psychologyAdminActor = {
-    id: "admin-psych",
-    email: "psychadmin@imsu-foss.ng",
+test("Journal-scoped authorization enforces boundary on governance mutations", async () => {
+  const existentiaAdminActor = {
+    id: "admin-existentia",
+    email: "existentiaadmin@cas-journals.org",
     globalRoles: [{ role: "AUTHOR" as const }],
     journalRoles: [
       {
-        journalId: "njcp",
+        journalId: "existentia",
         role: "JOURNAL_ADMIN" as const,
-        journal: { slug: "njcp" },
+        journal: { slug: "existentia" },
       },
     ],
   };
@@ -307,38 +254,44 @@ test("Department-scoped authorization enforces boundary on governance mutations"
   };
 
   // 1. Check helper
-  assert.equal(isAuthorizedForJournal(psychologyAdminActor, "njcp"), true);
-  assert.equal(isAuthorizedForJournal(psychologyAdminActor, "ajsbs"), false);
-  assert.equal(isAuthorizedForJournal(authorActor, "njcp"), false);
+  assert.equal(isAuthorizedForJournal(existentiaAdminActor, "existentia"), true);
+  assert.equal(isAuthorizedForJournal(existentiaAdminActor, "cjmr"), false);
+  assert.equal(isAuthorizedForJournal(authorActor, "existentia"), false);
 
-  // 2. Psychology admin can add board member to NJCP
-  const allowedRes = await addEditorialBoardMember({
-    journalSlug: "njcp",
-    name: "Dr. Psychology Fellow",
-    role: "Editorial Assistant",
-    affiliation: "IMSU Psychology",
-    category: "BOARD_MEMBER",
-    actor: psychologyAdminActor,
-  });
-  assert.equal(allowedRes.success, true);
+  // 2. Existentia admin can add board member to Existentia
+  try {
+    const allowedRes = await addEditorialBoardMember({
+      journalSlug: "existentia",
+      name: "Dr. Existentia Fellow",
+      role: "Editorial Assistant",
+      affiliation: "CAS Humanities",
+      category: "BOARD_MEMBER",
+      actor: existentiaAdminActor,
+    });
+    assert.equal(allowedRes.success, true);
 
-  // Clean up
-  if (allowedRes.member) {
-    await deleteEditorialBoardMember({
-      journalSlug: "njcp",
-      memberId: allowedRes.member.id,
-      actor: psychologyAdminActor,
+    if (allowedRes.member) {
+      await deleteEditorialBoardMember({
+        journalSlug: "existentia",
+        memberId: allowedRes.member.id,
+        actor: existentiaAdminActor,
+      });
+    }
+  } finally {
+    await resetEditorialBoard({
+      journalSlug: "existentia",
+      actor: existentiaAdminActor,
     });
   }
 
-  // 3. Psychology admin is DENIED adding board members to AJSBS
+  // 3. Existentia admin is DENIED adding board members to CJMR
   const deniedBoardRes = await addEditorialBoardMember({
-    journalSlug: "ajsbs",
+    journalSlug: "cjmr",
     name: "Dr. Intruder",
     role: "Intruder",
     affiliation: "Unknown",
     category: "BOARD_MEMBER",
-    actor: psychologyAdminActor,
+    actor: existentiaAdminActor,
   });
   assert.equal(deniedBoardRes.success, false);
   assert.ok(deniedBoardRes.error?.includes("Unauthorized"));
@@ -351,21 +304,23 @@ test("Navbar streamlining and footer navigation consistency", async () => {
   assert.deepEqual(topNavLabels, [
     "Home",
     "Journals",
-    "Archives",
-    "Announcements",
-    "Submissions",
+    "For Authors",
+    "Current Issue",
+    "Archive",
+    "Indexing & Abstracting",
+    "Contact",
   ]);
 
   const footerLabels = siteConfig.footerNavigation.map((item) => item.label);
   assert.deepEqual(footerLabels, [
     "Home",
-    "About",
-    "Editorial Board",
-    "Announcements",
     "Current Issue",
-    "Archives",
-    "Submissions",
-    "Apply as a Reviewer",
-    "Contact",
+    "Archive",
+    "Indexing & Abstracting",
+    "Editorial Team",
+    "Announcements",
+    "Become a Reviewer",
+    "Sign In / Track",
+    "Contact Us",
   ]);
 });

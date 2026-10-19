@@ -19,6 +19,7 @@ import {
   publishIssueTOC,
 } from "@/lib/editorial/issue-mutations";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parsePageRange } from "@/lib/metadata/scholar";
 
 export type AdminArticleFormState = {
   error?: string;
@@ -56,8 +57,14 @@ export async function createDirectLegacyArticleAction(
   const yearStr = formData.get("year") as string;
   const issueOrderStr = (formData.get("issueOrder") as string)?.trim();
   const publishedAtStr = (formData.get("publishedAt") as string)?.trim();
-  const pageStart = (formData.get("pageStart") as string)?.trim() || null;
-  const pageEnd = (formData.get("pageEnd") as string)?.trim() || null;
+  const rawPageStart = (formData.get("pageStart") as string)?.trim() || null;
+  const rawPageEnd = (formData.get("pageEnd") as string)?.trim() || null;
+  const { firstPage: normStart, lastPage: normEnd } = parsePageRange(
+    rawPageStart,
+    rawPageEnd,
+  );
+  const pageStart = normStart || null;
+  const pageEnd = normEnd || null;
   const abstract = (formData.get("abstract") as string)?.trim() || null;
   const keywordsStr = (formData.get("keywords") as string)?.trim();
   const doi = (formData.get("doi") as string)?.trim() || null;
@@ -372,8 +379,14 @@ export async function updateArticleAction(
   const yearStr = formData.get("year") as string;
   const issueOrderStr = (formData.get("issueOrder") as string)?.trim();
   const publishedAtStr = (formData.get("publishedAt") as string)?.trim();
-  const pageStart = (formData.get("pageStart") as string)?.trim() || null;
-  const pageEnd = (formData.get("pageEnd") as string)?.trim() || null;
+  const rawPageStart = (formData.get("pageStart") as string)?.trim() || null;
+  const rawPageEnd = (formData.get("pageEnd") as string)?.trim() || null;
+  const { firstPage: normStart, lastPage: normEnd } = parsePageRange(
+    rawPageStart,
+    rawPageEnd,
+  );
+  const pageStart = normStart || null;
+  const pageEnd = normEnd || null;
   const abstract = (formData.get("abstract") as string)?.trim() || null;
   const keywordsStr = (formData.get("keywords") as string)?.trim();
   const doi = (formData.get("doi") as string)?.trim() || null;

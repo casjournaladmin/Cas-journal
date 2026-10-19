@@ -10,6 +10,7 @@ import { BrandMark } from "@/components/ui/brand-mark";
 import type { ProductWorkspace } from "@/lib/auth/workspaces";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type ShellUser = {
   displayName: string;
@@ -104,21 +105,28 @@ export function AuthenticatedShell({
   return (
     <div className="min-h-screen bg-[color:var(--color-app-background)]">
       <header className="sticky top-0 z-30 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-[4.5rem] max-w-[90rem] items-center gap-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-[4.25rem] max-w-[90rem] items-center gap-3 sm:gap-4 px-4 sm:px-6 xl:px-8">
           <div className="shrink-0">
             <BrandMark href={overviewHref} />
           </div>
           <nav
             aria-label="Workspace navigation"
-            className="hidden h-full items-center gap-6 pl-4 md:flex"
+            className="hidden h-full min-w-0 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-webkit-overflow-scrolling:touch] lg:flex xl:gap-2"
           >
             <NavigationLinks items={navigationItems} />
           </nav>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+            <Link
+              href="/"
+              className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-2.5 py-1.5 text-xs font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] xl:inline-flex"
+            >
+              <span>Public Portal</span>
+              <span aria-hidden="true" className="opacity-70">↗</span>
+            </Link>
             {availableWorkspaces.length > 1 ? (
               <Link
                 href="/workspaces"
-                className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] md:inline-flex"
+                className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-2.5 py-1.5 text-xs font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] 2xl:inline-flex"
               >
                 <svg
                   aria-hidden="true"
@@ -139,11 +147,11 @@ export function AuthenticatedShell({
             ) : null}
             <details
               name="shell-menu"
-              className="app-popover group relative md:hidden"
+              className="app-popover group relative lg:hidden"
             >
               <summary
                 aria-label="Open workspace navigation"
-                className="grid size-11 cursor-pointer list-none place-items-center rounded-[var(--radius-md)] border border-[color:var(--color-border)] text-[color:var(--color-foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-focus)]"
+                className="grid size-9 cursor-pointer list-none place-items-center rounded-[var(--radius-md)] border border-[color:var(--color-border)] text-[color:var(--color-foreground)] transition hover:bg-[color:var(--color-surface-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-focus)]"
               >
                 <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5">
                   <path
@@ -156,21 +164,28 @@ export function AuthenticatedShell({
                 </svg>
               </summary>
               <div className="absolute top-[calc(100%+0.65rem)] right-0 z-40 w-[min(21rem,calc(100vw-2rem))] rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-3 shadow-[var(--shadow-menu)]">
-                <nav aria-label="Mobile workspace navigation">
+                <nav aria-label="Mobile workspace navigation" className="space-y-1">
                   <NavigationLinks items={navigationItems} mobile />
                 </nav>
-                {availableWorkspaces.length > 1 ? (
-                  <div className="mt-3 border-t border-[color:var(--color-border)] pt-3">
+                <div className="mt-3 border-t border-[color:var(--color-border)] pt-3 space-y-1">
+                  <Link
+                    href="/"
+                    className="block rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-strong)]"
+                  >
+                    Public Journal Portal ↗
+                  </Link>
+                  {availableWorkspaces.length > 1 ? (
                     <Link
                       href="/workspaces"
                       className="block rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-strong)]"
                     >
                       Switch workspace
                     </Link>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </details>
+            <NotificationBell />
             <ThemeToggle />
             <AccountMenu
               user={user}

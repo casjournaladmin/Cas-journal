@@ -24,7 +24,7 @@ import { prisma } from "@/lib/db/prisma";
 import { SupabaseConfigurationError } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
-const applicationUserInclude = {
+export const applicationUserInclude = {
   globalRoles: true,
   journalRoles: {
     include: {
@@ -45,6 +45,28 @@ const applicationUserInclude = {
 } as const;
 
 export const getCurrentUser = cache(async () => {
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const { getActiveDevIdentity } =
+        await import("@/lib/auth/dev-identities");
+      const devUser = await getActiveDevIdentity();
+      if (devUser) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: devUser.id },
+            include: applicationUserInclude,
+          });
+          if (dbUser) return dbUser;
+        } catch {
+          // Fallback to static dev identity
+        }
+        return devUser;
+      }
+    } catch {
+      // Gracefully continue to normal auth if dev identity check fails
+    }
+  }
+
   try {
     const supabase = await createClient();
     const {

@@ -13,6 +13,7 @@ import {
 } from "@/lib/requests/validation";
 import { createTrackingNumber } from "@/lib/submissions/tracking";
 import { isJournalActivated } from "@/lib/editorial/journal-activation";
+import { handleRequestMessageSent } from "@/lib/notifications/event-handlers";
 export class RequestMutationError extends Error {
   constructor(
     message: string,
@@ -149,19 +150,34 @@ export async function sendRequestMessage(input: {
 }) {
   const error = validateMessageBody(input.body);
   if (error) throw new RequestMutationError(error, { body: error });
-  const { request } = await actorAccess(input.actorId, input.requestId);
+  const { request, actor } = await actorAccess(input.actorId, input.requestId);
+  let createdMessageId: string | undefined;
+
   await prisma.$transaction(async (transaction) => {
-    await transaction.submissionConversationMessage.create({
+    const msg = await transaction.submissionConversationMessage.create({
       data: {
         requestId: request.id,
         senderId: input.actorId,
         body: input.body.trim(),
       },
     });
+    createdMessageId = msg.id;
     await transaction.submissionRequest.update({
       where: { id: request.id },
       data: { updatedAt: new Date() },
     });
+  });
+
+  void handleRequestMessageSent({
+    requestId: request.id,
+    messageId: createdMessageId,
+    senderId: input.actorId,
+    senderName: actor.displayName || undefined,
+  }).catch((err) => {
+    console.error(
+      "[RequestMessage] Failed to dispatch notification:",
+      err instanceof Error ? err.message : String(err),
+    );
   });
 }
 

@@ -198,7 +198,7 @@ export function AdminLegacyUploadForm({
           <input
             name="doi"
             type="text"
-            placeholder="e.g. 10.4314/imsufoss.v1i1.1"
+            placeholder="e.g. 10.5281/zenodo.cas.v1i1.1"
             className="app-field mt-1.5"
           />
         </label>
@@ -315,7 +315,7 @@ export function AdminLegacyUploadForm({
         <input
           name="keywords"
           type="text"
-          placeholder="e.g. Psychology, Behaviour, West Africa"
+          placeholder="e.g. Philosophy, Governance, Multi-Disciplinary Research"
           className="app-field mt-1.5"
         />
       </label>

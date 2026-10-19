@@ -598,3 +598,112 @@ export function JournalEditorManager({
     </div>
   );
 }
+
+export type RoleAuditEventItem = {
+  id: string;
+  action: "ASSIGNED" | "REMOVED";
+  role: "SUPER_ADMIN" | "JOURNAL_ADMIN" | "EDITOR" | "AUTHOR";
+  journalName?: string | null;
+  journal?: {
+    name: string;
+    slug: string;
+    shortName: string | null;
+  } | null;
+  createdAt: Date | string;
+  actor: {
+    displayName: string;
+    email: string | null;
+  };
+  targetUser: {
+    displayName: string;
+    email: string | null;
+  };
+};
+
+export function RoleChangeAuditLog({
+  events,
+}: {
+  events: RoleAuditEventItem[];
+}) {
+  return (
+    <section className="mt-10 rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-5 sm:p-6">
+      <div className="border-b border-[color:var(--color-border)] pb-4">
+        <p className="text-[11px] font-bold tracking-[0.14em] text-[color:var(--color-accent)] uppercase">
+          Security & Governance Audit
+        </p>
+        <h2 className="mt-1 font-serif text-xl font-medium tracking-[-0.02em] text-[color:var(--color-foreground)]">
+          Role Change History
+        </h2>
+        <p className="mt-1 text-xs text-[color:var(--color-muted)]">
+          Chronological record of role assignments and revocations across CAS
+          Journals.
+        </p>
+      </div>
+
+      {events.length === 0 ? (
+        <p className="py-6 text-center text-xs text-[color:var(--color-muted)]">
+          No role assignment or revocation events recorded yet.
+        </p>
+      ) : (
+        <div className="mt-4 divide-y divide-[color:var(--color-border)]">
+          {events.map((event) => {
+            const formattedDate = new Intl.DateTimeFormat("en-NG", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(new Date(event.createdAt));
+            const resolvedJournalName =
+              event.journalName ?? event.journal?.name ?? null;
+
+            return (
+              <div
+                key={event.id}
+                className="flex flex-col justify-between gap-2 py-3 text-xs sm:flex-row sm:items-center"
+              >
+                <div className="space-y-0.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        event.action === "ASSIGNED"
+                          ? "bg-emerald-500/15 text-emerald-500"
+                          : "bg-red-500/15 text-red-500"
+                      }`}
+                    >
+                      {event.action}
+                    </span>
+                    <span className="font-mono font-semibold text-[color:var(--color-foreground)]">
+                      {event.role}
+                    </span>
+                    {resolvedJournalName ? (
+                      <span className="rounded bg-[color:var(--color-surface-strong)] px-2 py-0.5 text-[10px] text-[color:var(--color-muted)]">
+                        {resolvedJournalName}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-[color:var(--color-muted)]">
+                    Target:{" "}
+                    <strong className="text-[color:var(--color-foreground)]">
+                      {event.targetUser.displayName}
+                    </strong>{" "}
+                    {event.targetUser.email
+                      ? `(${event.targetUser.email})`
+                      : ""}{" "}
+                    · Actor:{" "}
+                    <strong className="text-[color:var(--color-foreground)]">
+                      {event.actor.displayName}
+                    </strong>
+                  </p>
+                </div>
+                <span className="shrink-0 font-mono text-[11px] text-[color:var(--color-subtle)]">
+                  {formattedDate}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}

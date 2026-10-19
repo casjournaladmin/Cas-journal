@@ -3,31 +3,29 @@ import "server-only";
 import type { GlobalRole } from "@prisma/client";
 import { isSuperAdmin } from "@/lib/auth/permissions";
 
-export const DEFAULT_ACTIVE_JOURNAL_SLUGS = new Set([
-  "psychology",
-  "njcp",
-  "ajsbs",
-  "njsr",
-  "njsbr",
-  "gjcsr",
-  "gjsbr",
+export const DEFAULT_ACTIVE_JOURNAL_SLUGS = new Set<string>([
+  "existentia",
+  "cjmr",
+  "izu",
+  "polis",
 ]);
 
-export const GATED_DEPARTMENTAL_JOURNAL_SLUGS = new Set([
-  "economics",
-  "sociology",
-  "political-science",
-  "public-administration",
-  "criminology-security-studies",
-  "library-information-science",
-]);
+export const GATED_DEPARTMENTAL_JOURNAL_SLUGS = new Set<string>();
 
 export function normalizeJournalSlug(slug: string): string {
   return slug.trim().toLowerCase();
 }
 
-export const LEAD_SYSTEM_OWNER_EMAILS = new Set([
-  "martinzkiziztto@gmail.com",
+export function getDefaultActiveJournalSlugs(): Set<string> {
+  const envSlugs = (process.env.DEFAULT_ACTIVE_JOURNAL_SLUGS ?? "")
+    .split(",")
+    .map((item) => normalizeJournalSlug(item))
+    .filter((item) => item.length > 0);
+  return new Set([...DEFAULT_ACTIVE_JOURNAL_SLUGS, ...envSlugs]);
+}
+
+export const LEAD_SYSTEM_OWNER_EMAILS = new Set<string>([
+  "casjournaladmin@gmail.com",
   "martinzkizitto@gmail.com",
 ]);
 
@@ -40,11 +38,19 @@ export function isLeadSystemOwner(user: {
     ? isSuperAdmin({ globalRoles: user.globalRoles, journalRoles: [] })
     : true;
   const email = user.email.trim().toLowerCase();
-  const envEmails = (process.env.LEAD_SYSTEM_OWNER_EMAILS ?? "")
+  const leadEnvEmails = (process.env.LEAD_SYSTEM_OWNER_EMAILS ?? "")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length > 0);
-  const allowed = new Set([...LEAD_SYSTEM_OWNER_EMAILS, ...envEmails]);
+  const breakGlassEnvEmails = (process.env.BREAK_GLASS_SUPERADMIN_EMAILS ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
+  const allowed = new Set([
+    ...LEAD_SYSTEM_OWNER_EMAILS,
+    ...leadEnvEmails,
+    ...breakGlassEnvEmails,
+  ]);
   return isSuper && allowed.has(email);
 }
 
@@ -79,11 +85,14 @@ export class MemoryJournalActivationStore implements JournalActivationStore {
 
   async getActivationMap(): Promise<Record<string, boolean>> {
     const map: Record<string, boolean> = {};
-    for (const slug of DEFAULT_ACTIVE_JOURNAL_SLUGS) {
+    for (const slug of getDefaultActiveJournalSlugs()) {
       map[slug] = true;
     }
     for (const slug of GATED_DEPARTMENTAL_JOURNAL_SLUGS) {
       map[slug] = this.activated.has(slug);
+    }
+    for (const slug of this.activated) {
+      map[slug] = true;
     }
     return map;
   }
@@ -91,25 +100,36 @@ export class MemoryJournalActivationStore implements JournalActivationStore {
 
 export const prismaJournalActivationStore: JournalActivationStore = {
   async isActivated(slug: string): Promise<boolean> {
-    if (!process.env.DATABASE_URL) return false;
+    const normalized = normalizeJournalSlug(slug);
+    if (!normalized || !process.env.DATABASE_URL) return false;
     try {
       const { prisma } = await import("@/lib/db/prisma");
-      const record = await prisma.journalActivation.findUnique({
-        where: { journalSlug: slug },
-      });
-      return Boolean(record);
+      const [journal, record] = await Promise.all([
+        prisma.journal.findUnique({
+          where: { slug: normalized },
+          select: { isActive: true },
+        }),
+        prisma.journalActivation.findUnique({
+          where: { journalSlug: normalized },
+        }),
+      ]);
+      if (journal && !journal.isActive) {
+        return false;
+      }
+      return Boolean(record || getDefaultActiveJournalSlugs().has(normalized));
     } catch {
       return false;
     }
   },
 
   async activate(slug: string, activatedBy?: string): Promise<void> {
-    if (!process.env.DATABASE_URL) return;
+    const normalized = normalizeJournalSlug(slug);
+    if (!normalized || !process.env.DATABASE_URL) return;
     const { prisma } = await import("@/lib/db/prisma");
     await prisma.journalActivation.upsert({
-      where: { journalSlug: slug },
+      where: { journalSlug: normalized },
       create: {
-        journalSlug: slug,
+        journalSlug: normalized,
         activatedBy: activatedBy ?? null,
       },
       update: {
@@ -120,41 +140,58 @@ export const prismaJournalActivationStore: JournalActivationStore = {
   },
 
   async deactivate(slug: string): Promise<void> {
-    if (!process.env.DATABASE_URL) return;
+    const normalized = normalizeJournalSlug(slug);
+    if (!normalized || !process.env.DATABASE_URL) return;
     const { prisma } = await import("@/lib/db/prisma");
     await prisma.journalActivation.deleteMany({
-      where: { journalSlug: slug },
+      where: { journalSlug: normalized },
     });
   },
 
   async getActivationMap(): Promise<Record<string, boolean>> {
+    const defaultActive = getDefaultActiveJournalSlugs();
     if (!process.env.DATABASE_URL) {
       const fallback: Record<string, boolean> = {};
-      for (const slug of DEFAULT_ACTIVE_JOURNAL_SLUGS) fallback[slug] = true;
+      for (const slug of defaultActive) fallback[slug] = true;
       for (const slug of GATED_DEPARTMENTAL_JOURNAL_SLUGS)
         fallback[slug] = false;
       return fallback;
     }
     try {
       const { prisma } = await import("@/lib/db/prisma");
-      const activatedRecords = await prisma.journalActivation.findMany({
-        select: { journalSlug: true },
-      });
+      const [journals, activatedRecords] = await Promise.all([
+        prisma.journal.findMany({
+          select: { slug: true, isActive: true },
+        }),
+        prisma.journalActivation.findMany({
+          select: { journalSlug: true },
+        }),
+      ]);
       const activatedSet = new Set(
         activatedRecords.map((r) => normalizeJournalSlug(r.journalSlug)),
       );
 
       const map: Record<string, boolean> = {};
-      for (const slug of DEFAULT_ACTIVE_JOURNAL_SLUGS) {
+      for (const slug of defaultActive) {
         map[slug] = true;
       }
       for (const slug of GATED_DEPARTMENTAL_JOURNAL_SLUGS) {
         map[slug] = activatedSet.has(slug);
       }
+      for (const slug of activatedSet) {
+        map[slug] = true;
+      }
+      for (const journal of journals) {
+        const norm = normalizeJournalSlug(journal.slug);
+        map[norm] = Boolean(
+          journal.isActive &&
+          (activatedSet.has(norm) || defaultActive.has(norm)),
+        );
+      }
       return map;
     } catch {
       const fallback: Record<string, boolean> = {};
-      for (const slug of DEFAULT_ACTIVE_JOURNAL_SLUGS) fallback[slug] = true;
+      for (const slug of defaultActive) fallback[slug] = true;
       for (const slug of GATED_DEPARTMENTAL_JOURNAL_SLUGS)
         fallback[slug] = false;
       return fallback;
@@ -167,11 +204,8 @@ export async function isJournalActivated(
   store: JournalActivationStore = prismaJournalActivationStore,
 ): Promise<boolean> {
   const normalized = normalizeJournalSlug(slug);
-  if (DEFAULT_ACTIVE_JOURNAL_SLUGS.has(normalized)) {
-    return true;
-  }
-  if (!GATED_DEPARTMENTAL_JOURNAL_SLUGS.has(normalized)) {
-    // Any journal not in the gated departmental list is active by default (e.g. faculty journals)
+  if (!normalized) return false;
+  if (getDefaultActiveJournalSlugs().has(normalized)) {
     return true;
   }
   return store.isActivated(normalized);
@@ -206,7 +240,7 @@ export async function setJournalOperationalState({
   }
 
   // 2. Baseline journals cannot be deactivated
-  if (DEFAULT_ACTIVE_JOURNAL_SLUGS.has(normalized)) {
+  if (!enabled && getDefaultActiveJournalSlugs().has(normalized)) {
     return {
       success: false,
       error: "Baseline operational journals cannot be gated.",
@@ -224,11 +258,6 @@ export async function setJournalOperationalState({
 
       if (!journal) {
         return { success: false, error: "Journal not found." };
-      }
-
-      // Faculty journals with null departments cannot be gated
-      if (journal.departmentId === null) {
-        return { success: false, error: "Faculty journals cannot be gated." };
       }
 
       if (!enabled) {

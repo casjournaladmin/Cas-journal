@@ -98,10 +98,10 @@ export function DisciplinesMarquee({ journals }: { journals: Discipline[] }) {
             <div className="flex items-center justify-between border-b border-[color:var(--color-border)] pb-4">
               <div>
                 <h3 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-                  Active Faculty Journals
+                  Active CAS Journals
                 </h3>
                 <p className="text-xs text-[color:var(--color-muted)]">
-                  Faculty of Social Sciences, Imo State University
+                  Concrescence Academic Society · CAS Journals
                 </p>
               </div>
               <button

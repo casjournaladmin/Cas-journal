@@ -11,6 +11,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  const allCookies = request.cookies.getAll();
+  const hasDevCookie =
+    process.env.NODE_ENV !== "production" &&
+    allCookies.some((c) => c.name === "cas_dev_identity");
+  if (hasDevCookie) {
+    return NextResponse.next({ request });
+  }
+
+  const hasAuthCookie = allCookies.some((c) => c.name.startsWith("sb-"));
+  if (!hasAuthCookie) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
   const { url, publishableKey } = getSupabaseEnvironment();
   const supabase = createServerClient(url, publishableKey, {
@@ -33,7 +46,11 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Silently continue if Supabase auth network call fails or times out in middleware
+  }
 
   return response;
 }

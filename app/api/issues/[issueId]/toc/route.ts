@@ -112,7 +112,7 @@ export async function GET(
     }
     .header {
       text-align: center;
-      border-bottom: 2px solid #059669;
+      border-bottom: 2px solid #0284c7;
       padding-bottom: 24px;
       margin-bottom: 32px;
     }
@@ -121,7 +121,7 @@ export async function GET(
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #059669;
+      color: #0284c7;
       margin-bottom: 6px;
     }
     .journal-title {
@@ -165,7 +165,7 @@ export async function GET(
 <body>
   <div class="container">
     <div class="header">
-      <div class="institution">Faculty of Social Sciences · Imo State University</div>
+      <div class="institution">Concrescence Academic Society · CAS Journals</div>
       <h1 class="journal-title">${escapeHtml(journalName)}</h1>
       <div class="meta">Volume ${volNum}, Issue ${issueNum} (${year}) · Table of Contents</div>
     </div>
@@ -184,7 +184,7 @@ export async function GET(
     </table>
 
     <div class="footer">
-      Official Publication of IMSU FOSS Journals · Generated ${new Date().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}
+      Official Publication of CAS Journals · Generated ${new Date().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}
     </div>
   </div>
 </body>

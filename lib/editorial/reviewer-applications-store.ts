@@ -331,7 +331,7 @@ export async function updateReviewerApplicationStatus({
             });
 
         if (targetUser) {
-          let journalSlugsToAssign: string[] = [];
+          let journals: Array<{ id: string; slug: string }> = [];
           if (app.targetJournal === "ALL") {
             if (!isSuperAdmin(actor)) {
               const actorJournals = (
@@ -341,23 +341,28 @@ export async function updateReviewerApplicationStatus({
               )?.journalRoles
                 ?.map((r) => r.journal?.slug)
                 .filter(Boolean) as string[];
-              journalSlugsToAssign =
-                actorJournals && actorJournals.length > 0
-                  ? actorJournals
-                  : ["njcp", "ajsbs", "njsr", "gjcsr"];
+              const allDbSlugs = (actorJournals ?? []).flatMap((s) =>
+                getJournalDbSlugs(s),
+              );
+              if (allDbSlugs.length > 0) {
+                journals = await prisma.journal.findMany({
+                  where: { slug: { in: allDbSlugs }, isActive: true },
+                  select: { id: true, slug: true },
+                });
+              }
             } else {
-              journalSlugsToAssign = ["njcp", "ajsbs", "njsr", "gjcsr"];
+              journals = await prisma.journal.findMany({
+                where: { isActive: true },
+                select: { id: true, slug: true },
+              });
             }
           } else {
-            journalSlugsToAssign = [app.targetJournal];
+            const allDbSlugs = getJournalDbSlugs(app.targetJournal);
+            journals = await prisma.journal.findMany({
+              where: { slug: { in: allDbSlugs }, isActive: true },
+              select: { id: true, slug: true },
+            });
           }
-
-          const allDbSlugs = journalSlugsToAssign.flatMap((s) =>
-            getJournalDbSlugs(s),
-          );
-          const journals = await prisma.journal.findMany({
-            where: { slug: { in: allDbSlugs }, isActive: true },
-          });
 
           const actorId = (actor as { id?: string })?.id;
 

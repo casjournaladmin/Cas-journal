@@ -27,6 +27,42 @@ export class DirectSubmissionError extends Error {
   }
 }
 
+async function ensureDevUserRecord(id: string) {
+  if (process.env.NODE_ENV === "production") return null;
+  const { getDevIdentityById } = await import("@/lib/auth/dev-identities");
+  const dev = getDevIdentityById(id);
+  if (!dev) return null;
+
+  await prisma.user.upsert({
+    where: { id: dev.id },
+    update: {
+      isActive: dev.isActive,
+      displayName: dev.displayName,
+      email: dev.email,
+      department: dev.department,
+      institution: dev.institution,
+    },
+    create: {
+      id: dev.id,
+      email: dev.email,
+      displayName: dev.displayName,
+      isActive: dev.isActive,
+      department: dev.department,
+      institution: dev.institution,
+    },
+  });
+
+  for (const gr of dev.globalRoles) {
+    await prisma.userGlobalRole.upsert({
+      where: { userId_role: { userId: dev.id, role: gr.role } },
+      update: {},
+      create: { userId: dev.id, role: gr.role },
+    });
+  }
+
+  return dev;
+}
+
 export async function createDirectArticleSubmission(input: {
   authorId: string;
   journalSlug: string;
@@ -36,6 +72,14 @@ export async function createDirectArticleSubmission(input: {
   authors: SubmissionAuthorInput[];
   file: File;
 }) {
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      await ensureDevUserRecord(input.authorId);
+    } catch {
+      // Continue to standard database lookup
+    }
+  }
+
   const author = await prisma.user.findUnique({
     where: { id: input.authorId },
     select: {
@@ -85,6 +129,23 @@ export async function createDirectArticleSubmission(input: {
 
   if (!journal) {
     throw new DirectSubmissionError("Selected journal is unavailable.");
+  }
+
+  // Prevent immediate duplicate submissions (same author, journal, and title within 60s)
+  const recentWindow = new Date(Date.now() - 60 * 1000);
+  const duplicate = await prisma.submission.findFirst({
+    where: {
+      ownerId: author.id,
+      journalId: journal.id,
+      title: input.title.trim(),
+      createdAt: { gte: recentWindow },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    throw new DirectSubmissionError(
+      "A submission with this title was just submitted. Please wait a moment before submitting again.",
+    );
   }
 
   const detailsValidation = validateDetails({

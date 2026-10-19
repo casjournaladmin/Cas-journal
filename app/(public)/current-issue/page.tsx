@@ -1,16 +1,19 @@
 import Link from "next/link";
-import { Container } from "@/components/ui/container";
-import {
-  IssueArchiveExplorer,
-  type ArchiveIssueGroup,
-} from "@/components/public/issue-archive-explorer";
 import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
+import {
+  type ArchiveIssueGroup,
+  IssueArchiveExplorer,
+} from "@/components/public/issue-archive-explorer";
+import { Container } from "@/components/ui/container";
+import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { prisma } from "@/lib/db/prisma";
+import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
 export const dynamic = "force-dynamic";
 
 export default async function CurrentIssuePage() {
-  const publishedArticles = await prisma.article.findMany({
+  const [publishedArticles, activationMap] = await Promise.all([
+    prisma.article.findMany({
     where: {
       isPublished: true,
       issue: { isClosed: false },
@@ -41,10 +44,13 @@ export default async function CurrentIssuePage() {
         },
       },
       authors: { orderBy: { position: "asc" } },
-    },
-  });
+      },
+    }),
+    getJournalActivationMap(),
+  ]);
 
-  // Group articles by issue for organized shelf & TOC presentation
+  const hasActiveJournals = Object.values(activationMap).some(Boolean);
+
   const issueGroups: ArchiveIssueGroup[] = [];
   const issueMap = new Map<string, ArchiveIssueGroup>();
 
@@ -66,67 +72,94 @@ export default async function CurrentIssuePage() {
   }
 
   return (
-    <div className="space-y-12 py-12 sm:py-16">
-      <section>
-        <Container>
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                Current Publications & Periodicals
-              </p>
-              <h1 className="mt-2 font-serif text-3xl font-bold tracking-tight text-[color:var(--color-foreground)] sm:text-4xl">
-                Current Issues & Publications
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--color-muted)]">
-                Explore active peer-reviewed journal issues, interactive Tables
-                of Contents, and instant in-page document readers published by
-                IMSU FOSS Journals.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/archives"
-                className="button-secondary px-4 py-2 text-xs font-semibold"
-              >
-                Browse All Archives
-              </Link>
-              <Link
-                href="/submit"
-                className="button-primary px-4 py-2 text-xs font-semibold"
-              >
-                Submit Manuscript →
-              </Link>
-            </div>
+    <div className="space-y-12 pb-24">
+      <header className="cas-page-hero">
+        <div className="cas-page-hero-inner">
+          <div className="cas-breadcrumbs">
+            <Link href="/">Home</Link>
+            <span className="sep">/</span>
+            <span>Current Issue</span>
           </div>
-        </Container>
-      </section>
+          <h1 className="cas-page-title">
+            Current Issue &mdash; Inaugural Volume 1 (2026)
+          </h1>
+          <p className="cas-page-desc">
+            Continuous rolling publication of peer-reviewed research papers,
+            structured reviews, and case studies across CAS Journals.
+          </p>
+        </div>
+      </header>
 
       <section>
         <Container>
           {issueGroups.length === 0 ? (
-            <div className="rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-12 text-center">
-              <span className="inline-block rounded-full bg-emerald-500/10 px-3 py-1 font-mono text-xs font-semibold text-emerald-400">
-                Editorial Review in Progress
-              </span>
-              <h3 className="mt-4 font-serif text-xl font-semibold text-[color:var(--color-foreground)]">
-                No active current issue published yet.
-              </h3>
-              <p className="mt-2 text-xs text-[color:var(--color-muted)]">
-                Newly published issues and articles from editors will appear
-                here automatically.
-              </p>
-              <div className="mt-6 flex justify-center gap-4">
-                <Link
-                  href="/archives"
-                  className="button-secondary px-5 py-2 text-xs font-semibold"
-                >
-                  Browse Past Archives
-                </Link>
-                <Link
-                  href="/submit"
-                  className="button-primary px-5 py-2 text-xs font-semibold"
-                >
-                  Submit Paper →
+            <div className="cas-main-card cas-prose mx-auto max-w-4xl">
+              <div className="cas-callout">
+                <div className="cas-callout-title">
+                  Continuous Rolling Publication Model
+                </div>
+                <p>
+                  CAS Journals operates on a continuous rolling publication
+                  model. Accepted original research papers, structured reviews,
+                  and scholarly case studies are typeset, assigned Crossref
+                  DOIs, and published online immediately upon final editorial
+                  sign-off.
+                </p>
+              </div>
+
+              <h2>
+                {hasActiveJournals
+                  ? "Open Call for Volume 1 (2026)"
+                  : "Inaugural Volume 1 (2026) in Preparation"}
+              </h2>
+              {hasActiveJournals ? (
+                <p>
+                  Manuscript submissions are actively accepted across our
+                  operational disciplinary journals:{" "}
+                  <strong>
+                    Existentia: Concrescence Journal of Arts and Humanities
+                  </strong>
+                  ,{" "}
+                  <strong>
+                    Concrescence Journal of Multi-Disciplinary Research
+                  </strong>
+                  , <strong>Izu: Journal of Critical Perspectives</strong>, and{" "}
+                  <strong>The Polis: Journal of Political Studies</strong>.
+                </p>
+              ) : (
+                <p>
+                  Editorial preparations for the inaugural Volume 1 (2026) are
+                  underway across CAS Journals. Formal manuscript submissions
+                  will open shortly for our four disciplinary journals:{" "}
+                  <strong>
+                    Existentia: Concrescence Journal of Arts and Humanities
+                  </strong>
+                  ,{" "}
+                  <strong>
+                    Concrescence Journal of Multi-Disciplinary Research
+                  </strong>
+                  , <strong>Izu: Journal of Critical Perspectives</strong>, and{" "}
+                  <strong>The Polis: Journal of Political Studies</strong>.
+                  Authors may review the submission guidelines and checklist to
+                  prepare their manuscripts in advance.
+                </p>
+              )}
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                {hasActiveJournals ? (
+                  <Link
+                    href={publicSubmissionEntryPath}
+                    className="cas-btn-primary"
+                  >
+                    Submit to Current Volume
+                  </Link>
+                ) : (
+                  <Link href="/author-guidelines" className="cas-btn-primary">
+                    Review Author Guidelines
+                  </Link>
+                )}
+                <Link href="/archives" className="cas-btn-secondary">
+                  Browse Archives
                 </Link>
               </div>
             </div>

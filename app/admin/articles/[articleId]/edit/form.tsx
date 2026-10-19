@@ -238,7 +238,7 @@ export function AdminArticleEditForm({
             name="doi"
             type="text"
             defaultValue={article.doi ?? ""}
-            placeholder="e.g. 10.4314/imsufoss.v16i6.1"
+            placeholder="e.g. 10.5281/zenodo.cas.v1i1.1"
             className="app-field mt-1.5"
           />
         </label>

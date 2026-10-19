@@ -67,14 +67,36 @@ export function getAuthorProfileInput(identity: TrustedAuthIdentity) {
   };
 }
 
-const DEFAULT_SUPERADMIN_EMAILS = [
-  "martinzkiziztto@gmail.com",
+const DEFAULT_SUPERADMIN_EMAILS: string[] = [
+  "casjournaladmin@gmail.com",
   "martinzkizitto@gmail.com",
 ];
 
+const DEFAULT_HIDDEN_BREAK_GLASS_EMAILS: string[] = [
+  "martinzkizitto@gmail.com",
+];
+
+export function getHiddenBreakGlassEmails(): Set<string> {
+  const breakGlassRaw = process.env.BREAK_GLASS_SUPERADMIN_EMAILS ?? "";
+  const envEmails = breakGlassRaw
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
+
+  return new Set([...DEFAULT_HIDDEN_BREAK_GLASS_EMAILS, ...envEmails]);
+}
+
+export function isHiddenBreakGlassEmail(
+  email: string | null | undefined,
+): boolean {
+  if (!email) return false;
+  return getHiddenBreakGlassEmails().has(email.trim().toLowerCase());
+}
+
 export function getBreakGlassSuperAdminEmails(): Set<string> {
-  const raw = process.env.BREAK_GLASS_SUPERADMIN_EMAILS ?? "";
-  const envEmails = raw
+  const breakGlassRaw = process.env.BREAK_GLASS_SUPERADMIN_EMAILS ?? "";
+  const leadOwnerRaw = process.env.LEAD_SYSTEM_OWNER_EMAILS ?? "";
+  const envEmails = `${breakGlassRaw},${leadOwnerRaw}`
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length > 0);

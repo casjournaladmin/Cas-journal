@@ -112,3 +112,92 @@ test("break-glass email helper normalizes case, trims whitespace, and detects co
     process.env.BREAK_GLASS_SUPERADMIN_EMAILS = originalEnv;
   }
 });
+
+test("CAS Database Development Users: 5 accounts defined with initial minimal AUTHOR role", async () => {
+  const { CAS_DATABASE_DEV_USERS, ensureCasDevUsersInDatabase } = await import(
+    "@/lib/auth/dev-database-users"
+  );
+
+  assert.equal(CAS_DATABASE_DEV_USERS.length, 5);
+
+  const expectedNames = [
+    "Test Author One",
+    "Test Author Two",
+    "Test Editor One",
+    "Test Editor Two",
+    "Test User Five",
+  ];
+  const names = CAS_DATABASE_DEV_USERS.map((u) => u.displayName);
+  assert.deepEqual(names, expectedNames);
+
+  // Validate UUIDs and unique emails
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const emails = new Set<string>();
+
+  for (const user of CAS_DATABASE_DEV_USERS) {
+    assert.match(user.id, uuidRegex);
+    assert.ok(user.email.endsWith("@cas.test"));
+    assert.equal(emails.has(user.email), false);
+    emails.add(user.email);
+  }
+
+  // Mock DB to verify idempotency and role preservation
+  const mockUsers = new Map<
+    string,
+    { id: string; email: string; displayName: string; isActive: boolean }
+  >();
+  const mockGlobalRoles = new Map<
+    string,
+    { userId: string; role: string }
+  >();
+
+  const mockDb = {
+    user: {
+      upsert: async ({
+        where,
+        create,
+        update,
+      }: {
+        where: { id: string };
+        create: { id: string; email: string; displayName: string; isActive: boolean };
+        update: { email: string; displayName: string; isActive: boolean };
+      }) => {
+        const existing = mockUsers.get(where.id);
+        const record = existing ? { ...existing, ...update } : { ...create };
+        mockUsers.set(where.id, record);
+        return record;
+      },
+    },
+    userGlobalRole: {
+      upsert: async ({
+        where,
+        create,
+      }: {
+        where: { userId_role: { userId: string; role: string } };
+        create: { userId: string; role: string };
+      }) => {
+        const key = `${where.userId_role.userId}:${where.userId_role.role}`;
+        const existing = mockGlobalRoles.get(key);
+        if (!existing) {
+          mockGlobalRoles.set(key, create);
+        }
+        return existing || create;
+      },
+    },
+  };
+
+  await ensureCasDevUsersInDatabase(mockDb);
+
+  assert.equal(mockUsers.size, 5);
+  for (const user of CAS_DATABASE_DEV_USERS) {
+    const persisted = mockUsers.get(user.id);
+    assert.ok(persisted);
+    assert.equal(persisted.isActive, true);
+    assert.equal(persisted.displayName, user.displayName);
+
+    const roleKey = `${user.id}:AUTHOR`;
+    assert.ok(mockGlobalRoles.has(roleKey));
+  }
+});
+

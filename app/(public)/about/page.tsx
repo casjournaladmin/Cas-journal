@@ -1,220 +1,130 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
-import { siteConfig } from "@/lib/config/site";
+import { activeJournalsConfig } from "@/lib/config/site";
 
 export default function AboutPage() {
   return (
-    <div className="space-y-16 py-12 sm:py-16">
-      {/* Header Banner */}
-      <section>
-        <Container>
-          <div className="max-w-3xl">
-            <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-              About the Publishing Platform
-            </p>
-            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-5xl">
-              Advancing Knowledge in the Social & Behavioural Sciences.
-            </h1>
-            <p className="mt-4 font-serif text-lg leading-relaxed text-[color:var(--color-muted)]">
-              The official scholarly publishing center of the Faculty of Social
-              Sciences (FOSS) at Imo State University (IMSU), Owerri, Nigeria.
-            </p>
+    <div className="space-y-16 pb-24">
+      <header className="cas-page-hero">
+        <div className="cas-page-hero-inner">
+          <div className="cas-breadcrumbs">
+            <Link href="/">Home</Link>
+            <span className="sep">/</span>
+            <span>About CAS Journals</span>
           </div>
-        </Container>
-      </section>
+          <h1 className="cas-page-title">
+            Advancing Knowledge. Inspiring Growth.
+          </h1>
+          <p className="cas-page-desc">
+            A trusted open-access platform for peer-reviewed academic publishing
+            across the social sciences, arts, humanities, and allied fields.
+          </p>
+        </div>
+      </header>
 
-      {/* Main Body */}
       <section>
         <Container>
-          <div className="grid gap-12 lg:grid-cols-[1fr_320px]">
-            {/* Left Column: Comprehensive Story */}
-            <div className="space-y-10 text-sm leading-7 text-[color:var(--color-foreground)]">
+          <div className="grid gap-12 lg:grid-cols-[1fr_340px]">
+            <div className="cas-main-card cas-prose space-y-8">
               <div>
-                <h2 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-                  Faculty Overview & Academic Heritage
-                </h2>
-                <p className="mt-4 text-[color:var(--color-muted)]">
-                  The Faculty of Social Sciences (FOSS) at Imo State University
-                  (IMSU), Owerri, Nigeria, is one of the foremost faculties at
-                  IMSU. As a distinguished faculty in academic research, FOSS is
-                  dedicated to advancing knowledge in the fields of social and
-                  behavioural sciences. Over the years, FOSS has built a strong
-                  reputation for promoting research, innovation, and academic
-                  excellence, with the aim of addressing local, national, and
-                  global challenges.
+                <h2>Platform Mission &amp; Scholarly Mandate</h2>
+                <p>
+                  CAS Journals is committed to advancing knowledge and
+                  encouraging scholarly dialogue across a wide range of
+                  disciplines. We provide a trusted platform for sharing
+                  high-quality research and original ideas, reflecting our
+                  dedication to academic excellence and intellectual growth.
                 </p>
-                <p className="mt-3 text-[color:var(--color-muted)]">
-                  FOSS journals are scholarly, refereed, open-access,
-                  high-quality and peer-reviewed journals in all social and
-                  behavioural sciences fields utilising multi-dimensional
-                  research approaches in the conduct of scholarly inquiry. These
-                  approaches include theoretical, empirical, and experimental
-                  methods.
+                <p>
+                  All journals hosted on the CAS Journals platform operate under
+                  rigorous double-anonymised peer review, assign permanent
+                  Crossref Digital Object Identifiers (DOIs), and publish
+                  immediately online under the Creative Commons Attribution 4.0
+                  International License (CC-BY 4.0).
                 </p>
               </div>
 
               <div>
-                <h2 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-                  Key Faculty & Departmental Journals
-                </h2>
-                <div className="mt-6 space-y-6">
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                    <div className="flex items-center justify-between font-mono text-xs text-[color:var(--color-accent)]">
-                      <span className="font-bold">NJCP</span>
-                      <span>Departmental Journal</span>
-                    </div>
-                    <h3 className="mt-2 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      Nigerian Journal of Contemporary Psychology
-                    </h3>
-                    <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                      The official peer-reviewed journal of the Department of
-                      Psychology, advancing empirical, clinical, developmental,
-                      and social psychological research in Nigerian and African
-                      settings.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                    <div className="flex items-center justify-between font-mono text-xs text-[color:var(--color-accent)]">
-                      <span className="font-bold">AJSBS (Est. 2009)</span>
-                      <span>Faculty Flagship Journal</span>
-                    </div>
-                    <h3 className="mt-2 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      African Journal of Social and Behavioural Sciences
-                    </h3>
-                    <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                      Launched in 2009, AJSBS is a trusted source of
-                      peer-reviewed articles spanning political science, public
-                      administration, public relations, communication,
-                      geography, environmental management, sociology,
-                      psychology, crime and delinquency, economics, and
-                      financial management.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                    <div className="flex items-center justify-between font-mono text-xs text-[color:var(--color-accent)]">
-                      <span className="font-bold">NJSR</span>
-                      <span>Heritage & Scientific Inquiry</span>
-                    </div>
-                    <h3 className="mt-2 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      Nwaebere Journal of Scientific Research
-                    </h3>
-                    <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                      Named to honour IMSU heritage, this journal focuses on
-                      innovative empirical and scientific research inspired by
-                      African contexts while remaining relevant to global
-                      audiences.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                    <div className="flex items-center justify-between font-mono text-xs text-[color:var(--color-accent)]">
-                      <span className="font-bold">GJCSR</span>
-                      <span>Global Research</span>
-                    </div>
-                    <h3 className="mt-2 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      Global Journal of Contemporary Social Research
-                    </h3>
-                    <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                      Serving as a platform for global perspectives on
-                      contemporary social, behavioural, and policy research,
-                      exploring human behaviour and societal developments
-                      worldwide.
-                    </p>
-                  </div>
+                <h2>Our Scholarly Journals</h2>
+                <div className="not-prose mt-6 grid gap-4">
+                  {activeJournalsConfig.map((journal) => (
+                    <Link
+                      key={journal.slug}
+                      href={`/journals/${journal.slug}`}
+                      className="block rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 transition hover:border-[#0284c7]"
+                    >
+                      <div className="flex items-center justify-between font-mono text-xs text-[#0284c7]">
+                        <span className="font-bold">{journal.shortName}</span>
+                        <span>{journal.badge}</span>
+                      </div>
+                      <h3 className="mt-2 font-serif text-lg font-bold text-[color:var(--color-foreground)]">
+                        {journal.name}
+                      </h3>
+                      <p className="mt-1.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                        {journal.description}
+                      </p>
+                    </Link>
+                  ))}
                 </div>
-              </div>
-
-              <div>
-                <h2 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-                  Mission & Strategic Goal
-                </h2>
-                <p className="mt-3 text-[color:var(--color-muted)]">
-                  Our goal is to create a robust and inclusive platform for
-                  researchers, scholars, and practitioners to share knowledge,
-                  collaborate, and contribute to solving pressing social and
-                  behavioural issues. Through these journals, we strive to
-                  promote excellence in research, uphold ethical standards, and
-                  ensure the dissemination of valuable insights to a global
-                  audience.
-                </p>
               </div>
             </div>
 
-            {/* Right Column: Institutional Details */}
             <div className="space-y-6">
-              <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                <h3 className="font-serif text-base font-semibold text-[color:var(--color-foreground)]">
-                  Institutional Summary
+              <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 shadow-[var(--shadow-card)]">
+                <h3 className="font-serif text-base font-bold text-[color:var(--color-foreground)]">
+                  Editorial Directorate
                 </h3>
                 <dl className="mt-4 space-y-3 text-xs">
                   <div>
                     <dt className="font-mono text-[10px] text-[color:var(--color-subtle)] uppercase">
-                      Institution
+                      Platform
                     </dt>
                     <dd className="mt-0.5 font-semibold text-[color:var(--color-foreground)]">
-                      {siteConfig.institution}
+                      CAS Journals
                     </dd>
                   </div>
                   <div>
                     <dt className="font-mono text-[10px] text-[color:var(--color-subtle)] uppercase">
-                      Faculty
+                      Editorial Email
                     </dt>
-                    <dd className="mt-0.5 font-semibold text-[color:var(--color-foreground)]">
-                      {siteConfig.faculty}
+                    <dd className="mt-0.5 font-mono text-[#0284c7]">
+                      editorial@casjournals.org
                     </dd>
                   </div>
                   <div>
                     <dt className="font-mono text-[10px] text-[color:var(--color-subtle)] uppercase">
-                      Location
+                      Submissions Helpdesk
+                    </dt>
+                    <dd className="mt-0.5 font-mono text-[#0284c7]">
+                      submissions@casjournals.org
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-mono text-[10px] text-[color:var(--color-subtle)] uppercase">
+                      Open Access License
                     </dt>
                     <dd className="mt-0.5 text-[color:var(--color-muted)]">
-                      Owerri, Imo State, Nigeria
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-mono text-[10px] text-[color:var(--color-subtle)] uppercase">
-                      Official Email
-                    </dt>
-                    <dd className="mt-0.5 font-mono text-[color:var(--color-accent)]">
-                      fossjournals@gmail.com
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-mono text-[10px] text-[color:var(--color-subtle)] uppercase">
-                      Secretariat WhatsApp (WhatsApp Only)
-                    </dt>
-                    <dd className="mt-0.5 font-mono text-[color:var(--color-accent)]">
-                      <a
-                        href="https://wa.me/2348033689174"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline"
-                      >
-                        +234 803 368 9174
-                      </a>
+                      Creative Commons Attribution (CC-BY 4.0)
                     </dd>
                   </div>
                 </dl>
               </div>
 
-              <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                <h3 className="font-serif text-base font-semibold text-[color:var(--color-foreground)]">
+              <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 shadow-[var(--shadow-card)]">
+                <h3 className="font-serif text-base font-bold text-[color:var(--color-foreground)]">
                   Ready to Publish?
                 </h3>
                 <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                  Submit your empirical or theoretical manuscript to the faculty
-                  editorial board today.
+                  Submit your manuscript to our editorial board with zero
+                  upfront submission fee.
                 </p>
                 <div className="mt-4">
                   <Link
                     href={publicSubmissionEntryPath}
-                    className="button-primary inline-flex w-full items-center justify-center gap-2 py-2.5 text-xs font-semibold"
+                    className="cas-btn-primary w-full justify-center"
                   >
-                    <span>Submit Manuscript</span>
-                    <span>→</span>
+                    Submit Your Paper
                   </Link>
                 </div>
               </div>

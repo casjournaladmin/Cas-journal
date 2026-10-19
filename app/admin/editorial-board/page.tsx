@@ -5,9 +5,10 @@ import { EditorialBoardManager } from "@/components/admin/editorial-board-manage
 import { requireApplicationArea } from "@/lib/auth/authorization";
 import { getAvailableWorkspaces } from "@/lib/auth/workspaces";
 import { isSuperAdmin } from "@/lib/auth/permissions";
+import { prisma } from "@/lib/db/prisma";
 import {
-  CANONICAL_JOURNAL_METADATA,
-  getJournalMetadata,
+  buildJournalMetadataFromRecord,
+  sortJournalsByCanonicalOrder,
   type EditorialBoardMember,
 } from "@/lib/editorial/editorial-board-data";
 import {
@@ -27,20 +28,36 @@ export default async function AdminEditorialBoardPage() {
     redirect("/unauthorized?reason=workspace");
   }
 
-  // Filter journals based on administrator scope (Super Admin gets all 4; Journal Admin gets assigned journals)
-  const allCanonical = Object.values(CANONICAL_JOURNAL_METADATA);
-  const accessibleJournals = isSuperAdmin(user)
-    ? allCanonical
-    : allCanonical.filter((j) => isAuthorizedForJournal(user, j.slug));
+  const dbJournals = await prisma.journal.findMany({
+    where: {
+      isActive: true,
+      OR: [{ departmentId: null }, { department: { isActive: true } }],
+    },
+    select: {
+      slug: true,
+      name: true,
+      shortName: true,
+      description: true,
+      faculty: true,
+      institution: true,
+      department: { select: { name: true } },
+    },
+    orderBy: { name: "asc" },
+  });
 
-  if (accessibleJournals.length === 0) {
+  const allJournals = sortJournalsByCanonicalOrder(dbJournals).map((j) =>
+    buildJournalMetadataFromRecord(j),
+  );
+
+  const accessibleJournals = isSuperAdmin(user)
+    ? allJournals
+    : allJournals.filter((j) => isAuthorizedForJournal(user, j.slug));
+
+  if (!isSuperAdmin(user) && accessibleJournals.length === 0) {
     redirect("/unauthorized?reason=scope");
   }
 
-  // Load canonical journal metadata and initial editorial boards for accessible journals
-  const journals = accessibleJournals.map(
-    (j) => getJournalMetadata(j.slug) ?? j,
-  );
+  const journals = accessibleJournals;
   const boardPairs = await Promise.all(
     accessibleJournals.map(async (j) => {
       const board = await getJournalEditorialBoard(j.slug);

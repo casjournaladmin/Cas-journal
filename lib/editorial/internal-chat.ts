@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+import { handleInternalChatMessageSent } from "@/lib/notifications/event-handlers";
 
 export type InternalChatMessageDTO = {
   id: string;
@@ -23,6 +24,30 @@ export async function checkInternalChatAccess(
   userId: string,
   journalId: string,
 ) {
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const { getActiveDevIdentity } =
+        await import("@/lib/auth/dev-identities");
+      const devUser = await getActiveDevIdentity();
+      if (devUser && devUser.id === userId) {
+        if (!devUser.isActive) return false;
+        if (
+          devUser.globalRoles.some((r) => (r.role as string) === "SUPER_ADMIN")
+        )
+          return true;
+        return devUser.journalRoles.some(
+          (r) =>
+            (r.journalId === journalId ||
+              r.journal?.id === journalId ||
+              r.journal?.slug === journalId) &&
+            (r.role === "JOURNAL_ADMIN" || r.role === "EDITOR"),
+        );
+      }
+    } catch {
+      // Continue to database check
+    }
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -148,7 +173,7 @@ export async function sendInternalChatMessage(input: {
     throw new Error("Message or attachment is required.");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const message = await prisma.$transaction(async (tx) => {
     const message = await tx.internalChatMessage.create({
       data: {
         journalId: input.journalId,
@@ -181,4 +206,30 @@ export async function sendInternalChatMessage(input: {
 
     return message;
   });
+
+  try {
+    const sender = await prisma.user.findUnique({
+      where: { id: input.senderId },
+      select: { displayName: true },
+    });
+
+    void handleInternalChatMessageSent({
+      journalId: input.journalId,
+      messageId: message.id,
+      senderId: input.senderId,
+      senderName: sender?.displayName || undefined,
+    }).catch((err) => {
+      console.error(
+        "[InternalChat] Failed to dispatch chat notification:",
+        err instanceof Error ? err.message : String(err),
+      );
+    });
+  } catch (err) {
+    console.error(
+      "[InternalChat] Error preparing chat notification:",
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+
+  return message;
 }

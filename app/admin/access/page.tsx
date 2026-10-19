@@ -1,10 +1,12 @@
-import { AuthenticatedShell } from "@/components/app/authenticated-shell";
 import {
   PlatformRoleManager,
+  RoleChangeAuditLog,
   RoleManagementNotice,
 } from "@/components/admin/role-management";
+import { AuthenticatedShell } from "@/components/app/authenticated-shell";
 import { requireGlobalRole } from "@/lib/auth/authorization";
 import {
+  listRecentRoleChangeEvents,
   listRoleManagementJournals,
   searchRoleManagementUsers,
 } from "@/lib/auth/role-management-session";
@@ -19,9 +21,10 @@ export default async function PlatformAccessPage({
 }) {
   const user = await requireGlobalRole("SUPER_ADMIN");
   const { q = "", notice, error } = await searchParams;
-  const [users, journals] = await Promise.all([
+  const [users, journals, roleAuditEvents] = await Promise.all([
     searchRoleManagementUsers(q),
     listRoleManagementJournals(),
+    listRecentRoleChangeEvents(25),
   ]);
   const workspaces = getAvailableWorkspaces(user);
   const workspace = workspaces.find(({ area }) => area === "platform")!;
@@ -41,27 +44,31 @@ export default async function PlatformAccessPage({
         { href: "/admin/access", label: "Users" },
       ]}
     >
-      <div className="mx-auto max-w-5xl">
-        <header className="max-w-3xl">
-          <p className="text-xs font-semibold tracking-[0.12em] text-[color:var(--color-accent)] uppercase">
-            Platform access
-          </p>
-          <h1 className="mt-3 font-serif text-4xl font-medium tracking-[-0.035em] sm:text-5xl">
-            Assign staff roles.
-          </h1>
-          <p className="mt-4 text-sm leading-6 text-[color:var(--color-muted)]">
-            Users sign in with Google first. Search their Google email, then
-            assign only the access they need.
-          </p>
-          <RoleManagementNotice notice={notice} error={error} />
-        </header>
-        <PlatformRoleManager
-          query={q}
-          users={users}
-          journals={journals}
-          assignAction={assignRoleAction}
-          removeAction={removeRoleAction}
-        />
+      <div className="mx-auto max-w-5xl space-y-12">
+        <div>
+          <header className="max-w-3xl">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[color:var(--color-accent)] uppercase">
+              Platform access &amp; governance
+            </p>
+            <h1 className="mt-3 font-serif text-4xl font-medium tracking-[-0.035em] sm:text-5xl">
+              Assign staff roles.
+            </h1>
+            <p className="mt-4 text-sm leading-6 text-[color:var(--color-muted)]">
+              Users sign in with Google first. Search their Google email, then
+              assign only the access they need.
+            </p>
+            <RoleManagementNotice notice={notice} error={error} />
+          </header>
+          <PlatformRoleManager
+            query={q}
+            users={users}
+            journals={journals}
+            assignAction={assignRoleAction}
+            removeAction={removeRoleAction}
+          />
+        </div>
+
+        <RoleChangeAuditLog events={roleAuditEvents} />
       </div>
     </AuthenticatedShell>
   );

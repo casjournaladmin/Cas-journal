@@ -95,7 +95,7 @@ export function AssignTrackingIdForm({
           id="trackingId"
           name="trackingId"
           type="text"
-          placeholder="e.g. IMSUJ-PSY-2026-0001"
+          placeholder="e.g. CAS-CJMR-2026-0001"
           className="app-field mt-2 text-xs"
         />
       </div>
@@ -417,7 +417,7 @@ export function PublishArticleForm({
             name="doi"
             type="text"
             className="app-field mt-1.5 text-xs"
-            placeholder="e.g. 10.4314/imsufoss.v1i1.1"
+            placeholder="e.g. 10.5281/zenodo.cas.v1i1.1"
           />
         </label>
       </div>

@@ -99,7 +99,7 @@ export default async function PlatformSubmissionsPage({
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--color-muted)]">
             Review, manage tracking IDs, assign reviewers, and publish approved
-            manuscripts across all IMSU FOSS faculty journals.
+            manuscripts across all CAS Journals publications.
           </p>
         </div>
 

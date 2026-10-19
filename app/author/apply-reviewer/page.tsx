@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ReviewerApplicationForm } from "@/components/public/reviewer-application-form";
 import { requireApplicationArea } from "@/lib/auth/authorization";
+import { activeJournalsConfig } from "@/lib/config/site";
+import { prisma } from "@/lib/db/prisma";
+import { getJournalOrderPriority } from "@/lib/editorial/editorial-board-data";
 import {
   formatAcademicName,
   getReviewerApplicationForUser,
@@ -9,9 +12,9 @@ import {
 import { formatLongDate } from "@/lib/formatting/dates";
 
 export const metadata: Metadata = {
-  title: "Apply as a Peer Reviewer | IMSU FOSS Journals",
+  title: "Apply as a Peer Reviewer | CAS Journals",
   description:
-    "Apply to join the peer review and editorial referee board for Faculty of Social Sciences Journals.",
+    "Apply to join the peer review and editorial referee board across CAS Journals.",
 };
 
 export default async function AuthorApplyReviewerPage({
@@ -20,10 +23,27 @@ export default async function AuthorApplyReviewerPage({
   searchParams: Promise<{ journal?: string }>;
 }) {
   const user = await requireApplicationArea("author");
-  const [{ journal }, existingApp] = await Promise.all([
+  const [{ journal }, existingApp, dbJournals] = await Promise.all([
     searchParams,
     getReviewerApplicationForUser({ id: user.id, email: user.email ?? "" }),
+    prisma.journal.findMany({
+      where: { isActive: true },
+      select: { slug: true, name: true, shortName: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
+
+  const journalOptions =
+    dbJournals.length > 0
+      ? dbJournals.sort(
+          (a, b) =>
+            getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug),
+        )
+      : activeJournalsConfig.map((j) => ({
+          slug: j.slug,
+          name: j.name,
+          shortName: j.shortName,
+        }));
 
   const hasActiveOrPendingApp =
     existingApp &&
@@ -58,7 +78,7 @@ export default async function AuthorApplyReviewerPage({
         <p className="mt-2 max-w-2xl text-xs leading-relaxed text-[color:var(--color-muted)] sm:text-sm">
           {hasActiveOrPendingApp
             ? "Track the real-time status of your peer reviewer application and referee credentials."
-            : "Join the referee pool across Faculty of Social Sciences journals (NJCP, AJSBS, NJSR, GJCSR). Approved reviewers are assigned double-blind manuscripts matching their domain specialization."}
+            : "Join the referee pool across CAS Journals (EXISTENTIA, CJMR, IZU, POLIS). Approved reviewers are assigned double-blind manuscripts matching their domain specialization."}
         </p>
       </div>
 
@@ -78,15 +98,15 @@ export default async function AuthorApplyReviewerPage({
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 font-mono text-xs font-bold uppercase ${
                   existingApp.status === "APPROVED"
-                    ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
-                    : "border border-amber-500/30 bg-amber-500/15 text-amber-300"
+                    ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+                    : "border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-300"
                 }`}
               >
                 <span
                   className={`size-2 rounded-full ${
                     existingApp.status === "APPROVED"
-                      ? "bg-emerald-400"
-                      : "animate-pulse bg-amber-400"
+                      ? "bg-emerald-500"
+                      : "animate-pulse bg-amber-500"
                   }`}
                 />
                 <span>
@@ -118,7 +138,7 @@ export default async function AuthorApplyReviewerPage({
               </span>
               <p className="mt-0.5 font-semibold text-[color:var(--color-accent)]">
                 {existingApp.targetJournal === "ALL"
-                  ? "All Faculty Journals (NJCP, AJSBS, NJSR, GJCSR)"
+                  ? "All CAS Journals (EXISTENTIA, CJMR, IZU, POLIS)"
                   : existingApp.targetJournal.toUpperCase()}
               </p>
             </div>
@@ -185,6 +205,7 @@ export default async function AuthorApplyReviewerPage({
           initialFullName={user.displayName}
           initialEmail={user.email ?? ""}
           applicantUserId={user.id}
+          journals={journalOptions}
         />
       )}
     </div>

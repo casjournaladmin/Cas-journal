@@ -38,24 +38,68 @@ const authorActor = {
 };
 
 test("Announcements: Public retrieval and filtering", async () => {
-  const publicAnnouncements = await getPublicAnnouncements();
-  assert.ok(Array.isArray(publicAnnouncements));
-  assert.ok(publicAnnouncements.length >= 3);
-  assert.ok(publicAnnouncements.every((a) => a.isActive));
+  const createdIds: string[] = [];
+  try {
+    const allRes = await createAnnouncement({
+      title: "Platform-Wide Editorial Policy Update",
+      category: "EDITORIAL_UPDATE",
+      targetJournal: "ALL",
+      content:
+        "All CAS Journals manuscripts now undergo updated ethical compliance screening prior to peer review.",
+      authorName: "Editorial Office",
+      actor: superAdminActor,
+    });
+    if (allRes.announcement?.id) createdIds.push(allRes.announcement.id);
 
-  // Filter by journal
-  const njcpAnnouncements = await getPublicAnnouncements("njcp");
-  assert.ok(
-    njcpAnnouncements.every(
-      (a) => a.targetJournal === "njcp" || a.targetJournal === "ALL",
-    ),
-  );
+    const njcpRes = await createAnnouncement({
+      title: "NJCP Call for Clinical Research Manuscripts",
+      category: "CALL_FOR_PAPERS",
+      targetJournal: "njcp",
+      content:
+        "The Nigerian Journal of Clinical Psychology invites original empirical submissions for its upcoming volume.",
+      authorName: "NJCP Editor-in-Chief",
+      actor: superAdminActor,
+    });
+    if (njcpRes.announcement?.id) createdIds.push(njcpRes.announcement.id);
 
-  // Retrieve single announcement by slug
-  const first = publicAnnouncements[0];
-  const bySlug = await getAnnouncementBySlug(first.slug);
-  assert.ok(bySlug);
-  assert.equal(bySlug.id, first.id);
+    const ajsbsRes = await createAnnouncement({
+      title: "AJSBS Special Issue Notice",
+      category: "GENERAL",
+      targetJournal: "ajsbs",
+      content:
+        "The African Journal of Social and Behavioural Sciences announces its interdisciplinary thematic issue.",
+      authorName: "AJSBS Editorial Board",
+      actor: superAdminActor,
+    });
+    if (ajsbsRes.announcement?.id) createdIds.push(ajsbsRes.announcement.id);
+
+    const publicAnnouncements = await getPublicAnnouncements();
+    assert.ok(Array.isArray(publicAnnouncements));
+    assert.ok(publicAnnouncements.length >= 3);
+    assert.ok(publicAnnouncements.every((a) => a.isActive));
+
+    // Filter by journal
+    const njcpAnnouncements = await getPublicAnnouncements("njcp");
+    assert.ok(njcpAnnouncements.length >= 2);
+    assert.ok(
+      njcpAnnouncements.every(
+        (a) => a.targetJournal === "njcp" || a.targetJournal === "ALL",
+      ),
+    );
+
+    // Retrieve single announcement by slug
+    const first = publicAnnouncements[0];
+    const bySlug = await getAnnouncementBySlug(first.slug);
+    assert.ok(bySlug);
+    assert.equal(bySlug.id, first.id);
+  } finally {
+    for (const announcementId of createdIds) {
+      await deleteAnnouncement({
+        announcementId,
+        actor: superAdminActor,
+      });
+    }
+  }
 });
 
 test("Announcements: Creation, authorization, and updates", async () => {

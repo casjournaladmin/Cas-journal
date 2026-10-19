@@ -1,305 +1,184 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Container } from "@/components/ui/container";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
-import { siteConfig } from "@/lib/config/site";
+import { activeJournalsConfig } from "@/lib/config/site";
+import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
-export default function SubmissionsPage() {
-  const guidelines = [
-    {
-      title: "Document Formatting",
-      desc: "Manuscripts must be prepared using Microsoft Word, formatted on A4-sized paper with 1-inch margins on all sides. Double-spaced text in 12-point Times New Roman font.",
-    },
-    {
-      title: "Article Length",
-      desc: "Articles should not exceed 25 pages (maximum 8,000 words), inclusive of tables, figures, footnotes, and references.",
-    },
-    {
-      title: "Title & Author Attribution",
-      desc: "Cover page must clearly state paper title, author(s) full names in correct order (First Name, Middle Name, Surname), institutional affiliations, active email, and phone contact.",
-    },
-    {
-      title: "Abstract & Keywords",
-      desc: "An abstract of not more than 250 words summarising the study's purpose, methodology, empirical findings, and policy implications, accompanied by 4–6 relevant keywords.",
-    },
-    {
-      title: "Body Structure",
-      desc: "Standard academic progression: Introduction, Literature Review / Theoretical Framework, Methodology, Results / Data Presentation, Discussion, Conclusion & Recommendations.",
-    },
-    {
-      title: "Referencing & Citation Standard",
-      desc: "All citations and reference lists must strictly conform to APA 7th Edition guidelines.",
-    },
-  ];
+export const metadata: Metadata = {
+  title: "Submit Your Paper | CAS Journals",
+  description:
+    "Online manuscript submission portal, preparation checklist, and transparent open-access publication policies for CAS Journals.",
+};
 
-  const steps = [
-    {
-      step: "01",
-      title: "Manuscript Submission & Intake",
-      desc: "Authors initiate a digital request through the portal or via official email (fossjournals@gmail.com) with a cover letter affirming original work.",
-    },
-    {
-      step: "02",
-      title: "Initial Screening & Verification",
-      desc: "The editorial team screens the paper for scope, format compliance, and verifies the ₦10,000 peer review assessment fee.",
-    },
-    {
-      step: "03",
-      title: "Double-Blind Peer Review",
-      desc: "Manuscripts are completely anonymised and sent to at least two subject matter specialists for rigorous, independent evaluation.",
-    },
-    {
-      step: "04",
-      title: "Feedback & Revisions",
-      desc: "Authors receive structured reviewer recommendations (Accept, Minor Revision, Major Revision, or Reject) with a clear timeline for resubmission.",
-    },
-    {
-      step: "05",
-      title: "Final Decision & Production Fee",
-      desc: "Upon final acceptance, the ₦20,000 publication fee is confirmed, and the paper enters copyediting, typesetting, and DOI assignment.",
-    },
-    {
-      step: "06",
-      title: "Receive your tracking ID & Global Indexing",
-      desc: "The final paper is permanently assigned an official tracking ID, published with volume, issue, and CrossRef DOIs, streaming to global academic indexes.",
-    },
-  ];
-
+export default async function SubmissionsPage() {
+  const activationMap = await getJournalActivationMap();
+  const hasActiveJournals = Object.values(activationMap).some(Boolean);
   return (
-    <div className="space-y-16 py-12 sm:py-16">
-      {/* Header */}
-      <section>
-        <Container>
-          <div className="max-w-3xl">
-            <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-              Author Guidelines & Policies
+    <div>
+      <header className="cas-page-hero">
+        <div className="cas-page-hero-inner">
+          <div className="cas-breadcrumbs">
+            <Link href="/">Home</Link>
+            <span className="sep">/</span>
+            <span>Submit Your Paper</span>
+          </div>
+          <h1 className="cas-page-title">Submit Your Paper</h1>
+          <p className="cas-page-desc">
+            Online manuscript submission portal for CAS Journals. Initial
+            submission is completely free with zero upfront review fee.
+          </p>
+        </div>
+      </header>
+
+      <main className="cas-content-section">
+        <div className="cas-layout-with-sidebar">
+          <div className="cas-sidebar">
+            <div className="cas-sidebar-title">Author Resources</div>
+            <ul className="cas-sidebar-menu">
+              <li>
+                <Link href="/author-guidelines">Author Guidelines</Link>
+              </li>
+              <li>
+                <Link href="/how-to-write">How to Write a Journal Paper</Link>
+              </li>
+              <li>
+                <Link href="/submissions" className="active">
+                  Submit Your Paper
+                </Link>
+              </li>
+              <li>
+                <Link href="/announcements">Call for Papers</Link>
+              </li>
+              <li>
+                <Link href="/processing-charges">
+                  Article Processing Charges
+                </Link>
+              </li>
+              <li>
+                <Link href="/withdrawal-correction">
+                  Article Withdrawal &amp; Correction
+                </Link>
+              </li>
+              <li>
+                <Link href="/copyright-form">Copyright Form</Link>
+              </li>
+              <li>
+                <Link href="/apply-reviewer">Become a Reviewer</Link>
+              </li>
+              <li>
+                <Link href="/editorial-board">Join our Editorial Team</Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="cas-main-card cas-prose">
+            <div className="mb-7 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-800 dark:text-emerald-300">
+              <strong>✓ Free Submission — Zero Upfront Charge:</strong>{" "}
+              Submitting your manuscript for peer review is completely free. The
+              Article Processing Charge (₦30,000 for Nigerian authors / US $90
+              for foreign authors) is payable{" "}
+              <strong>only after formal acceptance</strong>.
+            </div>
+
+            <h2>Submit your article.</h2>
+            <p>
+              Sign in with your Google account to access the Author Workspace,
+              select your target CAS journal, upload your anonymised manuscript
+              and cover page, and track your peer review progress in real time:{" "}
+              <strong>Start submission request</strong>, upload your manuscript,
+              and <strong>Receive your tracking ID</strong> from the editorial
+              secretariat.
             </p>
-            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-5xl">
-              Submit your article.
-            </h1>
-            <p className="mt-4 font-serif text-lg leading-relaxed text-[color:var(--color-muted)]">
-              Comprehensive guidelines on manuscript preparation, submission
-              fees, peer review policies, and research ethics for{" "}
-              {siteConfig.faculty}, {siteConfig.institution}.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+
+            {!hasActiveJournals ? (
+              <div className="my-6 rounded-xl border border-sky-300 bg-sky-50/80 p-4 text-sm text-sky-950 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100">
+                <strong className="font-semibold text-[#032b45] dark:text-sky-200">
+                  Standby Notice:
+                </strong>{" "}
+                Direct manuscript submissions for Volume 1 (2026) are scheduled
+                to open shortly across all four journals. Authors may review the
+                pre-submission checklist below and format their papers ahead of
+                time.
+              </div>
+            ) : null}
+
+            <div className="not-prose my-6 flex flex-wrap gap-4">
               <Link
                 href={publicSubmissionEntryPath}
-                className="button-primary inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold"
+                className="cas-btn-primary"
               >
-                <span>Start submission request</span>
-                <span>→</span>
+                Continue to Author Submission Portal →
               </Link>
-              <Link
-                href="/login"
-                className="button-secondary inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold"
-              >
-                <span>Sign in to Track Submission</span>
+              <Link href="/login" className="cas-btn-secondary">
+                Sign In to Track Existing Submission
               </Link>
             </div>
-          </div>
-        </Container>
-      </section>
 
-      {/* Fee Schedule */}
-      <section>
-        <Container>
-          <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 shadow-sm sm:p-8">
-            <div className="max-w-2xl">
-              <span className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                Transparent Schedule
-              </span>
-              <h2 className="mt-1 font-serif text-2xl font-semibold text-[color:var(--color-foreground)] sm:text-3xl">
-                Publication &amp; Review Fees
-              </h2>
-              <p className="mt-1.5 text-xs text-[color:var(--color-muted)]">
-                Direct operating costs for double-blind peer review,
-                copyediting, DOI registration, and open-access hosting.
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-2">
-              {/* Card 1: For Nigerian Authors */}
-              <div className="flex flex-col justify-between rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-5 transition-colors hover:border-[color:var(--color-accent)]/50 sm:p-6">
-                <div>
-                  <div className="flex items-center justify-between font-mono text-[11px] text-[color:var(--color-accent)] uppercase">
-                    <span className="font-bold">Domestic Submissions</span>
-                    <span className="rounded bg-[color:var(--color-surface-strong)] px-2 py-0.5 font-bold">
-                      NGN (₦)
-                    </span>
-                  </div>
-                  <h3 className="mt-2.5 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                    For Nigerian Authors
-                  </h3>
-                  <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
-                    Researchers affiliated with Nigerian academic institutions.
-                  </p>
-
-                  <div className="mt-5 space-y-3.5 divide-y divide-[color:var(--color-border)]/60">
-                    <div className="pt-1">
-                      <p className="font-mono text-[10px] font-semibold tracking-wider text-[color:var(--color-subtle)] uppercase">
-                        Non-Refundable Review Fee
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                        <span className="font-serif text-2xl font-bold text-[color:var(--color-accent)]">
-                          ₦10,000
-                        </span>
-                        <span className="text-xs text-[color:var(--color-muted)] italic">
-                          (Upon manuscript submission)
+            <h2>Select Your Target Journal</h2>
+            <div className="not-prose my-4 space-y-3">
+              {activeJournalsConfig.map((j) => {
+                const isActive = Boolean(activationMap[j.slug]);
+                return (
+                  <div
+                    key={j.slug}
+                    className="flex flex-col gap-2 rounded-xl border border-sky-100 bg-sky-50/40 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-[#032b45]">
+                          {j.name}
+                        </h3>
+                        <span className="rounded bg-sky-100 px-2 py-0.5 font-mono text-[10px] font-bold text-[#0284c7]">
+                          {j.shortName}
                         </span>
                       </div>
-                    </div>
-
-                    <div className="pt-3.5">
-                      <p className="font-mono text-[10px] font-semibold tracking-wider text-[color:var(--color-subtle)] uppercase">
-                        Publication Fee
+                      <p className="mt-1 text-xs text-[#5c6c7c]">
+                        {j.description}
                       </p>
-                      <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                        <span className="font-serif text-2xl font-bold text-[color:var(--color-foreground)]">
-                          ₦20,000
+                    </div>
+                    <div className="shrink-0">
+                      {isActive ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/20 ring-inset">
+                          Accepting Submissions
                         </span>
-                        <span className="text-xs text-[color:var(--color-muted)] italic">
-                          (Payable only upon acceptance)
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-600/20 ring-inset">
+                          Standby (Opening Soon)
                         </span>
-                      </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Card 2: For Foreign Authors */}
-              <div className="flex flex-col justify-between rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-5 transition-colors hover:border-[color:var(--color-accent)]/50 sm:p-6">
-                <div>
-                  <div className="flex items-center justify-between font-mono text-[11px] text-[color:var(--color-accent)] uppercase">
-                    <span className="font-bold">International Submissions</span>
-                    <span className="rounded bg-[color:var(--color-surface-strong)] px-2 py-0.5 font-bold">
-                      USD ($)
-                    </span>
-                  </div>
-                  <h3 className="mt-2.5 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                    For Foreign Authors
-                  </h3>
-                  <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
-                    International scholars submitting from abroad.
-                  </p>
-
-                  <div className="mt-5 space-y-3.5">
-                    <div className="pt-1">
-                      <p className="font-mono text-[10px] font-semibold tracking-wider text-[color:var(--color-subtle)] uppercase">
-                        Article Publication Fee
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                        <span className="font-serif text-2xl font-bold text-[color:var(--color-accent)]">
-                          $50
-                        </span>
-                        <span className="text-xs text-[color:var(--color-muted)] italic">
-                          (Payable only upon acceptance)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-[var(--radius-sm)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-2.5 text-[11px] text-[color:var(--color-muted)]">
-                  <span className="font-semibold text-[color:var(--color-accent)]">
-                    Note:
-                  </span>{" "}
-                  No upfront review assessment fee for international authors;
-                  payable strictly upon formal paper acceptance.
-                </div>
-              </div>
+                );
+              })}
             </div>
-          </div>
-        </Container>
-      </section>
 
-      {/* Manuscript Preparation Guidelines */}
-      <section>
-        <Container>
-          <h2 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-            Manuscript Preparation Guidelines
-          </h2>
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {guidelines.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6"
-              >
-                <h3 className="font-serif text-base font-semibold text-[color:var(--color-foreground)]">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
+            <h2>Pre-Submission Checklist</h2>
+            <ul>
+              <li>
+                The manuscript is original, has not been previously published,
+                and is not under simultaneous consideration elsewhere.
+              </li>
+              <li>
+                The main manuscript file is prepared in Microsoft Word (
+                <code>.doc</code> or <code>.docx</code>) or PDF and anonymised
+                for double-blind peer review.
+              </li>
+              <li>
+                An abstract of 150&ndash;250 words with 4&ndash;6 keywords is
+                included.
+              </li>
+              <li>
+                All references are consistently formatted according to APA (7th
+                Edition), MLA, Chicago, or Harvard style.
+              </li>
+              <li>
+                Any funding sources, ethical approvals, or competing interests
+                are declared.
+              </li>
+            </ul>
           </div>
-        </Container>
-      </section>
-
-      {/* 6-Step Workflow */}
-      <section>
-        <Container>
-          <h2 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-            Review & Publication Process
-          </h2>
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {steps.map((item) => (
-              <div
-                key={item.step}
-                className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6"
-              >
-                <span className="font-mono text-xl font-bold text-[color:var(--color-accent)]">
-                  {item.step}
-                </span>
-                <h3 className="mt-3 font-serif text-base font-semibold text-[color:var(--color-foreground)]">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Container>
-      </section>
-
-      {/* Ethical & Plagiarism Policy */}
-      <section>
-        <Container>
-          <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-8">
-            <h2 className="font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
-              Publication Ethics & Integrity
-            </h2>
-            <div className="mt-4 space-y-3 text-xs leading-relaxed text-[color:var(--color-muted)]">
-              <p>
-                • <strong>Originality & Plagiarism:</strong> Authors must ensure
-                submitted works are entirely original. Papers with substantial
-                plagiarism or simultaneous submissions elsewhere are immediately
-                disqualified.
-              </p>
-              <p>
-                • <strong>Human & Animal Ethics:</strong> Studies involving
-                human or animal participants must provide evidence of
-                institutional ethical approval and informed consent.
-              </p>
-              <p>
-                • <strong>Conflict of Interest:</strong> All financial and
-                personal affiliations that could bias results must be fully
-                disclosed in the manuscript.
-              </p>
-            </div>
-            <div className="mt-8">
-              <Link
-                href={publicSubmissionEntryPath}
-                className="button-primary inline-flex items-center gap-2 px-8 py-3 text-sm font-semibold"
-              >
-                <span>Submit Manuscript Online</span>
-                <span>→</span>
-              </Link>
-            </div>
-          </div>
-        </Container>
-      </section>
+        </div>
+      </main>
     </div>
   );
 }

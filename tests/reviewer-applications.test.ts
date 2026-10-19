@@ -85,19 +85,56 @@ test("Reviewer Applications: Validation and Application Creation", async () => {
 });
 
 test("Reviewer Applications: List and Scoped Retrieval", async () => {
-  const allApps = await getReviewerApplications(superAdminActor);
-  assert.ok(Array.isArray(allApps));
-  assert.ok(allApps.length > 0);
+  const createdIds: string[] = [];
+  try {
+    const njcpRes = await createReviewerApplication({
+      fullName: "Dr. Ngozi Okeke",
+      academicTitle: "Dr.",
+      email: "ngozi.okeke.test@example.com",
+      phone: "+2348011223344",
+      affiliation: "University of Lagos",
+      academicRank: "Senior Lecturer",
+      specializationKeywords: "Clinical Psychology, Psychometrics",
+      targetJournal: "njcp",
+      statement: "Willing to review clinical psychology manuscripts.",
+    });
+    if (njcpRes.application?.id) createdIds.push(njcpRes.application.id);
 
-  // Filter by journal
-  const psychApps = await getReviewerApplications(superAdminActor, {
-    journalSlug: "njcp",
-  });
-  assert.ok(
-    psychApps.every(
-      (a) => a.targetJournal === "njcp" || a.targetJournal === "ALL",
-    ),
-  );
+    const ajsbsRes = await createReviewerApplication({
+      fullName: "Prof. Tunde Bello",
+      academicTitle: "Prof.",
+      email: "tunde.bello.test@example.com",
+      phone: "+2348022334455",
+      affiliation: "University of Ibadan",
+      academicRank: "Professor",
+      specializationKeywords: "Sociology, Behavioral Economics",
+      targetJournal: "ajsbs",
+      statement: "Willing to review interdisciplinary social science papers.",
+    });
+    if (ajsbsRes.application?.id) createdIds.push(ajsbsRes.application.id);
+
+    const allApps = await getReviewerApplications(superAdminActor);
+    assert.ok(Array.isArray(allApps));
+    assert.ok(allApps.length >= 2);
+
+    // Filter by journal
+    const psychApps = await getReviewerApplications(superAdminActor, {
+      journalSlug: "njcp",
+    });
+    assert.ok(psychApps.length >= 1);
+    assert.ok(
+      psychApps.every(
+        (a) => a.targetJournal === "njcp" || a.targetJournal === "ALL",
+      ),
+    );
+  } finally {
+    for (const applicationId of createdIds) {
+      await deleteReviewerApplication({
+        applicationId,
+        actor: superAdminActor,
+      });
+    }
+  }
 });
 
 test("Reviewer Applications: Status Transition and Department Authorization", async () => {

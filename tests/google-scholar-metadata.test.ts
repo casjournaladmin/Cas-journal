@@ -226,113 +226,318 @@ test("serveArticlePdf returns 404 for non-existent or unpublished articles", asy
   assert.equal(notFoundRes.status, 404);
 });
 
+async function withTemporaryPublishedArticlesFixture(
+  fn: (fixture: {
+    slugs: Array<{ category: string; slug: string }>;
+  }) => Promise<void>,
+) {
+  const { prisma } = await import("../lib/db/prisma");
+  const { createAdminClient } = await import("../lib/supabase/admin");
+
+  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const bucket = "published-articles";
+  const objectPaths = [
+    `test-scholar-fixtures/test-1-${uniqueSuffix}.pdf`,
+    `test-scholar-fixtures/test-2-${uniqueSuffix}.pdf`,
+    `test-scholar-fixtures/test-3-${uniqueSuffix}.pdf`,
+  ];
+  const pdfBuffer = Buffer.from(
+    `%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n${"A".repeat(1200)}\n%%EOF\n`,
+    "utf8",
+  );
+
+  const supabase = createAdminClient();
+  for (const objectPath of objectPaths) {
+    const uploadRes = await supabase.storage
+      .from(bucket)
+      .upload(objectPath, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+    assert.equal(
+      uploadRes.error,
+      null,
+      "Test PDF upload to storage must succeed",
+    );
+  }
+
+  const journal = await prisma.journal.create({
+    data: {
+      name: `CAS Scholar Test Journal ${uniqueSuffix}`,
+      slug: `cas-scholar-${uniqueSuffix}`,
+      shortName: "CSTJ",
+      isActive: true,
+    },
+  });
+
+  const volRecent = await prisma.volume.create({
+    data: {
+      journalId: journal.id,
+      number: 16,
+      year: 2026,
+    },
+  });
+
+  const volCross = await prisma.volume.create({
+    data: {
+      journalId: journal.id,
+      number: 14,
+      year: 2024,
+    },
+  });
+
+  const issueRecent = await prisma.issue.create({
+    data: {
+      volumeId: volRecent.id,
+      number: 1,
+      title: "Issue 1",
+      publishedAt: new Date("2026-09-16T12:00:00.000Z"),
+    },
+  });
+
+  const issueCross = await prisma.issue.create({
+    data: {
+      volumeId: volCross.id,
+      number: 2,
+      title: "Issue 2",
+      publishedAt: new Date("2024-06-10T12:00:00.000Z"),
+    },
+  });
+
+  const uploader = await prisma.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      email: `scholar-uploader-${uniqueSuffix}@example.com`,
+      displayName: "Scholar Test Uploader",
+      isActive: true,
+    },
+  });
+
+  const storedFiles = await Promise.all(
+    objectPaths.map((objectPath, idx) =>
+      prisma.storedFile.create({
+        data: {
+          bucket,
+          objectPath,
+          originalFileName: `scholar-test-${idx + 1}-${uniqueSuffix}.pdf`,
+          mimeType: "application/pdf",
+          sizeBytes: BigInt(pdfBuffer.byteLength),
+          uploaderId: uploader.id,
+        },
+      }),
+    ),
+  );
+
+  const recentSlug = `cas-v16-i1-recent-${uniqueSuffix}`;
+  const crossSlug = `cas-v14-i2-cross-${uniqueSuffix}`;
+  const remediatedSlug = `art-remediated-multi-author-${uniqueSuffix}`;
+
+  const createdArticleIds: string[] = [];
+
+  try {
+    const recentArticle = await prisma.article.create({
+      data: {
+        issueId: issueRecent.id,
+        title: "Digital Nativity and Technology Adoption in CAS",
+        slug: recentSlug,
+        abstract: "Recent article abstract for PDF streaming verification.",
+        pageStart: "10",
+        pageEnd: "25",
+        isPublished: true,
+        publishedAt: new Date("2026-09-16T12:00:00.000Z"),
+        authors: {
+          create: [
+            { fullName: "Dr. Adaobi Nwachukwu", position: 1 },
+            { fullName: "Prof. Ibrahim Musa", position: 2 },
+          ],
+        },
+        files: {
+          create: {
+            storedFileId: storedFiles[0].id,
+            type: "PUBLISHED_PDF",
+          },
+        },
+      },
+    });
+    createdArticleIds.push(recentArticle.id);
+
+    const crossArticle = await prisma.article.create({
+      data: {
+        issueId: issueCross.id,
+        title: "Cross-Volume Institutional Analysis in CAS",
+        slug: crossSlug,
+        abstract:
+          "Cross-volume article abstract for PDF streaming verification.",
+        pageStart: "40",
+        pageEnd: "58",
+        isPublished: true,
+        publishedAt: new Date("2024-06-10T12:00:00.000Z"),
+        authors: {
+          create: [
+            { fullName: "Dr. Chinedu Eze", position: 1 },
+            { fullName: "Dr. Halima Abubakar", position: 2 },
+          ],
+        },
+        files: {
+          create: {
+            storedFileId: storedFiles[1].id,
+            type: "PUBLISHED_PDF",
+          },
+        },
+      },
+    });
+    createdArticleIds.push(crossArticle.id);
+
+    const remediatedArticle = await prisma.article.create({
+      data: {
+        issueId: issueRecent.id,
+        title: "Blame Reorientation in Digital Moral Judgement",
+        slug: remediatedSlug,
+        abstract:
+          "Remediated multi-author and normalized page-range test fixture.",
+        pageStart: "1875",
+        pageEnd: "1893",
+        isPublished: true,
+        publishedAt: new Date("2026-09-16T12:00:00.000Z"),
+        authors: {
+          create: [
+            { fullName: "Sadiat Iyabode Alliu", position: 1 },
+            { fullName: "Stephen Ishola Babatunde", position: 2 },
+            { fullName: "Leonard Chidozie Orji", position: 3 },
+          ],
+        },
+        files: {
+          create: {
+            storedFileId: storedFiles[2].id,
+            type: "PUBLISHED_PDF",
+          },
+        },
+      },
+    });
+    createdArticleIds.push(remediatedArticle.id);
+
+    await fn({
+      slugs: [
+        { category: "Recent Article (Vol 16, 2026)", slug: recentSlug },
+        { category: "Cross-Volume Article (Vol 14, 2024)", slug: crossSlug },
+        {
+          category:
+            "Remediated Article (Database Author Split & Page Normalized)",
+          slug: remediatedSlug,
+        },
+      ],
+    });
+  } finally {
+    for (const id of createdArticleIds) {
+      await prisma.article.delete({ where: { id } }).catch(() => {});
+    }
+    for (const sf of storedFiles) {
+      await prisma.storedFile.delete({ where: { id: sf.id } }).catch(() => {});
+    }
+    await prisma.user.delete({ where: { id: uploader.id } }).catch(() => {});
+    await prisma.issue
+      .delete({ where: { id: issueRecent.id } })
+      .catch(() => {});
+    await prisma.issue.delete({ where: { id: issueCross.id } }).catch(() => {});
+    await prisma.volume.delete({ where: { id: volRecent.id } }).catch(() => {});
+    await prisma.volume.delete({ where: { id: volCross.id } }).catch(() => {});
+    await prisma.journal.delete({ where: { id: journal.id } }).catch(() => {});
+    await supabase.storage.from(bucket).remove(objectPaths);
+  }
+}
+
 test("serveArticlePdf streams full PDF across recent, older, cross-volume, and remediated articles", async () => {
   const { serveArticlePdf } =
     await import("../lib/editorial/article-pdf-stream");
 
-  const testCases = [
-    {
-      category: "Recent Article (Vol 16, 2026)",
-      slug: "ajsbs-v16-i6-12-digital-nativity-and-digital-technology-adoption-a",
-    },
-    {
-      category: "Older Article (Vol 10, 2020)",
-      slug: "ajsbs-v10-i2-9-predictors-of-job-satisfaction-among-private-secto",
-    },
-    {
-      category: "Cross-Volume Article (Vol 14, 2024)",
-      slug: "ajsbs-v14-i7-9-analysis-of-the-nexus-between-national-security-an",
-    },
-    {
-      category: "Remediated Article (Database Author Split & Page Normalized)",
-      slug: "art-blame-reorientation-in-digital-moral-jud-mu4ngdw1",
-    },
-  ];
+  await withTemporaryPublishedArticlesFixture(async ({ slugs }) => {
+    for (const tc of slugs) {
+      const res = await serveArticlePdf(tc.slug);
 
-  for (const tc of testCases) {
-    const res = await serveArticlePdf(tc.slug);
-
-    assert.equal(
-      res.status,
-      200,
-      `Expected status 200 for ${tc.category} (${tc.slug})`,
-    );
-    assert.equal(
-      res.headers.get("content-type"),
-      "application/pdf",
-      `Expected application/pdf for ${tc.slug}`,
-    );
-    assert.ok(
-      res.headers
-        .get("content-disposition")
-        ?.includes(`inline; filename="${tc.slug}.pdf"`),
-      `Expected inline content-disposition for ${tc.slug}`,
-    );
-    assert.equal(
-      res.headers.get("x-robots-tag"),
-      "all",
-      `Expected x-robots-tag: all (no blocking directives) for ${tc.slug}`,
-    );
-    assert.ok(
-      res.headers.get("cache-control")?.includes("public"),
-      `Should be publicly cacheable for fast crawler delivery: ${tc.slug}`,
-    );
-
-    const arrayBuffer = await res.arrayBuffer();
-    assert.ok(
-      arrayBuffer.byteLength > 1000,
-      `Expected non-empty binary (>1000 bytes) for ${tc.slug}, got ${arrayBuffer.byteLength}`,
-    );
-
-    const header = Buffer.from(arrayBuffer.slice(0, 4)).toString();
-    assert.equal(
-      header,
-      "%PDF",
-      `Expected valid PDF magic bytes '%PDF' for ${tc.slug}`,
-    );
-
-    const contentLength = res.headers.get("content-length");
-    if (contentLength) {
       assert.equal(
-        Number(contentLength),
-        arrayBuffer.byteLength,
-        `Content-Length header must match actual byte length for ${tc.slug}`,
+        res.status,
+        200,
+        `Expected status 200 for ${tc.category} (${tc.slug})`,
       );
+      assert.equal(
+        res.headers.get("content-type"),
+        "application/pdf",
+        `Expected application/pdf for ${tc.slug}`,
+      );
+      assert.ok(
+        res.headers
+          .get("content-disposition")
+          ?.includes(`inline; filename="${tc.slug}.pdf"`),
+        `Expected inline content-disposition for ${tc.slug}`,
+      );
+      assert.equal(
+        res.headers.get("x-robots-tag"),
+        "all",
+        `Expected x-robots-tag: all (no blocking directives) for ${tc.slug}`,
+      );
+      assert.ok(
+        res.headers.get("cache-control")?.includes("public"),
+        `Should be publicly cacheable for fast crawler delivery: ${tc.slug}`,
+      );
+
+      const arrayBuffer = await res.arrayBuffer();
+      assert.ok(
+        arrayBuffer.byteLength > 1000,
+        `Expected non-empty binary (>1000 bytes) for ${tc.slug}, got ${arrayBuffer.byteLength}`,
+      );
+
+      const header = Buffer.from(arrayBuffer.slice(0, 4)).toString();
+      assert.equal(
+        header,
+        "%PDF",
+        `Expected valid PDF magic bytes '%PDF' for ${tc.slug}`,
+      );
+
+      const contentLength = res.headers.get("content-length");
+      if (contentLength) {
+        assert.equal(
+          Number(contentLength),
+          arrayBuffer.byteLength,
+          `Content-Length header must match actual byte length for ${tc.slug}`,
+        );
+      }
     }
-  }
+  });
 });
 
 test("nested PDF route handler resolves /articles/[articleSlug]/[filename] correctly", async () => {
   const { GET } =
     await import("../app/(public)/articles/[articleSlug]/[filename]/route");
 
-  const slug = "art-blame-reorientation-in-digital-moral-jud-mu4ngdw1";
+  await withTemporaryPublishedArticlesFixture(async ({ slugs }) => {
+    const slug = slugs[0].slug;
 
-  // Test 1: Full filename with .pdf
-  const res1 = await GET(
-    new Request(`https://imsufoss.com/articles/${slug}/${slug}.pdf`),
-    {
-      params: Promise.resolve({
-        articleSlug: slug,
-        filename: `${slug}.pdf`,
-      }),
-    },
-  );
-  assert.equal(res1.status, 200);
-  assert.equal(res1.headers.get("content-type"), "application/pdf");
+    // Test 1: Full filename with .pdf
+    const res1 = await GET(
+      new Request(`https://imsufoss.com/articles/${slug}/${slug}.pdf`),
+      {
+        params: Promise.resolve({
+          articleSlug: slug,
+          filename: `${slug}.pdf`,
+        }),
+      },
+    );
+    assert.equal(res1.status, 200);
+    assert.equal(res1.headers.get("content-type"), "application/pdf");
 
-  // Test 2: Standard pdf shorthand
-  const res2 = await GET(
-    new Request(`https://imsufoss.com/articles/${slug}/pdf`),
-    {
-      params: Promise.resolve({
-        articleSlug: slug,
-        filename: "pdf",
-      }),
-    },
-  );
-  assert.equal(res2.status, 200);
-  assert.equal(res2.headers.get("content-type"), "application/pdf");
+    // Test 2: Standard pdf shorthand
+    const res2 = await GET(
+      new Request(`https://imsufoss.com/articles/${slug}/pdf`),
+      {
+        params: Promise.resolve({
+          articleSlug: slug,
+          filename: "pdf",
+        }),
+      },
+    );
+    assert.equal(res2.status, 200);
+    assert.equal(res2.headers.get("content-type"), "application/pdf");
+  });
 });
 
 test("database audit verifies remediation of 5 multi-author and 29 page-range articles", async () => {
@@ -340,70 +545,63 @@ test("database audit verifies remediation of 5 multi-author and 29 page-range ar
   const { buildGoogleScholarMetadata } =
     await import("../lib/metadata/scholar");
 
-  // 1. Verify 5 previously combined author articles are now individual records
-  const targetSlugs = [
-    "art-assessment-of-environmental-impacts-of-u-mu4ojylp",
-    "art-blame-reorientation-in-digital-moral-jud-mu4ngdw1",
-    "art-developing-a-strategic-framing-of-public-mu4o4g1o",
-    "art-from-locus-of-control-to-entrepreneurial-muu6m39c",
-    "art-the-state-and-human-security-failures-in-mu4nngwa",
-  ];
+  await withTemporaryPublishedArticlesFixture(async ({ slugs }) => {
+    for (const { slug } of slugs) {
+      const article = await prisma.article.findUnique({
+        where: { slug },
+        include: {
+          authors: { orderBy: { position: "asc" } },
+          issue: { include: { volume: { include: { journal: true } } } },
+        },
+      });
 
-  for (const slug of targetSlugs) {
-    const article = await prisma.article.findUnique({
-      where: { slug },
-      include: {
-        authors: { orderBy: { position: "asc" } },
-        issue: { include: { volume: { include: { journal: true } } } },
-      },
-    });
-
-    assert.ok(article, `Article ${slug} must exist`);
-    assert.ok(
-      article.authors.length >= 2,
-      `Article ${slug} must have multiple separated authors`,
-    );
-
-    // Ensure no author record in DB contains " & " or " and "
-    for (const author of article.authors) {
+      assert.ok(article, `Article ${slug} must exist`);
       assert.ok(
-        !author.fullName.includes(" & "),
-        `Author record '${author.fullName}' in ${slug} must not contain ' & '`,
+        article.authors.length >= 2,
+        `Article ${slug} must have multiple separated authors`,
       );
-      assert.ok(
-        !/\s+and\s+/i.test(author.fullName),
-        `Author record '${author.fullName}' in ${slug} must not contain ' and '`,
-      );
+
+      // Ensure no author record in DB contains " & " or " and "
+      for (const author of article.authors) {
+        assert.ok(
+          !author.fullName.includes(" & "),
+          `Author record '${author.fullName}' in ${slug} must not contain ' & '`,
+        );
+        assert.ok(
+          !/\s+and\s+/i.test(author.fullName),
+          `Author record '${author.fullName}' in ${slug} must not contain ' and '`,
+        );
+      }
+
+      // Ensure positions are strictly 1-indexed sequential (1, 2, 3...)
+      article.authors.forEach((author, idx) => {
+        assert.equal(
+          author.position,
+          idx + 1,
+          `Author position must be sequential 1-indexed in ${slug}`,
+        );
+      });
+
+      // Test generated scholar metadata
+      const meta = buildGoogleScholarMetadata(article, "https://imsufoss.com");
+      assert.ok(Array.isArray(meta.other.citation_author));
+      assert.equal(meta.other.citation_author.length, article.authors.length);
     }
 
-    // Ensure positions are strictly 1-indexed sequential (1, 2, 3...)
-    article.authors.forEach((author, idx) => {
-      assert.equal(
-        author.position,
-        idx + 1,
-        `Author position must be sequential 1-indexed in ${slug}`,
-      );
+    // 2. Verify page ranges: ensure no published article has an unparsed dash/hyphen in pageStart with null pageEnd
+    const publishedArticles = await prisma.article.findMany({
+      where: { isPublished: true },
+      select: { slug: true, pageStart: true, pageEnd: true },
     });
 
-    // Test generated scholar metadata
-    const meta = buildGoogleScholarMetadata(article, "https://imsufoss.com");
-    assert.ok(Array.isArray(meta.other.citation_author));
-    assert.equal(meta.other.citation_author.length, article.authors.length);
-  }
+    const remainingUnsplit = publishedArticles.filter(
+      (a) => a.pageStart && !a.pageEnd && /[-–—]/.test(a.pageStart),
+    );
 
-  // 2. Verify page ranges: ensure no published article has an unparsed dash/hyphen in pageStart with null pageEnd
-  const publishedArticles = await prisma.article.findMany({
-    where: { isPublished: true },
-    select: { slug: true, pageStart: true, pageEnd: true },
+    assert.equal(
+      remainingUnsplit.length,
+      0,
+      `Expected 0 unparsed page ranges in database, found: ${JSON.stringify(remainingUnsplit)}`,
+    );
   });
-
-  const remainingUnsplit = publishedArticles.filter(
-    (a) => a.pageStart && !a.pageEnd && /[-–—]/.test(a.pageStart),
-  );
-
-  assert.equal(
-    remainingUnsplit.length,
-    0,
-    `Expected 0 unparsed page ranges in database, found: ${JSON.stringify(remainingUnsplit)}`,
-  );
 });

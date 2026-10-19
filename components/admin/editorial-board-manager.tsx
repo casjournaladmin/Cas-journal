@@ -32,7 +32,7 @@ export function EditorialBoardManager({
 }) {
   const [journals, setJournals] = useState<JournalMetadata[]>(initialJournals);
   const [activeBoardSlug, setActiveBoardSlug] = useState<string>(
-    journals[0]?.slug ?? "njcp",
+    journals[0]?.slug ?? "",
   );
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMember, setEditingMember] =
@@ -54,7 +54,7 @@ export function EditorialBoardManager({
 
   const currentBoardJournal =
     journals.find((j) => j.slug === activeBoardSlug) || journals[0];
-  const members = initialBoards[activeBoardSlug] || [];
+  const members = activeBoardSlug ? initialBoards[activeBoardSlug] || [] : [];
 
   const handleBoardTabChange = (slug: string) => {
     setActiveBoardSlug(slug);
@@ -63,8 +63,9 @@ export function EditorialBoardManager({
 
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!currentBoardJournal) return;
     const formData = new FormData(e.currentTarget);
-    formData.set("journalSlug", activeBoardSlug);
+    formData.set("journalSlug", currentBoardJournal.slug);
 
     startAddTransition(async () => {
       const res = await addEditorialBoardMemberAction({}, formData);
@@ -85,9 +86,9 @@ export function EditorialBoardManager({
 
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!editingMember) return;
+    if (!editingMember || !currentBoardJournal) return;
     const formData = new FormData(e.currentTarget);
-    formData.set("journalSlug", activeBoardSlug);
+    formData.set("journalSlug", currentBoardJournal.slug);
     formData.set("memberId", editingMember.id);
 
     startAddTransition(async () => {
@@ -108,13 +109,14 @@ export function EditorialBoardManager({
   };
 
   const handleDelete = (memberId: string) => {
+    if (!currentBoardJournal) return;
     if (
       !confirm("Are you sure you want to remove this editorial board member?")
     ) {
       return;
     }
     const formData = new FormData();
-    formData.set("journalSlug", activeBoardSlug);
+    formData.set("journalSlug", currentBoardJournal.slug);
     formData.set("memberId", memberId);
 
     startDeleteTransition(async () => {
@@ -134,22 +136,23 @@ export function EditorialBoardManager({
   };
 
   const handleReset = () => {
+    if (!currentBoardJournal) return;
     if (
       !confirm(
-        `Reset ${currentBoardJournal.shortName} editorial board to standard institutional defaults?`,
+        `Clear all editorial board members for ${currentBoardJournal.shortName}?`,
       )
     ) {
       return;
     }
     const formData = new FormData();
-    formData.set("journalSlug", activeBoardSlug);
+    formData.set("journalSlug", currentBoardJournal.slug);
 
     startResetTransition(async () => {
       const res = await resetEditorialBoardAction({}, formData);
       if (res.success) {
         setFeedback({
           type: "success",
-          message: "Editorial board reset to defaults.",
+          message: "Editorial board cleared.",
         });
       } else {
         setFeedback({
@@ -173,7 +176,7 @@ export function EditorialBoardManager({
           </h1>
           <p className="mt-1 text-xs text-[color:var(--color-muted)]">
             Manage chief editors, associate editors, board members, and
-            consulting scholars across all 4 journals.
+            consulting scholars across active journals.
           </p>
         </div>
 
@@ -181,15 +184,16 @@ export function EditorialBoardManager({
           <button
             type="button"
             onClick={handleReset}
-            disabled={resetPending}
+            disabled={resetPending || !currentBoardJournal}
             className="button-secondary text-xs disabled:opacity-50"
           >
-            {resetPending ? "Resetting…" : "Reset to Defaults"}
+            {resetPending ? "Clearing…" : "Clear Board"}
           </button>
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="button-primary text-xs"
+            disabled={!currentBoardJournal}
+            className="button-primary text-xs disabled:opacity-50"
           >
             + Add Board Member
           </button>
@@ -237,80 +241,89 @@ export function EditorialBoardManager({
 
       {/* Editorial Board Members Directory */}
       <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 sm:p-5">
-        <div className="flex flex-col gap-2 border-b border-[color:var(--color-border)] pb-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-              {currentBoardJournal.title} ({currentBoardJournal.shortName})
-            </h2>
-            <p className="font-mono text-xs text-[color:var(--color-accent)]">
-              {members.length} Active Editorial Officers &amp; Scholars
-            </p>
-          </div>
-          <a
-            href={`/journals/${currentBoardJournal.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
-          >
-            View Public Page →
-          </a>
-        </div>
-
-        {/* Member list */}
-        <div className="mt-4 space-y-2.5">
-          {members.length === 0 ? (
-            <p className="py-8 text-center text-xs text-[color:var(--color-muted)]">
-              No editorial board members found. Click &quot;+ Add Board
-              Member&quot; or &quot;Reset to Defaults&quot;.
-            </p>
-          ) : (
-            members.map((m) => (
-              <div
-                key={m.id}
-                className="flex flex-col justify-between gap-3 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-3 transition sm:flex-row sm:items-center"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-[color:var(--color-surface-strong)] px-2 py-0.5 font-mono text-[10px] font-bold text-[color:var(--color-accent)] uppercase">
-                      {m.role}
-                    </span>
-                    <span className="font-mono text-[10px] text-[color:var(--color-subtle)]">
-                      ({m.category})
-                    </span>
-                  </div>
-                  <h3 className="mt-1 font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
-                    {m.name}
-                  </h3>
-                  <p className="text-[11px] text-[color:var(--color-muted)]">
-                    {m.affiliation}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <button
-                    type="button"
-                    onClick={() => setEditingMember(m)}
-                    className="button-secondary px-2.5 py-1 text-xs"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(m.id)}
-                    disabled={deletePending}
-                    className="rounded-[var(--radius-sm)] border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-500/10"
-                  >
-                    Remove
-                  </button>
-                </div>
+        {!currentBoardJournal ? (
+          <p className="py-8 text-center text-xs text-[color:var(--color-muted)]">
+            No active journals are configured yet. Editorial boards can be
+            managed once journals are registered in the database.
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2 border-b border-[color:var(--color-border)] pb-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
+                  {currentBoardJournal.title} ({currentBoardJournal.shortName})
+                </h2>
+                <p className="font-mono text-xs text-[color:var(--color-accent)]">
+                  {members.length} Active Editorial Officers &amp; Scholars
+                </p>
               </div>
-            ))
-          )}
-        </div>
+              <a
+                href={`/journals/${currentBoardJournal.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
+              >
+                View Public Page →
+              </a>
+            </div>
+
+            {/* Member list */}
+            <div className="mt-4 space-y-2.5">
+              {members.length === 0 ? (
+                <p className="py-8 text-center text-xs text-[color:var(--color-muted)]">
+                  No editorial board members found. Click &quot;+ Add Board
+                  Member&quot; to add members.
+                </p>
+              ) : (
+                members.map((m) => (
+                  <div
+                    key={m.id}
+                    className="flex flex-col justify-between gap-3 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-3 transition sm:flex-row sm:items-center"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-[color:var(--color-surface-strong)] px-2 py-0.5 font-mono text-[10px] font-bold text-[color:var(--color-accent)] uppercase">
+                          {m.role}
+                        </span>
+                        <span className="font-mono text-[10px] text-[color:var(--color-subtle)]">
+                          ({m.category})
+                        </span>
+                      </div>
+                      <h3 className="mt-1 font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
+                        {m.name}
+                      </h3>
+                      <p className="text-[11px] text-[color:var(--color-muted)]">
+                        {m.affiliation}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => setEditingMember(m)}
+                        className="button-secondary px-2.5 py-1 text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(m.id)}
+                        disabled={deletePending}
+                        className="rounded-[var(--radius-sm)] border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-500/10"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Add Modal */}
-      {showAddModal ? (
+      {showAddModal && currentBoardJournal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-5 shadow-2xl sm:p-6">
             <h3 className="font-serif text-xl font-semibold text-[color:var(--color-foreground)]">
@@ -330,7 +343,7 @@ export function EditorialBoardManager({
                   type="text"
                   name="name"
                   required
-                  placeholder="e.g. Prof Nkwam C. Uwaoma"
+                  placeholder="e.g. Prof. Jane Doe"
                   className="app-field mt-1 w-full text-xs"
                 />
               </div>
@@ -372,7 +385,7 @@ export function EditorialBoardManager({
                 <input
                   type="text"
                   name="affiliation"
-                  defaultValue="Department of Psychology, Imo State University, Owerri, Nigeria"
+                  placeholder="Institution or Department Affiliation"
                   className="app-field mt-1 w-full text-xs"
                 />
               </div>

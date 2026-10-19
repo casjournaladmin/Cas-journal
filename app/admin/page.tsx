@@ -18,7 +18,10 @@ import {
   getJournalActivationMap,
   isLeadSystemOwner,
 } from "@/lib/editorial/journal-activation";
-import { setJournalOperationalStateAction } from "@/app/admin/journal-activation-actions";
+import {
+  setJournalOperationalStateAction,
+  upsertJournalMetadataAction,
+} from "@/app/admin/journal-activation-actions";
 
 export default async function AdminPage() {
   const user = await requireApplicationArea("admin");
@@ -80,6 +83,7 @@ export default async function AdminPage() {
         journals={augmentedJournals}
         isBreakGlass={isBreakGlass}
         activateAction={setJournalOperationalStateAction}
+        upsertJournalAction={upsertJournalMetadataAction}
       />
     </AuthenticatedShell>
   );

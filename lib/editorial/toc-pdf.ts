@@ -68,13 +68,13 @@ export async function generateIssueTOCPdf(
   let page = doc.addPage([pageWidth, pageHeight]);
   let y = pageHeight - margin;
 
-  const colorPrimary = rgb(0.06, 0.09, 0.16); // #0f172a
-  const colorAccent = rgb(0.02, 0.59, 0.41); // #059669
+  const colorPrimary = rgb(0.01, 0.17, 0.27); // #032b45
+  const colorAccent = rgb(0.01, 0.52, 0.78); // #0284c7
   const colorMuted = rgb(0.39, 0.45, 0.55); // #64748b
   const colorBorder = rgb(0.89, 0.91, 0.94); // #e2e8f0
 
   // 1. Institution Header
-  page.drawText("FACULTY OF SOCIAL SCIENCES · IMO STATE UNIVERSITY", {
+  page.drawText("CONCRESCENCE ACADEMIC SOCIETY · CAS JOURNALS", {
     x: margin,
     y,
     size: 9,
@@ -265,7 +265,7 @@ export async function generateIssueTOCPdf(
   const totalPages = doc.getPageCount();
   for (let idx = 0; idx < totalPages; idx++) {
     const p = doc.getPage(idx);
-    const footerText = `Official Publication of IMSU FOSS Journals · Page ${idx + 1} of ${totalPages}`;
+    const footerText = `Official Publication of CAS Journals · Page ${idx + 1} of ${totalPages}`;
     p.drawText(footerText, {
       x: margin,
       y: margin - 20,

@@ -9,7 +9,21 @@ import {
   deleteReviewerAction,
   updateReviewerStatusAction,
 } from "@/app/admin/reviewers/actions";
+import { activeJournalsConfig } from "@/lib/config/site";
 import { formatShortDate } from "@/lib/formatting/dates";
+
+export type ReviewerManagerJournalOption = {
+  slug: string;
+  name: string;
+  shortName: string;
+};
+
+const DEFAULT_JOURNAL_OPTIONS: ReviewerManagerJournalOption[] =
+  activeJournalsConfig.map((j) => ({
+    slug: j.slug,
+    name: j.name,
+    shortName: j.shortName,
+  }));
 
 export function formatAcademicName(
   academicTitle?: string,
@@ -35,8 +49,10 @@ export function formatAcademicName(
 
 export function ReviewerApplicationsManager({
   initialApplications,
+  journals = DEFAULT_JOURNAL_OPTIONS,
 }: {
   initialApplications: ReviewerApplication[];
+  journals?: ReviewerManagerJournalOption[];
 }) {
   const [applications, setApplications] =
     useState<ReviewerApplication[]>(initialApplications);
@@ -210,7 +226,7 @@ export function ReviewerApplicationsManager({
                 onClick={() => setStatusFilter(s)}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                   statusFilter === s
-                    ? "bg-[color:var(--color-accent)] text-black"
+                    ? "bg-[color:var(--color-accent)] text-white"
                     : "border border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
                 }`}
               >
@@ -230,19 +246,12 @@ export function ReviewerApplicationsManager({
             onChange={(e) => setJournalFilter(e.target.value)}
             className="app-field py-1 text-xs"
           >
-            <option value="ALL">All Journals</option>
-            <option value="ajsbs">
-              African Journal of Social and Behavioural Sciences (AJSBS)
-            </option>
-            <option value="njsr">
-              Nwaebere Journal of Scientific Research (NJSR)
-            </option>
-            <option value="gjcsr">
-              Global Journal of Contemporary Social Research (GJCSR)
-            </option>
-            <option value="njcp">
-              Nigerian Journal of Contemporary Psychology (NJCP)
-            </option>
+            <option value="ALL">All CAS Journals</option>
+            {journals.map((j) => (
+              <option key={j.slug} value={j.slug}>
+                {j.name} ({j.shortName})
+              </option>
+            ))}
           </select>
         </div>
       </div>

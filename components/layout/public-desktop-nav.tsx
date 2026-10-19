@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { siteConfig } from "@/lib/config/site";
 
-const navigationLinkClass =
-  "text-sm font-medium text-[color:var(--color-muted)] transition hover:text-[color:var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-accent)]";
-
 export function PublicDesktopNav() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLLIElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = () => {
@@ -24,7 +23,7 @@ export function PublicDesktopNav() {
   };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
@@ -40,26 +39,26 @@ export function PublicDesktopNav() {
     }
 
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
   return (
-    <nav
-      aria-label="Primary navigation"
-      className="hidden items-center gap-7 lg:flex"
-    >
+    <ul aria-label="Primary navigation" className="cas-nav-links">
       {siteConfig.publicNavigation.map((item) => {
-        if ("children" in item && item.children) {
+        if ("children" in item && item.children && item.children.length > 0) {
+          const isActive = pathname?.startsWith("/journals/");
           return (
-            <div
+            <li
               key={item.label}
               ref={dropdownRef}
-              className="relative"
+              className="cas-nav-item relative"
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
@@ -68,15 +67,15 @@ export function PublicDesktopNav() {
                 aria-expanded={isOpen}
                 aria-haspopup="true"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 ${navigationLinkClass} ${
-                  isOpen ? "text-[color:var(--color-accent)]" : ""
+                className={`cas-nav-link inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent ${
+                  isOpen || isActive ? "active" : ""
                 }`}
               >
                 <span>{item.label}</span>
                 <svg
                   aria-hidden="true"
                   className={`size-3.5 transition-transform duration-200 ${
-                    isOpen ? "rotate-180 text-[color:var(--color-accent)]" : ""
+                    isOpen ? "rotate-180 text-[#38bdf8]" : ""
                   }`}
                   viewBox="0 0 16 16"
                   fill="none"
@@ -92,42 +91,58 @@ export function PublicDesktopNav() {
               </button>
 
               {isOpen ? (
-                <div className="animate-in fade-in slide-in-from-top-2 absolute top-full left-0 z-30 w-80 pt-2.5 duration-150">
-                  <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 shadow-[var(--shadow-menu)] backdrop-blur-xl">
-                    <div className="border-b border-[color:var(--color-border)] px-3 py-2">
-                      <p className="font-mono text-[10px] font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
-                        Active Faculty Journals
+                <div className="animate-in fade-in slide-in-from-top-2 absolute top-full left-0 z-[100] w-[660px] pt-3 duration-150">
+                  <div className="overflow-hidden rounded-2xl border border-[#075985]/60 bg-[#032b45] p-3.5 text-[#f0f9ff] shadow-2xl backdrop-blur-xl">
+                    <div className="flex items-center justify-between border-b border-sky-400/20 px-3 pb-2.5">
+                      <p className="font-mono text-[11px] font-bold tracking-wider text-[#38bdf8] uppercase">
+                        CAS Scholarly Journals
                       </p>
+                      <span className="text-[11px] text-sky-200/70">
+                        Peer-Reviewed &bull; Open Access
+                      </span>
                     </div>
 
-                    <div className="mt-1 space-y-1">
+                    <div className="mt-2.5 grid grid-cols-2 gap-2">
                       {item.children.map((subItem) => (
                         <Link
                           key={subItem.href}
                           href={subItem.href}
                           onClick={() => setIsOpen(false)}
-                          className="group flex flex-col rounded-[var(--radius-md)] p-2.5 transition hover:bg-[color:var(--color-surface-strong)]"
+                          className="group flex flex-col justify-between rounded-xl border border-transparent bg-white/[0.04] p-3 transition hover:border-sky-400/40 hover:bg-white/10"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs font-semibold text-[color:var(--color-foreground)] transition group-hover:text-[color:var(--color-accent)]">
+                          <div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="rounded bg-sky-500/20 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wide text-sky-300">
+                                {subItem.shortName}
+                              </span>
+                            </div>
+                            <h4 className="mt-2 text-xs font-semibold leading-snug text-white transition group-hover:text-sky-300">
                               {subItem.label}
-                            </span>
-                            <span className="min-w-[56px] shrink-0 rounded bg-[color:var(--color-surface)] px-2 py-0.5 text-center font-mono text-[9px] font-bold whitespace-nowrap text-[color:var(--color-accent)]">
-                              {subItem.shortName}
-                            </span>
+                            </h4>
+                            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sky-100/75">
+                              {subItem.description}
+                            </p>
                           </div>
-                          <span className="mt-0.5 text-[11px] text-[color:var(--color-muted)]">
-                            {subItem.description}
-                          </span>
+                          <div className="mt-2.5 flex items-center text-[10px] font-semibold text-[#38bdf8] opacity-0 transition group-hover:opacity-100">
+                            <span>View Journal Portal</span>
+                            <span className="ml-1">→</span>
+                          </div>
                         </Link>
                       ))}
                     </div>
 
-                    <div className="mt-1 border-t border-[color:var(--color-border)] pt-1">
+                    <div className="mt-2.5 flex items-center justify-between border-t border-sky-400/20 px-3 pt-2.5">
+                      <Link
+                        href="/editorial-board"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xs font-medium text-sky-200/80 transition hover:text-white"
+                      >
+                        Editorial Governance &amp; Boards
+                      </Link>
                       <Link
                         href="/archives"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center justify-between rounded-[var(--radius-md)] px-3 py-2 text-xs font-semibold text-[color:var(--color-accent)] transition hover:bg-[color:var(--color-surface-strong)]"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-[#38bdf8] transition hover:text-white"
                       >
                         <span>Browse All Archives</span>
                         <span>→</span>
@@ -136,20 +151,26 @@ export function PublicDesktopNav() {
                   </div>
                 </div>
               ) : null}
-            </div>
+            </li>
           );
         }
 
+        const isActive =
+          item.href === "/"
+            ? pathname === "/"
+            : pathname?.startsWith(item.href);
+
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={navigationLinkClass}
-          >
-            {item.label}
-          </Link>
+          <li key={item.href} className="cas-nav-item">
+            <Link
+              href={item.href}
+              className={`cas-nav-link ${isActive ? "active" : ""}`}
+            >
+              {item.label}
+            </Link>
+          </li>
         );
       })}
-    </nav>
+    </ul>
   );
 }

@@ -127,8 +127,7 @@ export default async function AuthorPage() {
             </p>
             <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[color:var(--color-muted)]">
               You have not submitted any manuscripts yet. Click below to submit
-              your research paper to any IMSU Faculty of Social Sciences
-              journal.
+              your research paper to any activated CAS Journals publication.
             </p>
             <div className="mt-5">
               <Link

@@ -12,6 +12,7 @@ import {
 
 import type { RequestActionState } from "@/app/author/requests/actions";
 import { PendingButton } from "@/components/submissions/pending-button";
+import { SubmissionConfirmationDialog } from "@/components/submissions/submission-confirmation-dialog";
 import { requestStatusContent } from "@/lib/requests/validation";
 
 const initialState: RequestActionState = {};
@@ -165,7 +166,7 @@ export function ConversationThread({
                 key={message.id}
                 className="my-3 flex w-full flex-col items-center justify-center text-center"
               >
-                <div className="max-w-[92%] min-w-0 rounded-[var(--radius-lg)] border border-[color:var(--color-accent)]/30 bg-[#0c231e] px-4 py-2.5 text-xs leading-relaxed font-medium text-[color:var(--color-foreground)] shadow-sm">
+                <div className="max-w-[92%] min-w-0 rounded-[var(--radius-lg)] border border-[color:var(--color-accent)]/30 bg-[color:var(--color-accent-soft)] px-4 py-2.5 text-xs leading-relaxed font-medium text-[color:var(--color-foreground)] shadow-sm">
                   <p>{mainText}</p>
                   {hasArticleLink && articleUrl ? (
                     <div className="mt-2 border-t border-[color:var(--color-border)] pt-1">
@@ -192,7 +193,7 @@ export function ConversationThread({
               <div
                 className={`max-w-[88%] min-w-0 rounded-[var(--radius-lg)] px-3.5 py-2.5 break-words shadow-sm sm:max-w-[80%] sm:px-4 sm:py-3 ${
                   mine
-                    ? "rounded-br-xs border border-[color:var(--color-accent)]/40 bg-[#0d2822] text-[color:var(--color-foreground)]"
+                    ? "rounded-br-xs border border-[color:var(--color-accent)]/40 bg-[color:var(--color-accent-soft)] text-[color:var(--color-foreground)]"
                     : "rounded-bl-xs border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-foreground)]"
                 }`}
               >
@@ -911,7 +912,8 @@ export function RequestChatBox({
   initialCorrectionMode?: boolean;
   initialAuthorCorrectionMode?: boolean;
 }) {
-  const router = useRouter();
+  const [currentMessages, setCurrentMessages] =
+    useState<ConversationMessageDTO[]>(messages);
   const [optimisticMessages, setOptimisticMessages] = useState<
     ConversationMessageDTO[]
   >([]);
@@ -919,41 +921,61 @@ export function RequestChatBox({
 
   if (messages !== prevMessages) {
     setPrevMessages(messages);
+    setCurrentMessages(messages);
     setOptimisticMessages([]);
   }
 
-  const [, startTransition] = useTransition();
   const isPollingRef = useRef(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
-    const poll = () => {
+    const fetchMessages = async () => {
       if (
         typeof document === "undefined" ||
-        document.visibilityState !== "visible"
+        document.visibilityState !== "visible" ||
+        isPollingRef.current
       )
         return;
-      if (isPollingRef.current) return;
 
       isPollingRef.current = true;
-      startTransition(() => {
-        router.refresh();
+      try {
+        const res = await fetch(`/api/requests/${requestId}/messages`, {
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.messages)) {
+            setCurrentMessages((prev) => {
+              if (data.messages.length !== prev.length) {
+                return data.messages;
+              }
+              const lastPrev = prev[prev.length - 1];
+              const lastNew = data.messages[data.messages.length - 1];
+              if (lastPrev?.id !== lastNew?.id) {
+                return data.messages;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch {
+        // Silently tolerate background network transient errors
+      } finally {
         isPollingRef.current = false;
-      });
+      }
     };
 
     const scheduleNext = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        poll();
-        scheduleNext();
-      }, 4000);
+        fetchMessages().then(scheduleNext);
+      }, 20000);
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        poll();
+        fetchMessages();
         scheduleNext();
       } else if (timer) {
         clearTimeout(timer);
@@ -968,7 +990,7 @@ export function RequestChatBox({
       if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [router]);
+  }, [requestId]);
 
   const handleOptimisticUpdate = (
     id: string,
@@ -984,7 +1006,7 @@ export function RequestChatBox({
       <ConversationThread
         requestId={requestId}
         viewerId={viewerId}
-        messages={messages}
+        messages={currentMessages}
         optimisticMessages={optimisticMessages}
       />
       <div className="mt-4">
@@ -1082,7 +1104,7 @@ export function TrackingIdForm({
           name="trackingId"
           type="text"
           defaultValue={currentTrackingId ?? ""}
-          placeholder="e.g. IMSU-AJSBS-2026-001"
+          placeholder="e.g. CAS-CJMR-2026-001"
           className="mt-1 block w-full rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 py-2 font-mono text-xs text-[color:var(--color-foreground)] placeholder:text-[color:var(--color-muted)] focus:border-[color:var(--color-accent)] focus:outline-none"
         />
         <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
@@ -1180,7 +1202,7 @@ export function InlineEditableTrackingId({
             name="trackingId"
             type="text"
             defaultValue={trackingId}
-            placeholder="e.g. IMSU-2026-002"
+            placeholder="e.g. CAS-2026-002"
             autoFocus
             disabled={isPending}
             className="block flex-1 rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-2.5 py-1 font-mono text-xs text-[color:var(--color-foreground)] placeholder:text-[color:var(--color-muted)] focus:border-[color:var(--color-accent)] focus:outline-none disabled:opacity-50"
@@ -1663,6 +1685,8 @@ export function CanonicalArticleSubmissionForm({
   version = 1,
   initial,
   fileName: initialFileName,
+  journalName,
+  journalShortName,
 }: {
   action: (
     state: RequestActionState,
@@ -1683,11 +1707,50 @@ export function CanonicalArticleSubmissionForm({
     }>;
   };
   fileName?: string;
+  journalName?: string;
+  journalShortName?: string | null;
 }) {
   const [title, setTitle] = useState(initial.title);
   const [abstract, setAbstract] = useState(initial.abstract);
   const [keywords, setKeywords] = useState(initial.keywords);
-  const [state, formAction] = useActionState(action, initialState);
+  const [state, formAction, isPending] = useActionState(action, initialState);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [prevError, setPrevError] = useState(state.error);
+  const formRef = useRef<HTMLFormElement>(null);
+  const isConfirmedRef = useRef(false);
+
+  if (state.error !== prevError) {
+    setPrevError(state.error);
+    if (state.error && isConfirmOpen) {
+      setIsConfirmOpen(false);
+    }
+  }
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (journalName && !isConfirmedRef.current) {
+      e.preventDefault();
+      if (!e.currentTarget.checkValidity()) {
+        e.currentTarget.reportValidity();
+        return;
+      }
+      setIsConfirmOpen(true);
+      return;
+    }
+    isConfirmedRef.current = false;
+  };
+
+  const handleConfirmSubmit = () => {
+    if (isPending) return;
+    isConfirmedRef.current = true;
+    formRef.current?.requestSubmit();
+  };
+
+  const handleGoBack = () => {
+    if (isPending) return;
+    setIsConfirmOpen(false);
+    isConfirmedRef.current = false;
+  };
+
   const [authors, setAuthors] = useState(
     initial.authors.length > 0
       ? initial.authors
@@ -1703,7 +1766,12 @@ export function CanonicalArticleSubmissionForm({
   );
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={handleSubmit}
+      className="space-y-6"
+    >
       <input type="hidden" name="version" value={version} />
       <input type="hidden" name="authors" value={JSON.stringify(authors)} />
       <label className="block text-sm font-semibold">
@@ -1852,6 +1920,18 @@ export function CanonicalArticleSubmissionForm({
         <p className="text-xs text-[color:var(--color-danger)]">
           {state.error}
         </p>
+      ) : null}
+
+      {journalName ? (
+        <SubmissionConfirmationDialog
+          isOpen={isConfirmOpen}
+          onClose={handleGoBack}
+          onConfirm={handleConfirmSubmit}
+          journalName={journalName}
+          journalShortName={journalShortName}
+          manuscriptTitle={title || ""}
+          isSubmitting={isPending}
+        />
       ) : null}
     </form>
   );
