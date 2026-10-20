@@ -17,6 +17,11 @@ type DbJournalOption = {
   name: string;
 };
 
+type JournalOptionItem = {
+  slug: string;
+  name: string;
+};
+
 export const metadata: Metadata = {
   title: "Announcements & Call for Papers | CAS Journals",
   description:
@@ -41,18 +46,18 @@ export default async function AnnouncementsPage({
     }),
   ]);
 
-  const journalOptions =
+  const journalOptions: JournalOptionItem[] =
     dbJournals.length > 0
       ? dbJournals
-          .map((j: DbJournalOption) => ({
+          .map((j: DbJournalOption): JournalOptionItem => ({
             slug: j.slug,
             name: j.shortName || j.name,
           }))
           .sort(
-            (a, b) =>
+            (a: JournalOptionItem, b: JournalOptionItem) =>
               getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug),
           )
-      : activeJournalsConfig.map((j) => ({
+      : activeJournalsConfig.map((j): JournalOptionItem => ({
           slug: j.slug,
           name: j.shortName,
         }));
