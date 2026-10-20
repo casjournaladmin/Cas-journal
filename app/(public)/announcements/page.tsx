@@ -4,7 +4,10 @@ import { AnnouncementImage } from "@/components/announcements/announcement-image
 import { Container } from "@/components/ui/container";
 import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
-import { getPublicAnnouncements } from "@/lib/editorial/announcements-store";
+import {
+  type Announcement,
+  getPublicAnnouncements,
+} from "@/lib/editorial/announcements-store";
 import {
   CANONICAL_JOURNAL_ORDER,
   getJournalOrderPriority,
@@ -34,17 +37,20 @@ export default async function AnnouncementsPage({
   searchParams: Promise<{ journal?: string }>;
 }) {
   const { journal: activeJournal = "ALL" } = await searchParams;
-  const [announcements, dbJournals] = await Promise.all([
-    getPublicAnnouncements(activeJournal === "ALL" ? undefined : activeJournal),
-    prisma.journal.findMany({
-      where: {
-        isActive: true,
-        slug: { in: [...CANONICAL_JOURNAL_ORDER] },
-      },
-      select: { slug: true, shortName: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  const [announcements, dbJournals]: [Announcement[], DbJournalOption[]] =
+    await Promise.all([
+      getPublicAnnouncements(
+        activeJournal === "ALL" ? undefined : activeJournal,
+      ),
+      prisma.journal.findMany({
+        where: {
+          isActive: true,
+          slug: { in: [...CANONICAL_JOURNAL_ORDER] },
+        },
+        select: { slug: true, shortName: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
   const journalOptions: JournalOptionItem[] =
     dbJournals.length > 0
@@ -62,7 +68,10 @@ export default async function AnnouncementsPage({
           name: j.shortName,
         }));
 
-  const filterTabs = [{ slug: "ALL", name: "All Journals" }, ...journalOptions];
+  const filterTabs: JournalOptionItem[] = [
+    { slug: "ALL", name: "All Journals" },
+    ...journalOptions,
+  ];
 
   return (
     <div className="space-y-12 pb-24">
@@ -87,7 +96,7 @@ export default async function AnnouncementsPage({
         <div className="mx-auto max-w-4xl space-y-8">
           {/* Journal Filter Tabs */}
           <div className="flex gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-3">
-            {filterTabs.map((j) => (
+            {filterTabs.map((j: JournalOptionItem) => (
               <Link
                 key={j.slug}
                 href={
@@ -163,7 +172,7 @@ export default async function AnnouncementsPage({
             </div>
           ) : (
             <div className="space-y-6">
-              {announcements.map((item, index) => (
+              {announcements.map((item: Announcement, index: number) => (
                 <article
                   key={item.id}
                   className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 shadow-sm transition hover:border-[color:var(--color-accent)]/50 sm:p-7"
