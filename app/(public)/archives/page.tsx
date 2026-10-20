@@ -12,6 +12,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
+type CatalogJournalItem = {
+  id: string;
+  name: string;
+  slug: string;
+  shortName: string | null;
+  department: { name: string } | null;
+};
+
 export default async function ArchivesPage({
   searchParams,
 }: {
@@ -99,15 +107,17 @@ export default async function ArchivesPage({
     }),
   ]);
 
-  const catalogJournals =
+  const catalogJournals: CatalogJournalItem[] =
     allActiveJournals.length > 0
-      ? allActiveJournals.sort((a, b) => {
-          const diff =
-            getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug);
-          if (diff !== 0) return diff;
-          return a.name.localeCompare(b.name);
-        })
-      : activeJournalsConfig.map((j) => ({
+      ? allActiveJournals.sort(
+          (a: CatalogJournalItem, b: CatalogJournalItem) => {
+            const diff =
+              getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug);
+            if (diff !== 0) return diff;
+            return a.name.localeCompare(b.name);
+          },
+        )
+      : activeJournalsConfig.map((j): CatalogJournalItem => ({
           id: j.slug,
           name: j.name,
           slug: j.slug,
@@ -315,7 +325,9 @@ export default async function ArchivesPage({
                       {article.authors.length ? (
                         <p className="mt-2 font-mono text-xs text-[color:var(--color-subtle)]">
                           Authors:{" "}
-                          {article.authors.map((a) => a.fullName).join(", ")}
+                          {article.authors
+                            .map((a: { fullName: string }) => a.fullName)
+                            .join(", ")}
                         </p>
                       ) : null}
                       {article.doi ? (

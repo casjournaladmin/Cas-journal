@@ -41,6 +41,16 @@ const JOURNAL_CARD_META: Record<
   },
 };
 
+type CatalogHomeCard = {
+  slug: string;
+  name: string;
+  shortName: string | null;
+  badge: string;
+  image: string;
+  description: string;
+  isSubmissionOpen: boolean;
+};
+
 export default async function Home() {
   const [
     currentIssueArticle,
@@ -109,13 +119,13 @@ export default async function Home() {
               isSubmissionOpen: activationMap[j.slug] === true,
             };
           })
-          .sort((a, b) => {
+          .sort((a: CatalogHomeCard, b: CatalogHomeCard) => {
             const diff =
               getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug);
             if (diff !== 0) return diff;
             return a.name.localeCompare(b.name);
           })
-      : activeJournalsConfig.map((j) => ({
+      : activeJournalsConfig.map((j): CatalogHomeCard => ({
           slug: j.slug,
           name: j.name,
           shortName: j.shortName,

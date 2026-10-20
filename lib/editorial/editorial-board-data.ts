@@ -75,7 +75,7 @@ export function getJournalOrderPriority(slug: string): number {
 export function sortJournalsByCanonicalOrder<T extends { slug: string }>(
   journals: T[],
 ): T[] {
-  return [...journals].sort((a, b) => {
+  return [...journals].sort((a: T, b: T) => {
     const pA = getJournalOrderPriority(a.slug);
     const pB = getJournalOrderPriority(b.slug);
     if (pA !== pB) return pA - pB;

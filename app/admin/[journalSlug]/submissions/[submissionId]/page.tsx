@@ -696,7 +696,10 @@ export default async function EditorialSubmissionPage({
                 ];
 
                 return eventsList
-                  .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+                  .sort(
+                    (a: { createdAt: Date }, b: { createdAt: Date }) =>
+                      a.createdAt.getTime() - b.createdAt.getTime(),
+                  )
                   .map((event) => (
                     <li key={event.id} className="relative pb-5 last:pb-0">
                       <span className="absolute top-1.5 -left-[1.42rem] size-2 rounded-full bg-[color:var(--color-accent)]" />

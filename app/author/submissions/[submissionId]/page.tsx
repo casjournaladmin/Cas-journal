@@ -124,7 +124,10 @@ export default async function SubmissionDetailPage({
         createdAt: event.createdAt,
       };
     }),
-  ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  ].sort(
+    (a: { createdAt: Date }, b: { createdAt: Date }) =>
+      a.createdAt.getTime() - b.createdAt.getTime(),
+  );
 
   return (
     <div className="mx-auto max-w-5xl">
