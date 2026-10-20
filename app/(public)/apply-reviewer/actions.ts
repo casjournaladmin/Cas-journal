@@ -1,6 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/lib/auth/authorization";
+import { hasGlobalRole } from "@/lib/auth/permissions";
 import { createReviewerApplication } from "@/lib/editorial/reviewer-applications-store";
 
 export type ReviewerApplicationActionState = {
@@ -30,7 +31,7 @@ export async function applyAsReviewerAction(
     };
   }
 
-  if (!user.globalRoles.some((r) => r.role === "AUTHOR")) {
+  if (!hasGlobalRole(user, "AUTHOR")) {
     return {
       success: false,
       error: "Author privileges are required to submit a reviewer application.",

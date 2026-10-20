@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/authorization";
-import { isSuperAdmin } from "@/lib/auth/permissions";
+import { hasGlobalRole, isSuperAdmin } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/db/prisma";
 import { canAccessRequest } from "@/lib/requests/policy";
 
@@ -38,7 +38,7 @@ export async function GET(
     id: user.id,
     active: user.isActive,
     superAdmin: isSuperAdmin(user),
-    author: user.globalRoles.some((r) => r.role === "AUTHOR"),
+    author: hasGlobalRole(user, "AUTHOR"),
     adminDepartmentIds: user.journalRoles
       .filter((r) => r.role === "JOURNAL_ADMIN")
       .map((r) => r.journal.department?.id)

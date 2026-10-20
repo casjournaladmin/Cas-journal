@@ -56,11 +56,15 @@ export default async function LoginPage({
 
       if (dbUsers.length > 0) {
         devUsers = dbUsers.map((u) => {
-          const isSuper = u.globalRoles.some((gr) => gr.role === "SUPER_ADMIN");
-          const journalAdminRole = u.journalRoles.find(
-            (jr) => jr.role === "JOURNAL_ADMIN",
+          const isSuper = u.globalRoles.some(
+            (gr: { role: string }) => gr.role === "SUPER_ADMIN",
           );
-          const editorRole = u.journalRoles.find((jr) => jr.role === "EDITOR");
+          const journalAdminRole = u.journalRoles.find(
+            (jr: { role: string }) => jr.role === "JOURNAL_ADMIN",
+          );
+          const editorRole = u.journalRoles.find(
+            (jr: { role: string }) => jr.role === "EDITOR",
+          );
 
           let roleLabel = "Author";
           let color = "bg-sky-500/10 text-sky-400 border-sky-500/30";
