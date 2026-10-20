@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "NODE_ENV=test NODE_OPTIONS=--conditions=react-server node --env-file=.env --import tsx --test-concurrency=1 --test tests/*.test.ts",
