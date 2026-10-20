@@ -1,4 +1,19 @@
-import { GlobalRole, JournalRole } from "@prisma/client";
+export const GlobalRole = {
+  SUPER_ADMIN: "SUPER_ADMIN",
+  AUTHOR: "AUTHOR",
+} as const;
+export type GlobalRole = (typeof GlobalRole)[keyof typeof GlobalRole];
+
+export const JournalRole = {
+  JOURNAL_ADMIN: "JOURNAL_ADMIN",
+  EDITOR: "EDITOR",
+  REVIEWER: "REVIEWER",
+  AUTHOR: "AUTHOR",
+} as const;
+export type JournalRole = (typeof JournalRole)[keyof typeof JournalRole];
+
+import { isDevIdentityEnabled } from "./dev-identity-config";
+export { isDevIdentityEnabled };
 
 export const DEV_IDENTITY_COOKIE_NAME = "cas_dev_identity";
 
@@ -280,10 +295,6 @@ export const ALL_DEV_IDENTITIES = {
   ...CAS_DEV_IDENTITIES,
   ...IZU_DEV_IDENTITIES,
 };
-
-export function isDevIdentityEnabled(): boolean {
-  return process.env.NODE_ENV !== "production";
-}
 
 export function getDevIdentityById(id: string) {
   if (!isDevIdentityEnabled()) return null;

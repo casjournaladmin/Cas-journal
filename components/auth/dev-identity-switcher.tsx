@@ -1,4 +1,4 @@
-import { isDevIdentityEnabled } from "@/lib/auth/dev-identities";
+import { isDevIdentityEnabled } from "@/lib/auth/dev-identity-config";
 import {
   switchDevIdentityAction,
   clearDevIdentityAction,

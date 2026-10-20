@@ -11,12 +11,33 @@ interface WebPushSender {
   ) => Promise<{ statusCode: number }>;
 }
 
+declare const __non_webpack_require__: ((id: string) => unknown) | undefined;
+
 let dynamicWebPush: WebPushSender | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  dynamicWebPush = require("web-push");
-} catch {
-  // web-push optional dependency
+let webPushAttempted = false;
+
+function getWebPushSender(): WebPushSender | null {
+  if (dynamicWebPush) return dynamicWebPush;
+  if (webPushAttempted) return null;
+  webPushAttempted = true;
+
+  try {
+    const pkg = "web-push";
+    // Indirect dynamic require prevents bundlers (such as Next.js Turbopack)
+    // from treating optional runtime modules as fatal missing dependencies.
+    const dynamicRequire =
+      typeof __non_webpack_require__ !== "undefined"
+        ? __non_webpack_require__
+        : typeof require !== "undefined"
+          ? require
+          : null;
+    if (dynamicRequire) {
+      dynamicWebPush = dynamicRequire(pkg) as WebPushSender;
+    }
+  } catch {
+    // web-push optional dependency
+  }
+  return dynamicWebPush;
 }
 import { isValidUuid } from "./validation";
 
@@ -274,7 +295,7 @@ export async function sendPushNotificationToSubscription(
     ) => Promise<{ statusCode: number }>;
   },
 ): Promise<PushDeliveryResult> {
-  const sender = pushSender || dynamicWebPush;
+  const sender = pushSender || getWebPushSender();
   if (!sender) {
     return {
       success: false,
