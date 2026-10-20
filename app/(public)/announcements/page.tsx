@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { Journal } from "@prisma/client";
 import { AnnouncementImage } from "@/components/announcements/announcement-image";
 import { Container } from "@/components/ui/container";
 import { activeJournalsConfig } from "@/lib/config/site";
@@ -11,6 +10,12 @@ import {
   getJournalOrderPriority,
 } from "@/lib/editorial/editorial-board-data";
 import { formatLongDate } from "@/lib/formatting/dates";
+
+type DbJournalOption = {
+  slug: string;
+  shortName: string | null;
+  name: string;
+};
 
 export const metadata: Metadata = {
   title: "Announcements & Call for Papers | CAS Journals",
@@ -39,7 +44,7 @@ export default async function AnnouncementsPage({
   const journalOptions =
     dbJournals.length > 0
       ? dbJournals
-          .map((j: Pick<Journal, "slug" | "shortName" | "name">) => ({
+          .map((j: DbJournalOption) => ({
             slug: j.slug,
             name: j.shortName || j.name,
           }))
