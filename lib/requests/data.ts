@@ -183,12 +183,16 @@ export async function getPlatformStaffCounts() {
   return { journalAdmins, editors };
 }
 
-import { sortJournalsByCanonicalOrder } from "@/lib/editorial/editorial-board-data";
+import {
+  CANONICAL_JOURNAL_ORDER,
+  sortJournalsByCanonicalOrder,
+} from "@/lib/editorial/editorial-board-data";
 
 export async function getActiveJournals() {
   const journals = await prisma.journal.findMany({
     where: {
       isActive: true,
+      slug: { in: [...CANONICAL_JOURNAL_ORDER] },
       OR: [{ departmentId: null }, { department: { isActive: true } }],
     },
     select: {

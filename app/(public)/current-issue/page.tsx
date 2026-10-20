@@ -14,36 +14,36 @@ export const dynamic = "force-dynamic";
 export default async function CurrentIssuePage() {
   const [publishedArticles, activationMap] = await Promise.all([
     prisma.article.findMany({
-    where: {
-      isPublished: true,
-      issue: { isClosed: false },
-    },
-    orderBy: [
-      { issue: { volume: { year: "desc" } } },
-      { issue: { volume: { number: "desc" } } },
-      { issue: { number: "desc" } },
-      { issueOrder: "asc" },
-      { pageStart: "asc" },
-      { publishedAt: "desc" },
-    ],
-    include: {
-      issue: {
-        include: {
-          volume: {
-            include: {
-              journal: {
-                select: {
-                  name: true,
-                  slug: true,
-                  shortName: true,
-                  department: { select: { name: true } },
+      where: {
+        isPublished: true,
+        issue: { isClosed: false },
+      },
+      orderBy: [
+        { issue: { volume: { year: "desc" } } },
+        { issue: { volume: { number: "desc" } } },
+        { issue: { number: "desc" } },
+        { issueOrder: "asc" },
+        { pageStart: "asc" },
+        { publishedAt: "desc" },
+      ],
+      include: {
+        issue: {
+          include: {
+            volume: {
+              include: {
+                journal: {
+                  select: {
+                    name: true,
+                    slug: true,
+                    shortName: true,
+                    department: { select: { name: true } },
+                  },
                 },
               },
             },
           },
         },
-      },
-      authors: { orderBy: { position: "asc" } },
+        authors: { orderBy: { position: "asc" } },
       },
     }),
     getJournalActivationMap(),
@@ -73,7 +73,7 @@ export default async function CurrentIssuePage() {
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="cas-page-hero">
+      <header className="cas-page-hero cas-page-hero-current">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/authorization";
 import {
+  dismissAllNotifications,
+  dismissNotification,
   getUnreadCount,
   listNotifications,
   markAllNotificationsAsRead,
@@ -65,6 +67,31 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
 
+    // Dismissal requests
+    if (body.dismissAll === true) {
+      const result = await dismissAllNotifications(user.id);
+      return NextResponse.json({ success: true, count: result.count });
+    }
+
+    if (
+      body.dismiss === true &&
+      typeof body.notificationId === "string" &&
+      body.notificationId.trim()
+    ) {
+      const updated = await dismissNotification(
+        body.notificationId.trim(),
+        user.id,
+      );
+      if (!updated) {
+        return NextResponse.json(
+          { error: "Notification not found." },
+          { status: 404 },
+        );
+      }
+      return NextResponse.json({ success: true, notification: updated });
+    }
+
+    // Read state updates
     if (body.all === true) {
       const result = await markAllNotificationsAsRead(user.id);
       return NextResponse.json({ success: true, count: result.count });
@@ -87,13 +114,51 @@ export async function PATCH(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Either 'all: true' or a valid 'notificationId' must be specified.",
+          "Specify a valid operation ('all', 'notificationId', 'dismiss', or 'dismissAll').",
       },
       { status: 400 },
     );
   } catch {
     return NextResponse.json(
-      { error: "Failed to update notification read state." },
+      { error: "Failed to update notification state." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const user = await getCurrentUser();
+  if (!user || !user.isActive) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+
+  try {
+    if (searchParams.get("all") === "true") {
+      const result = await dismissAllNotifications(user.id);
+      return NextResponse.json({ success: true, count: result.count });
+    }
+
+    const id = searchParams.get("id");
+    if (id && id.trim()) {
+      const updated = await dismissNotification(id.trim(), user.id);
+      if (!updated) {
+        return NextResponse.json(
+          { error: "Notification not found." },
+          { status: 404 },
+        );
+      }
+      return NextResponse.json({ success: true, notification: updated });
+    }
+
+    return NextResponse.json(
+      { error: "Specify either '?all=true' or '?id=<notificationId>'." },
+      { status: 400 },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to dismiss notification." },
       { status: 500 },
     );
   }

@@ -38,7 +38,7 @@ import {
   normalizeKeywords,
   validateUploadFile,
 } from "@/lib/submissions/validation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function actionError(error: unknown): ActionState {
   if (
@@ -47,6 +47,9 @@ function actionError(error: unknown): ActionState {
     error instanceof DirectSubmissionError
   ) {
     return { error: error.message, fieldErrors: error.fieldErrors };
+  }
+  if (error instanceof Error && error.message) {
+    return { error: error.message };
   }
   return { error: "We couldn’t save that change. Please try again." };
 }
@@ -191,7 +194,7 @@ export async function removeSubmissionFileAction(
       storedFileId: file.storedFileId,
       version: numberField(formData, "version"),
     });
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { error } = await supabase.storage
       .from(file.storedFile.bucket)
       .remove([file.storedFile.objectPath]);
@@ -217,7 +220,7 @@ export async function deleteDraftAction(
 
   const files = await getDraftFilesForDeletion(user.id, submissionId);
   if (files.length > 0) {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const grouped = new Map<string, typeof files>();
     for (const file of files) {
       const bucketFiles = grouped.get(file.storedFile.bucket) ?? [];
@@ -274,10 +277,22 @@ export async function submitAuthorCorrectionAction(
     };
   }
 
-  const rawFiles = formData.getAll("attachments");
-  const files: File[] = rawFiles.filter(
-    (item): item is File => item instanceof File && item.size > 0,
-  );
+  let files: File[] = [];
+  const rawAttachments = formData
+    .getAll("attachments")
+    .filter((item): item is File => item instanceof File && item.size > 0);
+  if (rawAttachments.length > 0) {
+    files = rawAttachments;
+  } else {
+    const rawManuscript = formData.get("manuscript");
+    const rawResponse = formData.get("response");
+    if (rawManuscript instanceof File && rawManuscript.size > 0) {
+      files.push(rawManuscript);
+    }
+    if (rawResponse instanceof File && rawResponse.size > 0) {
+      files.push(rawResponse);
+    }
+  }
 
   if (files.length === 0) {
     return { error: "Please attach your corrected manuscript file." };
@@ -325,18 +340,21 @@ export async function submitAuthorCorrectionAction(
     }),
   );
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const uploaded: string[] = [];
 
   try {
     for (const [index, file] of files.entries()) {
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(paths[index], file, {
-          contentType: file.type,
+        .upload(paths[index], fileBuffer, {
+          contentType: file.type || "application/octet-stream",
           upsert: false,
         });
-      if (error) throw new Error("Upload failed. Try again.");
+      if (error) {
+        throw new Error(`Upload failed for ${file.name}: ${error.message}`);
+      }
       uploaded.push(paths[index]);
     }
 
@@ -344,7 +362,7 @@ export async function submitAuthorCorrectionAction(
       bucket,
       objectPath,
       originalFileName: file.name,
-      mimeType: file.type,
+      mimeType: file.type || "application/octet-stream",
       sizeBytes: file.size,
     });
 

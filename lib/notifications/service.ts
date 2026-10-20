@@ -21,16 +21,17 @@ interface NotificationServiceClient {
         id?: string;
         userId?: string;
         idempotencyKey?: string;
+        isDismissed?: boolean;
       };
     }) => Promise<NotificationRecord | null>;
     findMany: (args: {
-      where: { userId: string; isRead?: boolean };
+      where: { userId: string; isRead?: boolean; isDismissed?: boolean };
       orderBy?: { createdAt: "asc" | "desc" };
       skip?: number;
       take?: number;
     }) => Promise<NotificationRecord[]>;
     count: (args: {
-      where: { userId: string; isRead?: boolean };
+      where: { userId: string; isRead?: boolean; isDismissed?: boolean };
     }) => Promise<number>;
     create: (args: {
       data: {
@@ -47,11 +48,21 @@ interface NotificationServiceClient {
     }) => Promise<NotificationRecord>;
     update: (args: {
       where: { id: string };
-      data: { isRead: boolean; readAt: Date };
+      data: {
+        isRead?: boolean;
+        readAt?: Date;
+        isDismissed?: boolean;
+        dismissedAt?: Date;
+      };
     }) => Promise<NotificationRecord>;
     updateMany: (args: {
-      where: { userId: string; isRead?: boolean };
-      data: { isRead: boolean; readAt: Date };
+      where: { userId: string; isRead?: boolean; isDismissed?: boolean };
+      data: {
+        isRead?: boolean;
+        readAt?: Date;
+        isDismissed?: boolean;
+        dismissedAt?: Date;
+      };
     }) => Promise<{ count: number }>;
   };
 }
@@ -179,6 +190,7 @@ export async function getUnreadCount(
   return client.notification.count({
     where: {
       userId: userId.trim(),
+      isDismissed: false,
       isRead: false,
     },
   });
@@ -205,6 +217,7 @@ export async function listNotifications(
   const cleanUserId = userId.trim();
   const whereClause = {
     userId: cleanUserId,
+    isDismissed: false,
     ...(filter === "unread" ? { isRead: false } : {}),
   };
 
@@ -224,6 +237,7 @@ export async function listNotifications(
       : client.notification.count({
           where: {
             userId: cleanUserId,
+            isDismissed: false,
             isRead: false,
           },
         }),
@@ -315,11 +329,93 @@ export async function markAllNotificationsAsRead(
   const result = await client.notification.updateMany({
     where: {
       userId: cleanUserId,
+      isDismissed: false,
       isRead: false,
     },
     data: {
       isRead: true,
       readAt: new Date(),
+    },
+  });
+
+  return { count: result.count };
+}
+
+/**
+ * Dismisses an individual notification for a user (removing it from active lists).
+ * Enforces strict ownership.
+ */
+export async function dismissNotification(
+  notificationId: string,
+  userId: string,
+  db?: unknown,
+): Promise<NotificationRecord | null> {
+  if (
+    !notificationId ||
+    typeof notificationId !== "string" ||
+    !notificationId.trim()
+  ) {
+    throw new NotificationValidationError("notificationId is required.");
+  }
+  if (!isValidUuid(userId)) {
+    throw new NotificationValidationError("userId must be a valid UUID.");
+  }
+
+  const cleanId = notificationId.trim();
+  const cleanUserId = userId.trim();
+  const client = await getClient(db);
+
+  // 1. Verify existence and ownership
+  const existing = await client.notification.findFirst({
+    where: {
+      id: cleanId,
+      userId: cleanUserId,
+    },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  // 2. If already dismissed, return immediately
+  if (existing.isDismissed) {
+    return existing;
+  }
+
+  // 3. Mark dismissed and update timestamp
+  const updated = await client.notification.update({
+    where: { id: cleanId },
+    data: {
+      isDismissed: true,
+      dismissedAt: new Date(),
+    },
+  });
+
+  return updated;
+}
+
+/**
+ * Dismisses all active notifications for a user.
+ */
+export async function dismissAllNotifications(
+  userId: string,
+  db?: unknown,
+): Promise<{ count: number }> {
+  if (!isValidUuid(userId)) {
+    throw new NotificationValidationError("userId must be a valid UUID.");
+  }
+
+  const cleanUserId = userId.trim();
+  const client = await getClient(db);
+
+  const result = await client.notification.updateMany({
+    where: {
+      userId: cleanUserId,
+      isDismissed: false,
+    },
+    data: {
+      isDismissed: true,
+      dismissedAt: new Date(),
     },
   });
 

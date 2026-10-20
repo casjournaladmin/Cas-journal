@@ -17,6 +17,13 @@ import { isJournalActivated } from "@/lib/editorial/journal-activation";
 
 export const dynamic = "force-dynamic";
 
+const JOURNAL_HERO_MAP: Record<string, string> = {
+  existentia: "/assets/images/journal-arts-humanities.jpg",
+  cjmr: "/assets/images/journal-multidisciplinary.jpg",
+  izu: "/assets/images/journal-governance-security.jpg",
+  polis: "/assets/images/journal-political-studies.jpg",
+};
+
 async function resolvePublicJournalPageData(
   journalSlug: string,
 ): Promise<{ meta: JournalMetadata; isSubmissionOpen: boolean } | null> {
@@ -159,10 +166,19 @@ export default async function JournalLandingPage({
     .filter((value) => Boolean(value && value.trim()))
     .join(", ");
 
+  const heroImage =
+    JOURNAL_HERO_MAP[meta.slug] ||
+    "/assets/images/journal-multidisciplinary.jpg";
+
   return (
     <div className="space-y-16 pb-24">
-      {/* ── CAS HERO BANNER ── */}
-      <section className="cas-page-hero">
+      {/* ── CAS HERO BANNER (Image-backed with high contrast readable text overlay) ── */}
+      <section
+        className="cas-page-hero relative overflow-hidden text-white"
+        style={{
+          background: `linear-gradient(135deg, rgba(3, 43, 69, 0.90) 0%, rgba(7, 89, 133, 0.85) 100%), url("${heroImage}") center 35% / cover no-repeat`,
+        }}
+      >
         <div className="cas-page-hero-inner">
           <span className="cas-hero-eyebrow">
             {meta.shortName}
@@ -180,30 +196,47 @@ export default async function JournalLandingPage({
           )}
 
           {meta.issnPrint ||
+          meta.issnOnline ||
           meta.issnL ||
           meta.frequency ||
           meta.referencingStyle ? (
-            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-full border border-sky-300/25 bg-white/10 px-5 py-2 font-mono text-xs text-sky-100">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-sans text-xs text-sky-100/90">
               {meta.issnPrint ? (
                 <span>
-                  ISSN: <strong className="text-white">{meta.issnPrint}</strong>
+                  Print ISSN:{" "}
+                  <strong className="font-semibold text-white">
+                    {meta.issnPrint}
+                  </strong>
+                </span>
+              ) : null}
+              {meta.issnOnline ? (
+                <span>
+                  Online ISSN:{" "}
+                  <strong className="font-semibold text-white">
+                    {meta.issnOnline}
+                  </strong>
                 </span>
               ) : null}
               {meta.issnL ? (
                 <span>
-                  ISSN-L: <strong className="text-white">{meta.issnL}</strong>
+                  ISSN-L:{" "}
+                  <strong className="font-semibold text-white">
+                    {meta.issnL}
+                  </strong>
                 </span>
               ) : null}
               {meta.frequency ? (
                 <span>
                   Frequency:{" "}
-                  <strong className="text-white">{meta.frequency}</strong>
+                  <strong className="font-semibold text-white">
+                    {meta.frequency}
+                  </strong>
                 </span>
               ) : null}
               {meta.referencingStyle ? (
                 <span>
                   Standard:{" "}
-                  <strong className="text-white">
+                  <strong className="font-semibold text-white">
                     {meta.referencingStyle}
                   </strong>
                 </span>
@@ -237,94 +270,119 @@ export default async function JournalLandingPage({
         </div>
       </section>
 
-      {/* ── SECTION 1: AIMS & SCOPE ── */}
-      <section>
+      {/* ── SECTION 1: AIMS, SCOPE & TOPICAL COVERAGE ── */}
+      <section className="border-b border-[color:var(--color-border)] py-12">
         <Container>
-          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-6 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 shadow-[var(--shadow-card)] sm:p-8">
-              <div className="border-b border-[color:var(--color-border)] pb-3">
-                <p className="font-mono text-xs font-semibold text-[color:var(--color-accent)] uppercase">
+          <div className="grid gap-12 lg:grid-cols-[1.3fr_0.7fr]">
+            <div className="space-y-8">
+              <div>
+                <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
                   Journal Focus &amp; Policy
                 </p>
-                <h2 className="mt-1 font-serif text-2xl font-semibold text-[color:var(--color-foreground)]">
+                <h2 className="mt-1.5 font-serif text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-3xl">
                   Aims &amp; Scope
                 </h2>
+                <p className="mt-4 text-sm leading-relaxed text-[color:var(--color-foreground)]/90">
+                  {meta.aimsAndScope ||
+                    "Aims and scope for this journal will be published by the editorial board."}
+                </p>
               </div>
-              <p className="text-sm leading-relaxed text-[color:var(--color-muted)]">
-                {meta.aimsAndScope ||
-                  "Aims and scope for this journal will be published by the editorial board."}
-              </p>
 
-              <div className="grid gap-4 pt-2 sm:grid-cols-2">
-                <div className="rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4">
-                  <p className="font-mono text-xs font-bold text-[color:var(--color-foreground)]">
+              {meta.subjectAreas && meta.subjectAreas.length > 0 ? (
+                <div className="border-t border-[color:var(--color-border)]/70 pt-6">
+                  <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
+                    Thematic Coverage &amp; Disciplinary Domains
+                  </p>
+                  <ul className="mt-3.5 grid gap-2.5 text-xs sm:grid-cols-2">
+                    {meta.subjectAreas.map((area, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-2 py-1 text-[color:var(--color-foreground)]"
+                      >
+                        <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[color:var(--color-accent)]" />
+                        <span className="leading-relaxed">{area}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div className="grid gap-6 border-t border-[color:var(--color-border)]/70 pt-6 sm:grid-cols-2">
+                <div className="border-l-2 border-[color:var(--color-accent)] pl-4">
+                  <p className="font-serif text-sm font-bold text-[color:var(--color-foreground)]">
                     Double-Blind Peer Review
                   </p>
-                  <p className="mt-1 text-xs text-[color:var(--color-muted)]">
+                  <p className="mt-1.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
                     {meta.peerReviewPolicy ||
                       "Double-anonymised evaluation coordinated by the journal editorial board."}
                   </p>
                 </div>
-                <div className="rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4">
-                  <p className="font-mono text-xs font-bold text-[color:var(--color-foreground)]">
-                    Open Access &amp; Indexing
+                <div className="border-l-2 border-[color:var(--color-accent)] pl-4">
+                  <p className="font-serif text-sm font-bold text-[color:var(--color-foreground)]">
+                    Open Access &amp; CC-BY 4.0
                   </p>
-                  <p className="mt-1 text-xs text-[color:var(--color-muted)]">
-                    Immediate open access under CC-BY 4.0 with Crossref DOI
-                    registration and Google Scholar metadata.
+                  <p className="mt-1.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                    Immediate open access under Creative Commons Attribution 4.0
+                    International. Authors retain full copyright.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Author Quick Info Card */}
-            <div className="flex flex-col justify-between rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 shadow-[var(--shadow-card)] sm:p-8">
-              <div>
-                <p className="font-mono text-xs font-semibold text-[color:var(--color-accent)] uppercase">
-                  Submission Summary
-                </p>
-                <h3 className="mt-2 font-serif text-xl font-semibold text-[color:var(--color-foreground)]">
-                  Publishing Schedule &amp; Fees
-                </h3>
-                <dl className="mt-4 space-y-3 text-xs">
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 border-b border-[color:var(--color-border)] pb-2">
-                    <dt className="text-[color:var(--color-subtle)]">
-                      Initial Submission Fee:
-                    </dt>
-                    <dd className="shrink-0 font-bold text-emerald-600">
-                      Free (₦0 Upfront)
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 border-b border-[color:var(--color-border)] pb-2">
-                    <dt className="text-[color:var(--color-subtle)]">
-                      Publication Charge (Nigerian Authors):
-                    </dt>
-                    <dd className="shrink-0 font-bold text-[color:var(--color-foreground)]">
-                      ₦30,000 (After Acceptance)
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 border-b border-[color:var(--color-border)] pb-2">
-                    <dt className="text-[color:var(--color-subtle)]">
-                      Foreign / International Authors:
-                    </dt>
-                    <dd className="shrink-0 font-bold text-[color:var(--color-accent)]">
-                      US $90 (After Acceptance)
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 pb-1">
-                    <dt className="text-[color:var(--color-subtle)]">
-                      Submission Status:
-                    </dt>
-                    <dd className="font-semibold text-[color:var(--color-foreground)]">
-                      {isSubmissionOpen
-                        ? "Open for Submissions"
-                        : "Standby (Opening Soon)"}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+            {/* Author Quick Info Panel */}
+            <div className="border-t border-[color:var(--color-border)] pt-8 lg:border-t-0 lg:border-l lg:border-[color:var(--color-border)] lg:pl-10">
+              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
+                Submission Summary
+              </p>
+              <h3 className="mt-1.5 font-serif text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+                Publishing Schedule &amp; Fees
+              </h3>
+              <dl className="mt-5 space-y-3.5 text-xs">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--color-border)]/60 pb-2.5">
+                  <dt className="text-[color:var(--color-subtle)]">
+                    Initial Submission Fee:
+                  </dt>
+                  <dd className="font-bold text-emerald-600 dark:text-emerald-400">
+                    Free (₦0 Upfront)
+                  </dd>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--color-border)]/60 pb-2.5">
+                  <dt className="text-[color:var(--color-subtle)]">
+                    Publication Charge (Nigerian Authors):
+                  </dt>
+                  <dd className="font-bold text-[color:var(--color-foreground)]">
+                    ₦30,000 (After Acceptance)
+                  </dd>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--color-border)]/60 pb-2.5">
+                  <dt className="text-[color:var(--color-subtle)]">
+                    Foreign / International Authors:
+                  </dt>
+                  <dd className="font-bold text-[color:var(--color-accent)]">
+                    US $90 (After Acceptance)
+                  </dd>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--color-border)]/60 pb-2.5">
+                  <dt className="text-[color:var(--color-subtle)]">
+                    Publication Frequency:
+                  </dt>
+                  <dd className="font-semibold text-[color:var(--color-foreground)]">
+                    {meta.frequency || "Continuous Rolling Intake"}
+                  </dd>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--color-border)]/60 pb-2.5">
+                  <dt className="text-[color:var(--color-subtle)]">
+                    Submission Status:
+                  </dt>
+                  <dd className="font-semibold text-[color:var(--color-foreground)]">
+                    {isSubmissionOpen
+                      ? "Open for Submissions"
+                      : "Standby (Opening Soon)"}
+                  </dd>
+                </div>
+              </dl>
 
-              <div className="mt-6 border-t border-[color:var(--color-border)] pt-4">
+              <div className="mt-8">
                 {isSubmissionOpen ? (
                   <Link
                     href={submissionHref}
@@ -348,15 +406,252 @@ export default async function JournalLandingPage({
         </Container>
       </section>
 
-      {/* ── SECTION 2: EDITORIAL BOARD ── */}
-      <section className="border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)]/60 py-12">
+      {/* ── SECTION 2: AUTHOR GUIDELINES & ACCEPTED ARTICLE TYPES ── */}
+      <section className="border-b border-[color:var(--color-border)] py-12">
+        <Container>
+          <div className="border-b border-[color:var(--color-border)] pb-4">
+            <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
+              Author Instructions &amp; Standards
+            </p>
+            <h2 className="mt-1.5 font-serif text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-3xl">
+              Submission Guidelines &amp; Accepted Article Types
+            </h2>
+          </div>
+
+          <div className="mt-8 grid gap-12 lg:grid-cols-2">
+            {/* Accepted Article Types */}
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
+                Accepted Article Types
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                {meta.shortName} considers original manuscripts that meet
+                rigorous scholarly standards, offer innovative critical
+                insights, and contribute to ongoing academic and societal
+                discourse.
+              </p>
+              <div className="mt-5 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60">
+                {(
+                  meta.articleTypes || [
+                    "Original Research Articles",
+                    "Review Articles",
+                    "Critical Essays",
+                  ]
+                ).map((type, idx) => (
+                  <div key={idx} className="py-3.5">
+                    <p className="flex items-center gap-2 text-xs font-bold text-[color:var(--color-foreground)]">
+                      <span className="size-1.5 rounded-full bg-[color:var(--color-accent)]" />
+                      {type}
+                    </p>
+                    <p className="mt-1 pl-3.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                      {type === "Original Research Articles" &&
+                        "Full-length empirical, qualitative, or theoretical investigations presenting novel scholarship and robust methodological frameworks."}
+                      {type === "Review Articles" &&
+                        "Systematic, critical evaluations of existing literature, synthesizing disciplinary developments and identifying conceptual frontiers."}
+                      {(type === "Critical Essays" ||
+                        type === "Critical Analyses") &&
+                        "Rigorous analytical essays engaging with theoretical controversies, policy discourses, or philosophical debates."}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Manuscript Requirements */}
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
+                Manuscript Structure &amp; Requirements
+              </h3>
+              <dl className="mt-5 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60 text-xs">
+                {meta.guidelines?.wordCount ? (
+                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      Manuscript Length:
+                    </dt>
+                    <dd className="font-semibold text-[color:var(--color-foreground)]">
+                      {meta.guidelines.wordCount}
+                    </dd>
+                  </div>
+                ) : null}
+                {meta.guidelines?.abstractLength ? (
+                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      Abstract:
+                    </dt>
+                    <dd className="font-semibold text-[color:var(--color-foreground)]">
+                      {meta.guidelines.abstractLength}
+                    </dd>
+                  </div>
+                ) : null}
+                {meta.guidelines?.keywordsCount ? (
+                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      Keywords:
+                    </dt>
+                    <dd className="font-semibold text-[color:var(--color-foreground)]">
+                      {meta.guidelines.keywordsCount}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                  <dt className="font-medium text-[color:var(--color-subtle)]">
+                    Referencing Style:
+                  </dt>
+                  <dd className="font-semibold text-[color:var(--color-foreground)]">
+                    {meta.referencingStyle || "APA 7th Edition"}
+                  </dd>
+                </div>
+                {meta.guidelines?.formatting ? (
+                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      File Format:
+                    </dt>
+                    <dd className="font-semibold text-[color:var(--color-foreground)]">
+                      {meta.guidelines.formatting}
+                    </dd>
+                  </div>
+                ) : null}
+                {meta.guidelines?.deadline ? (
+                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      Submissions Intake:
+                    </dt>
+                    <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      {meta.guidelines.deadline}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
+                  <dt className="font-medium text-[color:var(--color-subtle)]">
+                    Editorial Desk:
+                  </dt>
+                  <dd className="font-mono text-[11px] font-semibold text-[color:var(--color-accent)]">
+                    {meta.contactEmail}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="pt-6">
+                <Link
+                  href={submissionHref}
+                  className="button-primary inline-flex w-full items-center justify-center gap-2 py-2.5 text-xs font-semibold"
+                >
+                  <span>Submit to {meta.shortName} via CAS Portal</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── SECTION 3: PUBLICATION ETHICS & CONTACT SECRETARIAT ── */}
+      <section className="border-b border-[color:var(--color-border)] py-12">
+        <Container>
+          <div className="grid gap-12 lg:grid-cols-2">
+            {/* Ethics & Peer Review Standards */}
+            <div>
+              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
+                Academic Integrity
+              </p>
+              <h3 className="mt-1.5 font-serif text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+                Peer Review &amp; Publication Ethics
+              </h3>
+              <p className="mt-3 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                {meta.shortName} follows the rigorous standards established by
+                the Committee on Publication Ethics (COPE). Every manuscript is
+                initially reviewed by the editorial desk for alignment and
+                quality, then subjected to double-blind evaluation by at least
+                two independent expert referees.
+              </p>
+              <div className="mt-5 space-y-4 border-l-2 border-[color:var(--color-border)] pl-4 text-xs">
+                <div>
+                  <p className="font-semibold text-[color:var(--color-foreground)]">
+                    Double-Blind Review
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                    Author identities and reviewer identities are mutually
+                    concealed throughout the review cycle.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-semibold text-[color:var(--color-foreground)]">
+                    Plagiarism Screening
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
+                    Manuscripts undergo anti-plagiarism verification.
+                    Falsification, fabricated data, and duplicate submissions
+                    are strictly prohibited.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Editorial Secretariat & Office */}
+            <div>
+              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
+                Correspondence
+              </p>
+              <h3 className="mt-1.5 font-serif text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+                Editorial Secretariat &amp; Office
+              </h3>
+              <dl className="mt-5 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60 text-xs">
+                {meta.officeAddress ? (
+                  <div className="py-2.5">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      Physical Address:
+                    </dt>
+                    <dd className="mt-0.5 font-medium text-[color:var(--color-foreground)]">
+                      {meta.officeAddress}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap items-baseline justify-between gap-1 py-2.5">
+                  <dt className="font-medium text-[color:var(--color-subtle)]">
+                    Editorial Email:
+                  </dt>
+                  <dd className="font-mono font-medium text-[color:var(--color-accent)]">
+                    {meta.contactEmail}
+                  </dd>
+                </div>
+                {meta.contactPhone ? (
+                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-2.5">
+                    <dt className="font-medium text-[color:var(--color-subtle)]">
+                      Telephone Inquiries:
+                    </dt>
+                    <dd className="font-mono font-medium text-[color:var(--color-foreground)]">
+                      {meta.contactPhone}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap items-baseline justify-between gap-1 py-2.5">
+                  <dt className="font-medium text-[color:var(--color-subtle)]">
+                    Online Operations:
+                  </dt>
+                  <dd className="font-medium text-[color:var(--color-foreground)]">
+                    CAS Journals Digital Operating Center
+                  </dd>
+                </div>
+              </dl>
+              {meta.issnPreservedNote ? (
+                <p className="mt-3 text-[11px] leading-relaxed text-[color:var(--color-subtle)] italic">
+                  {meta.issnPreservedNote}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── SECTION 4: EDITORIAL BOARD (TYPOGRAPHIC ROSTER) ── */}
+      <section className="border-b border-[color:var(--color-border)] py-12">
         <Container>
           <div className="flex flex-col gap-3 border-b border-[color:var(--color-border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="font-mono text-xs font-semibold text-[color:var(--color-accent)] uppercase">
+              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
                 Governance &amp; Leadership
               </p>
-              <h2 className="mt-1 font-serif text-2xl font-semibold text-[color:var(--color-foreground)] sm:text-3xl">
+              <h2 className="mt-1 font-serif text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-3xl">
                 Editorial Board
               </h2>
             </div>
@@ -379,91 +674,62 @@ export default async function JournalLandingPage({
               </p>
             </div>
           ) : (
-            <>
-              {/* Principal Officers */}
-              <div
-                className={`mt-8 grid gap-6 ${
-                  chiefEditor && deputyEditor && !managingEditor
-                    ? "sm:grid-cols-2"
-                    : "sm:grid-cols-2 lg:grid-cols-3"
-                }`}
-              >
-                {chiefEditor ? (
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-accent)]/40 bg-[color:var(--color-surface-raised)] p-6 shadow-sm">
-                    <span className="rounded bg-[color:var(--color-surface-strong)] px-2.5 py-1 font-mono text-[10px] font-bold text-[color:var(--color-accent)] uppercase">
-                      {chiefEditor.role}
-                    </span>
-                    <h3 className="mt-3 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      {chiefEditor.name}
-                    </h3>
-                    {chiefEditor.affiliation?.trim() ? (
-                      <p className="mt-1 text-xs text-[color:var(--color-muted)]">
-                        {chiefEditor.affiliation}
-                      </p>
-                    ) : null}
+            <div className="mt-8 space-y-10">
+              {/* Principal Officers / Leadership */}
+              {chiefEditor || deputyEditor || managingEditor ? (
+                <div>
+                  <h3 className="font-mono text-xs font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
+                    Editorial Leadership
+                  </h3>
+                  <div className="mt-4 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60">
+                    {[chiefEditor, deputyEditor, managingEditor]
+                      .filter(Boolean)
+                      .map((officer) => (
+                        <div
+                          key={officer!.id}
+                          className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:justify-between"
+                        >
+                          <div>
+                            <span className="font-mono text-[10px] font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
+                              {officer!.role}
+                            </span>
+                            <p className="font-serif text-base font-bold text-[color:var(--color-foreground)]">
+                              {officer!.name}
+                            </p>
+                          </div>
+                          {officer!.affiliation?.trim() ? (
+                            <p className="text-xs text-[color:var(--color-muted)] sm:max-w-md sm:text-right">
+                              {officer!.affiliation}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
                   </div>
-                ) : null}
+                </div>
+              ) : null}
 
-                {deputyEditor ? (
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6">
-                    <span className="rounded bg-[color:var(--color-surface)] px-2.5 py-1 font-mono text-[10px] font-bold text-[color:var(--color-accent)] uppercase">
-                      {deputyEditor.role}
-                    </span>
-                    <h3 className="mt-3 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      {deputyEditor.name}
-                    </h3>
-                    {deputyEditor.affiliation?.trim() ? (
-                      <p className="mt-1 text-xs text-[color:var(--color-muted)]">
-                        {deputyEditor.affiliation}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {managingEditor ? (
-                  <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 sm:col-span-2 lg:col-span-1">
-                    <span className="rounded bg-[color:var(--color-surface)] px-2.5 py-1 font-mono text-[10px] font-bold text-[color:var(--color-accent)] uppercase">
-                      {managingEditor.role}
-                    </span>
-                    <h3 className="mt-3 font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                      {managingEditor.name}
-                    </h3>
-                    {managingEditor.affiliation?.trim() ? (
-                      <p className="mt-1 text-xs text-[color:var(--color-muted)]">
-                        {managingEditor.affiliation}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Associate Editors / Board Members */}
+              {/* Associate Editors & Board Members */}
               {associateEditors.length > 0 || boardMemberList.length > 0 ? (
-                <div className="mt-10">
-                  <h3 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
+                <div>
+                  <h3 className="font-mono text-xs font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
                     {associateEditors.length > 0
-                      ? "Associate Editors & Editorial Board"
+                      ? "Associate Editors & Board Members"
                       : "Editorial Board Members"}
                   </h3>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                     {[...associateEditors, ...boardMemberList].map((member) => (
                       <div
                         key={member.id}
-                        className="rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-4"
+                        className="border-b border-[color:var(--color-border)]/40 pb-3"
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="size-1.5 rounded-full bg-[color:var(--color-accent)]" />
-                            <p className="font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
-                              {member.name}
-                            </p>
-                          </div>
-                          <span className="rounded bg-[color:var(--color-surface-strong)] px-2 py-0.5 font-mono text-[10px] font-semibold text-[color:var(--color-accent)]">
-                            {member.role}
-                          </span>
-                        </div>
+                        <p className="font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
+                          {member.name}
+                        </p>
+                        <p className="mt-0.5 font-mono text-[10px] font-semibold text-[color:var(--color-accent)]">
+                          {member.role}
+                        </p>
                         {member.affiliation?.trim() ? (
-                          <p className="mt-1 pl-3.5 text-xs text-[color:var(--color-muted)]">
+                          <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
                             {member.affiliation}
                           </p>
                         ) : null}
@@ -475,23 +741,26 @@ export default async function JournalLandingPage({
 
               {/* Consulting Editors / Advisory Council */}
               {consultingEditors.length > 0 || advisoryBoard.length > 0 ? (
-                <div className="mt-10">
-                  <h3 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
+                <div>
+                  <h3 className="font-mono text-xs font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
                     {consultingEditors.length > 0
-                      ? "Consulting Editors"
+                      ? "Consulting Editors & Advisory Council"
                       : "Advisory Council"}
                   </h3>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                     {[...consultingEditors, ...advisoryBoard].map((member) => (
                       <div
                         key={member.id}
-                        className="rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-4"
+                        className="border-b border-[color:var(--color-border)]/40 pb-3"
                       >
                         <p className="font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
                           {member.name}
                         </p>
+                        <p className="mt-0.5 font-mono text-[10px] font-semibold text-[color:var(--color-accent)]">
+                          {member.role}
+                        </p>
                         {member.affiliation?.trim() ? (
-                          <p className="mt-1 text-xs text-[color:var(--color-muted)]">
+                          <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
                             {member.affiliation}
                           </p>
                         ) : null}
@@ -500,7 +769,7 @@ export default async function JournalLandingPage({
                   </div>
                 </div>
               ) : null}
-            </>
+            </div>
           )}
         </Container>
       </section>

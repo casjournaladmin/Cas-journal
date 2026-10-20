@@ -16,6 +16,15 @@ import {
   validateAdherenceReport,
   validateReview,
 } from "@/lib/editorial/validation";
+import {
+  handleCorrectionRequested,
+  handleReviewerAssigned,
+  handleReviewSubmitted,
+  handleAdherenceReportSubmitted,
+  handleEditorialDecisionIssued,
+  handleRevisionSubmitted,
+  handleArticlePublished,
+} from "@/lib/notifications/event-handlers";
 
 export class EditorialMutationError extends Error {
   constructor(
@@ -115,7 +124,7 @@ export async function returnForCorrection(input: {
       message: "Correction guidance is required.",
     });
   }
-  await prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const submission = await transaction.submission.findFirst({
       where: {
         id: input.submissionId,
@@ -153,7 +162,7 @@ export async function returnForCorrection(input: {
       );
     }
 
-    await transaction.submission.update({
+    const updated = await transaction.submission.update({
       where: { id: submission.id },
       data: { status: "CORRECTION_REQUESTED", version: { increment: 1 } },
     });
@@ -231,6 +240,14 @@ export async function returnForCorrection(input: {
         });
       }
     }
+
+    return updated;
+  });
+
+  await handleCorrectionRequested({
+    submissionId: input.submissionId,
+    note: message,
+    versionNumber: result?.version,
   });
 }
 
@@ -394,7 +411,7 @@ export async function assignReviewer(input: {
     );
   }
 
-  return prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const submission = await transaction.submission.findFirst({
       where: {
         id: input.submissionId,
@@ -465,6 +482,13 @@ export async function assignReviewer(input: {
     });
     return assignment;
   });
+
+  await handleReviewerAssigned({
+    submissionId: input.submissionId,
+    editorId: input.editorId,
+  });
+
+  return result;
 }
 
 export async function cancelReviewerAssignment(input: {
@@ -557,7 +581,7 @@ export async function saveEditorReview(input: {
       validation.fieldErrors,
     );
   }
-  return prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const assignment = await transaction.reviewAssignment.findFirst({
       where: {
         id: input.assignmentId,
@@ -736,7 +760,17 @@ export async function saveEditorReview(input: {
         });
       }
     }
+    return { submissionId: assignment.reviewRound.submissionId };
   });
+
+  if (input.final && result?.submissionId) {
+    await handleReviewSubmitted({
+      submissionId: result.submissionId,
+      recommendation: input.review.recommendation,
+    });
+  }
+
+  return result;
 }
 
 export async function submitAdherenceReport(input: {
@@ -818,7 +852,7 @@ export async function submitAdherenceReport(input: {
 
   const latestVersion = submission.manuscriptVersions[0];
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const adherence = await tx.adherenceReport.create({
       data: {
         submissionId: submission.id,
@@ -849,6 +883,12 @@ export async function submitAdherenceReport(input: {
 
     return adherence;
   });
+
+  await handleAdherenceReportSubmitted({
+    submissionId: input.submissionId,
+  });
+
+  return result;
 }
 
 export async function issueEditorialDecision(input: {
@@ -873,7 +913,7 @@ export async function issueEditorialDecision(input: {
       revisionDueAt: "A due date is required for revision decisions.",
     });
   }
-  return prisma.$transaction(async (transaction) => {
+  const result = await prisma.$transaction(async (transaction) => {
     const round = await transaction.reviewRound.findFirst({
       where: {
         id: input.roundId,
@@ -947,6 +987,13 @@ export async function issueEditorialDecision(input: {
     }
     return decision;
   });
+
+  await handleEditorialDecisionIssued({
+    submissionId: input.submissionId,
+    decision: input.type,
+  });
+
+  return result;
 }
 
 type UploadedFileMetadata = {
@@ -973,133 +1020,145 @@ export async function recordRevision(input: {
       { authorNote: "A revision note is required." },
     );
   }
-  return prisma.$transaction(
-    async (transaction) => {
-      const submission = await transaction.submission.findFirst({
-        where: {
-          id: input.submissionId,
-          ownerId: input.ownerId,
-          status: { in: ["CORRECTION_REQUESTED", "REVISION_REQUESTED"] },
+  const result = await prisma.$transaction(async (transaction) => {
+    const submission = await transaction.submission.findFirst({
+      where: {
+        id: input.submissionId,
+        ownerId: input.ownerId,
+        status: { in: ["CORRECTION_REQUESTED", "REVISION_REQUESTED"] },
+      },
+      select: {
+        id: true,
+        request: { select: { id: true } },
+        manuscriptVersions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          select: { versionNumber: true },
         },
-        select: {
-          id: true,
-          request: { select: { id: true } },
-          manuscriptVersions: {
-            orderBy: { versionNumber: "desc" },
-            take: 1,
-            select: { versionNumber: true },
-          },
-        },
-      });
-      if (!submission) {
-        throw new EditorialMutationError(
-          "This submission is not awaiting a revision.",
-        );
-      }
-      const manuscript = await transaction.storedFile.create({
-        data: { ...input.manuscript, uploaderId: input.ownerId },
-        select: { id: true },
-      });
-      const response = input.response
-        ? await transaction.storedFile.create({
-            data: { ...input.response, uploaderId: input.ownerId },
-            select: { id: true },
-          })
-        : null;
-
-      const additionalStored: Array<{ id: string }> = [];
-      if (
-        input.additionalAttachments &&
-        input.additionalAttachments.length > 0
-      ) {
-        for (const att of input.additionalAttachments) {
-          const stored = await transaction.storedFile.create({
-            data: { ...att, uploaderId: input.ownerId },
-            select: { id: true },
-          });
-          additionalStored.push(stored);
-        }
-      }
-
-      const nextVersionNumber =
-        (submission.manuscriptVersions[0]?.versionNumber ?? 0) + 1;
-      const version = await transaction.submissionVersion.create({
-        data: {
-          submissionId: submission.id,
-          versionNumber: nextVersionNumber,
-          kind: "REVISION",
-          manuscriptStoredFileId: manuscript.id,
-          responseStoredFileId: response?.id,
-          authorNote: note,
-        },
-        select: { id: true, versionNumber: true },
-      });
-      await transaction.submission.update({
-        where: { id: submission.id },
-        data: { status: "REVISED", version: { increment: 1 } },
-      });
-      const correctionNumber = Math.max(1, version.versionNumber - 1);
-      const totalAttCount = 1 + (response ? 1 : 0) + additionalStored.length;
-      const attLabel =
-        totalAttCount === 1 ? "1 attachment" : `${totalAttCount} attachments`;
-
-      await transaction.submissionEvent.create({
-        data: {
-          submissionId: submission.id,
-          actorId: input.ownerId,
-          submissionVersionId: version.id,
-          type: "REVISION_SUBMITTED",
-          message: attLabel,
-          authorVisible: true,
-        },
-      });
-      if (submission.request) {
-        await transaction.submissionRequest.update({
-          where: { id: submission.request.id },
-          data: { version: { increment: 1 }, updatedAt: new Date() },
-        });
-        const msg = await transaction.submissionConversationMessage.create({
+      },
+    });
+    if (!submission) {
+      throw new EditorialMutationError(
+        "This submission is not awaiting a revision.",
+      );
+    }
+    const manuscript = await transaction.storedFile.create({
+      data: {
+        ...input.manuscript,
+        sizeBytes: BigInt(input.manuscript.sizeBytes),
+        mimeType: input.manuscript.mimeType || "application/octet-stream",
+        uploaderId: input.ownerId,
+      },
+      select: { id: true },
+    });
+    const response = input.response
+      ? await transaction.storedFile.create({
           data: {
-            requestId: submission.request.id,
-            senderId: input.ownerId,
-            kind: "USER",
-            body: `📋 Correction #${correctionNumber} submitted.\n\nAuthor note: ${note}`,
+            ...input.response,
+            sizeBytes: BigInt(input.response.sizeBytes),
+            mimeType: input.response.mimeType || "application/octet-stream",
+            uploaderId: input.ownerId,
           },
+          select: { id: true },
+        })
+      : null;
+
+    const additionalStored: Array<{ id: string }> = [];
+    if (input.additionalAttachments && input.additionalAttachments.length > 0) {
+      for (const att of input.additionalAttachments) {
+        const stored = await transaction.storedFile.create({
+          data: {
+            ...att,
+            sizeBytes: BigInt(att.sizeBytes),
+            mimeType: att.mimeType || "application/octet-stream",
+            uploaderId: input.ownerId,
+          },
+          select: { id: true },
         });
+        additionalStored.push(stored);
+      }
+    }
+
+    const nextVersionNumber =
+      (submission.manuscriptVersions[0]?.versionNumber ?? 0) + 1;
+    const version = await transaction.submissionVersion.create({
+      data: {
+        submissionId: submission.id,
+        versionNumber: nextVersionNumber,
+        kind: "REVISION",
+        manuscriptStoredFileId: manuscript.id,
+        responseStoredFileId: response?.id,
+        authorNote: note,
+      },
+      select: { id: true, versionNumber: true },
+    });
+    await transaction.submission.update({
+      where: { id: submission.id },
+      data: { status: "REVISED", version: { increment: 1 } },
+    });
+    const correctionNumber = Math.max(1, version.versionNumber - 1);
+    const totalAttCount = 1 + (response ? 1 : 0) + additionalStored.length;
+    const attLabel =
+      totalAttCount === 1 ? "1 attachment" : `${totalAttCount} attachments`;
+
+    await transaction.submissionEvent.create({
+      data: {
+        submissionId: submission.id,
+        actorId: input.ownerId,
+        submissionVersionId: version.id,
+        type: "REVISION_SUBMITTED",
+        message: attLabel,
+        authorVisible: true,
+      },
+    });
+    if (submission.request) {
+      await transaction.submissionRequest.update({
+        where: { id: submission.request.id },
+        data: { version: { increment: 1 }, updatedAt: new Date() },
+      });
+      const msg = await transaction.submissionConversationMessage.create({
+        data: {
+          requestId: submission.request.id,
+          senderId: input.ownerId,
+          kind: "USER",
+          body: `📋 Correction #${correctionNumber} submitted.\n\nAuthor note: ${note}`,
+        },
+      });
+      await transaction.conversationAttachment.create({
+        data: {
+          messageId: msg.id,
+          storedFileId: manuscript.id,
+          type: "GENERAL",
+        },
+      });
+      if (response) {
         await transaction.conversationAttachment.create({
           data: {
             messageId: msg.id,
-            storedFileId: manuscript.id,
+            storedFileId: response.id,
             type: "GENERAL",
           },
         });
-        if (response) {
-          await transaction.conversationAttachment.create({
-            data: {
-              messageId: msg.id,
-              storedFileId: response.id,
-              type: "GENERAL",
-            },
-          });
-        }
-        for (const extra of additionalStored) {
-          await transaction.conversationAttachment.create({
-            data: {
-              messageId: msg.id,
-              storedFileId: extra.id,
-              type: "GENERAL",
-            },
-          });
-        }
       }
-      return version;
-    },
-    {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      maxWait: 10_000,
-      timeout: 20_000,
-    },
-  );
+      for (const extra of additionalStored) {
+        await transaction.conversationAttachment.create({
+          data: {
+            messageId: msg.id,
+            storedFileId: extra.id,
+            type: "GENERAL",
+          },
+        });
+      }
+    }
+    return version;
+  });
+
+  await handleRevisionSubmitted({
+    submissionId: input.submissionId,
+    roundNumber: result.versionNumber,
+  });
+
+  return result;
 }
 
 export async function skipToPublishing(input: {
@@ -1201,7 +1260,7 @@ export async function publishArticle(input: {
     .filter(Boolean)
     .join(" · ");
 
-  return prisma.$transaction(async (tx) => {
+  const article = await prisma.$transaction(async (tx) => {
     await tx.submission.update({
       where: { id: submission.id },
       data: {
@@ -1426,6 +1485,16 @@ export async function publishArticle(input: {
 
     return article;
   });
+
+  await handleArticlePublished({
+    articleId: article.id,
+    submissionId: input.submissionId,
+    title: submission.title || "Untitled Article",
+    articleSlug: article.slug,
+    journalId: input.journalId,
+  });
+
+  return article;
 }
 
 export async function deleteManuscriptSubmission(input: {

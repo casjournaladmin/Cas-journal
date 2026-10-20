@@ -43,7 +43,7 @@ export async function GET(
     return NextResponse.json({ error: "Journal not found" }, { status: 404 });
   }
 
-  const hasAccess = await checkInternalChatAccess(user.id, journal.id);
+  const hasAccess = await checkInternalChatAccess(user, journal.id);
   if (!hasAccess) {
     return NextResponse.json(
       {
@@ -73,7 +73,7 @@ export async function POST(
     return NextResponse.json({ error: "Journal not found" }, { status: 404 });
   }
 
-  const hasAccess = await checkInternalChatAccess(user.id, journal.id);
+  const hasAccess = await checkInternalChatAccess(user, journal.id);
   if (!hasAccess) {
     return NextResponse.json(
       {

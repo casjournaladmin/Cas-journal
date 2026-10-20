@@ -1,23 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribeTheme(callback: () => void) {
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getThemeSnapshot(): "dark" | "light" {
+  if (typeof window === "undefined") return "light";
+  try {
+    const attr = document.documentElement.getAttribute("data-theme");
+    if (attr === "dark" || attr === "light") return attr;
+    const stored = localStorage.getItem("app-theme");
+    return stored === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem("app-theme") as "dark" | "light" | null;
-    return stored || "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+    () => "light",
+  );
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("app-theme", next);
+    try {
+      localStorage.setItem("app-theme", next);
+    } catch {
+      // Ignore localStorage exceptions
+    }
     document.documentElement.setAttribute("data-theme", next);
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "app-theme", newValue: next }),
+    );
   };
 
   return (

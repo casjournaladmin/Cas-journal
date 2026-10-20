@@ -80,7 +80,6 @@ export const siteConfig = {
       })) as readonly PublicNavigationSubItem[],
     },
     { label: "For Authors", href: "/submissions" },
-    { label: "Current Issue", href: "/current-issue" },
     { label: "Archive", href: "/archives" },
     { label: "Indexing & Abstracting", href: "/indexing-abstracting" },
     { label: "Contact", href: "/contact" },

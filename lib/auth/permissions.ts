@@ -29,12 +29,13 @@ export function hasJournalRole(
   roles: JournalRole | JournalRole[],
 ) {
   const allowedRoles = Array.isArray(roles) ? roles : [roles];
+  const target = journalIdOrSlug.trim().toLowerCase();
 
   return subject.journalRoles.some(
     (assignment) =>
       (assignment.journalId === journalIdOrSlug ||
         assignment.journal?.id === journalIdOrSlug ||
-        assignment.journal?.slug === journalIdOrSlug) &&
+        assignment.journal?.slug?.toLowerCase() === target) &&
       allowedRoles.includes(assignment.role),
   );
 }

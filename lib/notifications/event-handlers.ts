@@ -35,6 +35,7 @@ export async function handleManuscriptSubmitted(
         id: true,
         title: true,
         journalId: true,
+        ownerId: true,
         journal: { select: { slug: true, name: true, shortName: true } },
       },
     });
@@ -59,6 +60,8 @@ export async function handleManuscriptSubmitted(
       : "New Manuscript";
 
     for (const userId of recipientIds) {
+      if (userId === submission.ownerId) continue;
+
       await createNotification(
         {
           userId,
@@ -73,6 +76,28 @@ export async function handleManuscriptSubmitted(
             userId,
             type: "MANUSCRIPT_SUBMITTED",
             resourceId: submission.id,
+          }),
+        },
+        client,
+      );
+    }
+
+    if (submission.ownerId) {
+      await createNotification(
+        {
+          userId: submission.ownerId,
+          journalId: submission.journalId,
+          type: "MANUSCRIPT_SUBMITTED",
+          title: "Manuscript Submission Received",
+          message: `Your manuscript ${titleText} has been received by ${journalLabel}. Our editorial team will review it shortly.`,
+          actionUrl: `/author/requests`,
+          resourceType: "Submission",
+          resourceId: submission.id,
+          idempotencyKey: generateIdempotencyKey({
+            userId: submission.ownerId,
+            type: "MANUSCRIPT_SUBMITTED",
+            resourceId: submission.id,
+            eventQualifier: "author-confirmation",
           }),
         },
         client,

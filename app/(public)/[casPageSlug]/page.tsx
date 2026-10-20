@@ -61,10 +61,16 @@ export default async function CasStaticPageRoute({
         : null;
 
   const cleanTitle = page.title.replace(/&amp;/g, "&");
+  const heroClass =
+    page.slug === "indexing-abstracting"
+      ? "cas-page-hero cas-page-hero-indexing"
+      : page.sidebarType === "authors"
+        ? "cas-page-hero cas-page-hero-authors"
+        : "cas-page-hero";
 
   return (
     <div>
-      <header className="cas-page-hero">
+      <header className={heroClass}>
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>

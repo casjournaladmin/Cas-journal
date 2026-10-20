@@ -149,14 +149,18 @@ export function SubmissionConfirmationDialog({
               id="confirm-submission-dialog-title"
               className="font-serif text-xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-2xl"
             >
-              Confirm your journal submission
+              Confirm submission
             </h2>
 
             <p
               id="confirm-submission-dialog-desc"
-              className="mt-2.5 text-sm leading-6 font-medium text-[color:var(--color-foreground)]"
+              className="mt-2 text-sm leading-relaxed text-[color:var(--color-muted)]"
             >
-              {info.formattedSentence}
+              Your manuscript will be submitted to{" "}
+              <strong className="font-semibold text-[color:var(--color-foreground)]">
+                {info.fullName}
+              </strong>
+              . Please confirm you wish to proceed.
             </p>
           </div>
         </div>
@@ -172,17 +176,6 @@ export function SubmissionConfirmationDialog({
             </span>
           </div>
 
-          {info.abbreviation ? (
-            <div>
-              <span className="block text-[10px] font-semibold tracking-wider text-[color:var(--color-subtle)] uppercase">
-                Journal Abbreviation / Code
-              </span>
-              <span className="mt-0.5 inline-block rounded-md bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-400">
-                {info.abbreviation}
-              </span>
-            </div>
-          ) : null}
-
           <div>
             <span className="block text-[10px] font-semibold tracking-wider text-[color:var(--color-subtle)] uppercase">
               Manuscript Title
@@ -192,13 +185,6 @@ export function SubmissionConfirmationDialog({
             </span>
           </div>
         </div>
-
-        {/* Advisory Context */}
-        <p className="mt-4 text-[11px] leading-relaxed text-[color:var(--color-muted)]">
-          Please confirm that this manuscript is intended for this academic
-          journal. Once submitted, your manuscript will enter editorial
-          screening with this journal secretariat.
-        </p>
 
         {/* Modal Actions */}
         <div className="mt-6 flex flex-col-reverse gap-2.5 border-t border-[color:var(--color-border)] pt-5 sm:flex-row sm:justify-end sm:gap-3">
