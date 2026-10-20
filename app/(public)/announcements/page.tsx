@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Journal } from "@prisma/client";
 import { AnnouncementImage } from "@/components/announcements/announcement-image";
 import { Container } from "@/components/ui/container";
 import { activeJournalsConfig } from "@/lib/config/site";
@@ -38,7 +39,10 @@ export default async function AnnouncementsPage({
   const journalOptions =
     dbJournals.length > 0
       ? dbJournals
-          .map((j) => ({ slug: j.slug, name: j.shortName || j.name }))
+          .map((j: Pick<Journal, "slug" | "shortName" | "name">) => ({
+            slug: j.slug,
+            name: j.shortName || j.name,
+          }))
           .sort(
             (a, b) =>
               getJournalOrderPriority(a.slug) - getJournalOrderPriority(b.slug),
