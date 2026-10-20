@@ -106,7 +106,7 @@ export function ReviewerApplicationsManager({
           type: "success",
           message:
             newStatus === "APPROVED"
-              ? "Reviewer approved and Editor workspace permissions assigned."
+              ? "Reviewer application approved and referee status recorded."
               : `Application marked as ${newStatus}.`,
         });
       } else {
@@ -181,12 +181,12 @@ export function ReviewerApplicationsManager({
 
         <div className="flex items-center gap-2">
           <a
-            href="/apply-reviewer"
+            href="/author/apply-reviewer"
             target="_blank"
             rel="noopener noreferrer"
             className="button-secondary text-xs"
           >
-            Public Application Form ↗
+            Reviewer Application Portal ↗
           </a>
         </div>
       </div>

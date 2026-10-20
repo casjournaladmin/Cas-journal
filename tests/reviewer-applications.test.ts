@@ -284,3 +284,207 @@ test("Reviewer Applications: formatAcademicName prevents duplicate titles", () =
   assert.equal(formatAcademicName("", "Chioma Okonkwo"), "Chioma Okonkwo");
   assert.equal(formatAcademicName("Dr.", ""), "");
 });
+
+test("Reviewer Applications: Duplicate active application prevention", async () => {
+  const email = "duplicate.test.referee@example.com";
+  const userUuid = "b0000000-0000-0000-0000-000000005678";
+
+  // 1. Initial application succeeds
+  const firstRes = await createReviewerApplication({
+    fullName: "Dr. Unique Candidate",
+    academicTitle: "Dr.",
+    email,
+    phone: "+2348011119999",
+    affiliation: "Federal University of Technology, Owerri",
+    academicRank: "Senior Lecturer",
+    specializationKeywords: "Information Systems, Software Engineering",
+    targetJournal: "cjmr",
+    statement: "Specialist in enterprise systems and empirical software.",
+    applicantUserId: userUuid,
+  });
+  assert.equal(firstRes.success, true);
+  assert.ok(firstRes.application?.id);
+  const firstId = firstRes.application!.id;
+
+  try {
+    // 2. Duplicate submission with same userUuid fails
+    const dupUserRes = await createReviewerApplication({
+      fullName: "Dr. Unique Candidate",
+      academicTitle: "Dr.",
+      email: "different.email@example.com",
+      phone: "+2348011119999",
+      affiliation: "Federal University of Technology, Owerri",
+      academicRank: "Senior Lecturer",
+      specializationKeywords: "Information Systems",
+      targetJournal: "cjmr",
+      statement: "Attempting duplicate with same userId.",
+      applicantUserId: userUuid,
+    });
+    assert.equal(dupUserRes.success, false);
+    assert.ok(
+      dupUserRes.error?.includes("already have an active reviewer application"),
+    );
+
+    // 3. Duplicate submission with same email fails
+    const dupEmailRes = await createReviewerApplication({
+      fullName: "Dr. Another Candidate",
+      academicTitle: "Dr.",
+      email,
+      phone: "+2348011119999",
+      affiliation: "Federal University of Technology, Owerri",
+      academicRank: "Senior Lecturer",
+      specializationKeywords: "Information Systems",
+      targetJournal: "cjmr",
+      statement: "Attempting duplicate with same email.",
+      applicantUserId: "c0000000-0000-0000-0000-000000009999",
+    });
+    assert.equal(dupEmailRes.success, false);
+    assert.ok(
+      dupEmailRes.error?.includes(
+        "already have an active reviewer application",
+      ),
+    );
+  } finally {
+    await deleteReviewerApplication({
+      applicationId: firstId,
+      actor: superAdminActor,
+    });
+  }
+});
+
+test("Reviewer Applications: Approval does NOT automatically grant EDITOR role", async () => {
+  const { prisma } = await import("@/lib/db/prisma");
+  const crypto = await import("node:crypto");
+
+  const email = "no.auto.editor@example.com";
+  const userId = crypto.randomUUID();
+
+  // Create or retrieve a test user
+  const testUser = await prisma.user.upsert({
+    where: { email },
+    update: { isActive: true },
+    create: {
+      id: userId,
+      email,
+      displayName: "Dr. Candidate Author",
+      isActive: true,
+      globalRoles: {
+        create: [{ role: "AUTHOR" }],
+      },
+    },
+  });
+
+  // Verify user initially has no EDITOR journal role
+  const initialEditorRoles = await prisma.journalRoleAssignment.findMany({
+    where: { userId: testUser.id, role: "EDITOR" },
+  });
+  assert.equal(initialEditorRoles.length, 0);
+
+  // Submit application
+  const appRes = await createReviewerApplication({
+    fullName: "Dr. Candidate Author",
+    academicTitle: "Dr.",
+    email,
+    phone: "+2348088887777",
+    affiliation: "University of Port Harcourt",
+    academicRank: "Senior Lecturer",
+    specializationKeywords: "Political Economy, Development Studies",
+    targetJournal: "polis",
+    statement: "Experienced peer reviewer in political studies.",
+    applicantUserId: testUser.id,
+  });
+  assert.equal(appRes.success, true);
+  const appId = appRes.application!.id;
+
+  try {
+    // Approve the application as Super Admin
+    const approveRes = await updateReviewerApplicationStatus({
+      applicationId: appId,
+      status: "APPROVED",
+      actor: superAdminActor,
+    });
+    assert.equal(approveRes.success, true);
+
+    // Verify application status is APPROVED
+    const appRecord = await prisma.reviewerApplication.findUnique({
+      where: { id: appId },
+    });
+    assert.equal(appRecord?.status, "APPROVED");
+
+    // CRITICAL AUTHORIZATION CHECK: User must NOT have been silently assigned the EDITOR role
+    const postApprovalEditorRoles = await prisma.journalRoleAssignment.findMany(
+      {
+        where: { userId: testUser.id, role: "EDITOR" },
+      },
+    );
+    assert.equal(
+      postApprovalEditorRoles.length,
+      0,
+      "Reviewer approval must not silently grant EDITOR journal role",
+    );
+
+    // User's global roles must remain unchanged (only AUTHOR)
+    const userGlobalRoles = await prisma.userGlobalRole.findMany({
+      where: { userId: testUser.id },
+    });
+    assert.equal(userGlobalRoles.length, 1);
+    assert.equal(userGlobalRoles[0].role, "AUTHOR");
+  } finally {
+    await deleteReviewerApplication({
+      applicationId: appId,
+      actor: superAdminActor,
+    });
+    await prisma.user.delete({ where: { id: testUser.id } }).catch(() => null);
+  }
+});
+
+test("Reviewer Applications: Safe login return path validation", async () => {
+  const { getSafeLoginReturnPath } =
+    await import("@/lib/auth/submission-entry");
+  const { getPostLoginDestination } = await import("@/lib/auth/workspaces");
+
+  // 1. Safe return path validation
+  assert.equal(
+    getSafeLoginReturnPath("/author/apply-reviewer"),
+    "/author/apply-reviewer",
+  );
+  assert.equal(
+    getSafeLoginReturnPath("/author/apply-reviewer?journal=existentia"),
+    "/author/apply-reviewer?journal=existentia",
+  );
+  assert.equal(
+    getSafeLoginReturnPath("/author/apply-reviewer?journal=polis"),
+    "/author/apply-reviewer?journal=polis",
+  );
+
+  // 2. Post-login destination preserves reviewer destination for Authors
+  const authorUser = {
+    id: "author-test-id",
+    isActive: true,
+    email: "author@test.com",
+    displayName: "Test Author",
+    globalRoles: [{ role: "AUTHOR" as const }],
+    journalRoles: [],
+  };
+  assert.equal(
+    getPostLoginDestination(
+      authorUser,
+      "/author/apply-reviewer?journal=existentia",
+    ),
+    "/author/apply-reviewer?journal=existentia",
+  );
+
+  // 3. Post-login destination denies non-authors
+  const nonAuthorUser = {
+    id: "non-author-id",
+    isActive: true,
+    email: "outsider@test.com",
+    displayName: "Non Author",
+    globalRoles: [],
+    journalRoles: [],
+  };
+  assert.equal(
+    getPostLoginDestination(nonAuthorUser, "/author/apply-reviewer"),
+    "/unauthorized?reason=author",
+  );
+});

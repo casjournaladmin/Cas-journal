@@ -305,6 +305,7 @@ test("Navbar streamlining and footer navigation consistency", async () => {
     "Journals",
     "For Authors",
     "Archive",
+    "Announcements",
     "Indexing & Abstracting",
     "Contact",
   ]);

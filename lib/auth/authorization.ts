@@ -8,6 +8,7 @@ import type {
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
+export { canAccessApplicationArea } from "@/lib/auth/permissions";
 import {
   canAccessApplicationArea,
   hasGlobalRole,

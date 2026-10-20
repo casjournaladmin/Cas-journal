@@ -81,6 +81,7 @@ export const siteConfig = {
     },
     { label: "For Authors", href: "/submissions" },
     { label: "Archive", href: "/archives" },
+    { label: "Announcements", href: "/announcements" },
     { label: "Indexing & Abstracting", href: "/indexing-abstracting" },
     { label: "Contact", href: "/contact" },
   ],

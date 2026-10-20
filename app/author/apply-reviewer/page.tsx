@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ReviewerApplicationForm } from "@/components/public/reviewer-application-form";
-import { requireApplicationArea } from "@/lib/auth/authorization";
+import { getCurrentUser } from "@/lib/auth/authorization";
+import { canAccessApplicationArea } from "@/lib/auth/permissions";
 import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
 import { getJournalOrderPriority } from "@/lib/editorial/editorial-board-data";
@@ -22,9 +24,25 @@ export default async function AuthorApplyReviewerPage({
 }: {
   searchParams: Promise<{ journal?: string }>;
 }) {
-  const user = await requireApplicationArea("author");
-  const [{ journal }, existingApp, dbJournals] = await Promise.all([
-    searchParams,
+  const { journal } = await searchParams;
+  const user = await getCurrentUser();
+
+  if (!user) {
+    const returnTarget = journal
+      ? `/author/apply-reviewer?journal=${encodeURIComponent(journal)}`
+      : "/author/apply-reviewer";
+    redirect(`/login?next=${encodeURIComponent(returnTarget)}`);
+  }
+
+  if (!user.isActive) {
+    redirect("/unauthorized?reason=inactive");
+  }
+
+  if (!canAccessApplicationArea(user, "author")) {
+    redirect("/unauthorized?reason=author");
+  }
+
+  const [existingApp, dbJournals] = await Promise.all([
     getReviewerApplicationForUser({ id: user.id, email: user.email ?? "" }),
     prisma.journal.findMany({
       where: { isActive: true },
@@ -177,7 +195,7 @@ export default async function AuthorApplyReviewerPage({
           <div className="mt-6 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]/60 p-4">
             <p className="text-xs leading-relaxed text-[color:var(--color-muted)]">
               {existingApp.status === "APPROVED"
-                ? "Your reviewer application has been approved by the Editorial Directorate. You have been provisioned with Editor workspace privileges to referee assigned manuscripts."
+                ? "Your reviewer application has been approved by the Editorial Directorate. You are in the active referee pool. When editorial or manuscript review privileges are assigned by an administrator, they will appear in your workspace."
                 : "Your reviewer application has been received and is currently under evaluation by the Managing Editors. You will be assigned manuscripts matching your domain expertise once review permissions are granted."}
             </p>
           </div>
@@ -189,7 +207,8 @@ export default async function AuthorApplyReviewerPage({
             >
               ← Back to Author Workspace
             </Link>
-            {existingApp.status === "APPROVED" ? (
+            {existingApp.status === "APPROVED" &&
+            user.journalRoles.some((r) => r.role === "EDITOR") ? (
               <Link
                 href="/workspaces"
                 className="button-primary text-xs font-semibold"

@@ -1,9 +1,6 @@
 import type { GlobalRole, JournalRole } from "@prisma/client";
 
-import {
-  canonicalSubmissionEntryPath,
-  getSafeLoginReturnPath,
-} from "@/lib/auth/submission-entry";
+import { getSafeLoginReturnPath } from "@/lib/auth/submission-entry";
 
 export type WorkspaceJournal = {
   id: string;
@@ -125,7 +122,7 @@ export function getPostLoginDestination(
   const returnPath = getSafeLoginReturnPath(requestedPath);
   if (returnPath) {
     return subject.globalRoles.some(({ role }) => role === "AUTHOR")
-      ? canonicalSubmissionEntryPath
+      ? returnPath
       : "/unauthorized?reason=author";
   }
 
