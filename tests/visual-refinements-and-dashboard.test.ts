@@ -111,10 +111,10 @@ test("3. Super Admin Overview: Layout, 3 metrics, 4 canonical journals, and coll
   );
   const dashboard = fs.readFileSync(dashboardPath, "utf8");
 
-  // Overview title and Operating Center removal
+  // Overview title, Operating Center removal, and Operational Metrics heading removed
   assert.equal(dashboard.includes("Overview"), true);
   assert.equal(dashboard.includes("Operating Center"), false);
-  assert.equal(dashboard.includes("Operational Metrics"), true);
+  assert.equal(dashboard.includes("Operational Metrics"), false);
 
   // Three database-backed metric cards without pulsating dots
   assert.equal(dashboard.includes("Submission Requests"), true);
@@ -173,7 +173,7 @@ test("5. Stability & Anti-Flickering: Loading skeleton matches sidebar shell and
   assert.equal(layout.includes("suppressHydrationWarning"), true);
 });
 
-test("4. Login Page Redesign: Full-screen immersive experience with abstract open-book folio", () => {
+test("4. Login Page Redesign: Full-screen immersive experience with cosmic books asset", () => {
   const loginPath = path.join(process.cwd(), "app/login/page.tsx");
   const login = fs.readFileSync(loginPath, "utf8");
 
@@ -181,18 +181,15 @@ test("4. Login Page Redesign: Full-screen immersive experience with abstract ope
   assert.equal(login.includes("lg:grid"), false);
   assert.equal(login.includes("hero-scholarly-bg.jpg"), false);
 
-  // Visual centerpiece: ScholarlyBookFolio component
-  assert.equal(login.includes("ScholarlyBookFolio"), true);
-  const folioPath = path.join(
+  // Visual centerpiece: supplied cosmic books asset
+  assert.equal(login.includes("/assets/images/login-cosmic-books.jpg"), true);
+  const assetPath = path.join(
     process.cwd(),
-    "components/auth/scholarly-book-folio.tsx",
+    "public/assets/images/login-cosmic-books.jpg",
   );
-  assert.equal(fs.existsSync(folioPath), true);
-  const folio = fs.readFileSync(folioPath, "utf8");
-  assert.equal(folio.includes("folio-aura"), true);
-  assert.equal(folio.includes("prefers-reduced-motion"), true);
+  assert.equal(fs.existsSync(assetPath), true);
 
-  // Brand copy directly beneath book
+  // Brand copy directly centered with CJ emblem
   assert.equal(login.includes("CAS Journals"), true);
   assert.equal(login.includes("Advancing Knowledge. Inspiring Growth."), true);
   assert.equal(
@@ -208,4 +205,20 @@ test("4. Login Page Redesign: Full-screen immersive experience with abstract ope
 
   // Dev switcher preserved with 5 DB accounts
   assert.equal(login.includes("devUsers={devUsers}"), true);
+});
+
+test("6. Design System: Subtle paper background and refined light blue glass surfaces", () => {
+  const globalsPath = path.join(process.cwd(), "app/globals.css");
+  const globals = fs.readFileSync(globalsPath, "utf8");
+
+  // Paper grain texture variable present for both light and dark modes
+  assert.equal(globals.includes("--paper-grain"), true);
+  assert.equal(globals.includes(".cas-paper-bg"), true);
+  assert.equal(globals.includes(".cas-glass-surface"), true);
+  assert.equal(globals.includes(".cas-glass-card"), true);
+
+  // Body styles in cas-theme.css use paper background
+  const themePath = path.join(process.cwd(), "app/cas-theme.css");
+  const theme = fs.readFileSync(themePath, "utf8");
+  assert.equal(theme.includes("var(--paper-grain)"), true);
 });
