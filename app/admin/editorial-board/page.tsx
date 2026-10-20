@@ -7,6 +7,7 @@ import { getAvailableWorkspaces } from "@/lib/auth/workspaces";
 import { isSuperAdmin } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/db/prisma";
 import {
+  CANONICAL_JOURNAL_ORDER,
   buildJournalMetadataFromRecord,
   sortJournalsByCanonicalOrder,
   type EditorialBoardMember,
@@ -31,6 +32,7 @@ export default async function AdminEditorialBoardPage() {
   const dbJournals = await prisma.journal.findMany({
     where: {
       isActive: true,
+      slug: { in: [...CANONICAL_JOURNAL_ORDER] },
       OR: [{ departmentId: null }, { department: { isActive: true } }],
     },
     select: {

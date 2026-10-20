@@ -8,6 +8,7 @@ import type {
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
+export { canAccessApplicationArea } from "@/lib/auth/permissions";
 import {
   canAccessApplicationArea,
   hasGlobalRole,
@@ -83,6 +84,13 @@ export const getCurrentUser = cache(async () => {
       where: { id: userId },
       include: applicationUserInclude,
     });
+
+    if (!user && userEmail) {
+      user = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: applicationUserInclude,
+      });
+    }
 
     if (userEmail && isBreakGlassSuperAdminEmail(userEmail)) {
       if (

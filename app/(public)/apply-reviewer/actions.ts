@@ -14,11 +14,32 @@ export async function applyAsReviewerAction(
   formData: FormData,
 ): Promise<ReviewerApplicationActionState> {
   const user = await getCurrentUser();
-  const applicantUserId =
-    formData.get("applicantUserId")?.toString() || user?.id || undefined;
+
+  if (!user) {
+    return {
+      success: false,
+      error:
+        "Authentication required. Please sign in with Google to apply as a reviewer.",
+    };
+  }
+
+  if (!user.isActive) {
+    return {
+      success: false,
+      error: "Your account is inactive. Please contact the administrator.",
+    };
+  }
+
+  if (!user.globalRoles.some((r) => r.role === "AUTHOR")) {
+    return {
+      success: false,
+      error: "Author privileges are required to submit a reviewer application.",
+    };
+  }
+
   const fullName = formData.get("fullName")?.toString() ?? "";
   const academicTitle = formData.get("academicTitle")?.toString() ?? "Dr.";
-  const email = formData.get("email")?.toString() ?? "";
+  const email = formData.get("email")?.toString() || user.email || "";
   const phone = formData.get("phone")?.toString() ?? "";
   const affiliation = formData.get("affiliation")?.toString() ?? "";
   const academicRank = formData.get("academicRank")?.toString() ?? "";
@@ -39,7 +60,7 @@ export async function applyAsReviewerAction(
     targetJournal,
     profileUrl,
     statement,
-    applicantUserId,
+    applicantUserId: user.id,
   });
 
   return res;

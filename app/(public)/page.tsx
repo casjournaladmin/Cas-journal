@@ -3,7 +3,10 @@ import Link from "next/link";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
-import { getJournalOrderPriority } from "@/lib/editorial/editorial-board-data";
+import {
+  CANONICAL_JOURNAL_ORDER,
+  getJournalOrderPriority,
+} from "@/lib/editorial/editorial-board-data";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +73,10 @@ export default async function Home() {
     }),
     prisma.article.count({ where: { isPublished: true } }),
     prisma.journal.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        slug: { in: [...CANONICAL_JOURNAL_ORDER] },
+      },
       select: {
         id: true,
         name: true,

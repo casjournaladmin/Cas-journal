@@ -5,7 +5,10 @@ import { Container } from "@/components/ui/container";
 import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
 import { getPublicAnnouncements } from "@/lib/editorial/announcements-store";
-import { getJournalOrderPriority } from "@/lib/editorial/editorial-board-data";
+import {
+  CANONICAL_JOURNAL_ORDER,
+  getJournalOrderPriority,
+} from "@/lib/editorial/editorial-board-data";
 import { formatLongDate } from "@/lib/formatting/dates";
 
 export const metadata: Metadata = {
@@ -23,7 +26,10 @@ export default async function AnnouncementsPage({
   const [announcements, dbJournals] = await Promise.all([
     getPublicAnnouncements(activeJournal === "ALL" ? undefined : activeJournal),
     prisma.journal.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        slug: { in: [...CANONICAL_JOURNAL_ORDER] },
+      },
       select: { slug: true, shortName: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -46,7 +52,7 @@ export default async function AnnouncementsPage({
 
   return (
     <div className="space-y-12 pb-24">
-      <header className="cas-page-hero">
+      <header className="cas-page-hero cas-page-hero-announcements">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>

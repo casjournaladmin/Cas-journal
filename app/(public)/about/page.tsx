@@ -6,7 +6,7 @@ import { activeJournalsConfig } from "@/lib/config/site";
 export default function AboutPage() {
   return (
     <div className="space-y-16 pb-24">
-      <header className="cas-page-hero">
+      <header className="cas-page-hero cas-page-hero-about">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>

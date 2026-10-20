@@ -13,7 +13,9 @@ export function getSafeLoginReturnPath(value: unknown) {
     if (
       value === canonicalSubmissionEntryPath ||
       value === "/author/requests/new" ||
-      value.startsWith(`${canonicalSubmissionEntryPath}?`)
+      value.startsWith(`${canonicalSubmissionEntryPath}?`) ||
+      value === "/author/apply-reviewer" ||
+      value.startsWith("/author/apply-reviewer?")
     ) {
       return value;
     }

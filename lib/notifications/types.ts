@@ -15,6 +15,8 @@ export interface NotificationRecord {
   idempotencyKey: string | null;
   isRead: boolean;
   readAt: Date | null;
+  isDismissed?: boolean;
+  dismissedAt?: Date | null;
   createdAt: Date;
 }
 

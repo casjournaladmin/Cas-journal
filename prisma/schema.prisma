@@ -768,11 +768,14 @@ model Notification {
   idempotencyKey String?          @unique
   isRead         Boolean          @default(false)
   readAt         DateTime?
+  isDismissed    Boolean          @default(false)
+  dismissedAt    DateTime?
   createdAt      DateTime         @default(now())
 
   user           User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
   journal        Journal?         @relation(fields: [journalId], references: [id], onDelete: SetNull)
 
+  @@index([userId, isDismissed, createdAt])
   @@index([userId, isRead, createdAt])
   @@index([userId, createdAt])
   @@index([journalId, createdAt])

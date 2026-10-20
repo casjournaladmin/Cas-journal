@@ -34,7 +34,7 @@ export async function GET(
   }
 
   const hasAccess = await checkInternalChatAccess(
-    user.id,
+    user,
     attachment.message.journalId,
   );
   if (!hasAccess) {

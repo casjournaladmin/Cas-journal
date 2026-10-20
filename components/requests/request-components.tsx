@@ -445,7 +445,6 @@ export function MessageComposer({
         setText("");
         setAttachments([]);
         setMode("chat");
-        router.refresh();
       }
     });
   };

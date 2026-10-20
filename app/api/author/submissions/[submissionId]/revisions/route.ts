@@ -16,7 +16,7 @@ import {
   createSubmissionObjectPath,
   storageBuckets,
 } from "@/lib/storage/paths";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
@@ -101,17 +101,18 @@ export async function POST(
         ]
       : []),
   ];
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const uploaded: string[] = [];
   try {
     for (const [index, file] of [
       manuscriptFile,
       ...(responseFile ? [responseFile] : []),
     ].entries()) {
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(paths[index], file, {
-          contentType: file.type,
+        .upload(paths[index], fileBuffer, {
+          contentType: file.type || "application/octet-stream",
           upsert: false,
         });
       if (error) throw new Error("UPLOAD_FAILED");
@@ -121,7 +122,7 @@ export async function POST(
       bucket,
       objectPath,
       originalFileName: file.name,
-      mimeType: file.type,
+      mimeType: file.type || "application/octet-stream",
       sizeBytes: file.size,
     });
     const version = await recordRevision({

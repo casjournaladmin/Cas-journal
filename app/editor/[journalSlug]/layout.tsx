@@ -32,11 +32,12 @@ export default async function JournalEditorLayout({
   params,
 }: JournalEditorLayoutProps) {
   const { journalSlug } = await params;
-  const { user, journal, journalWorkspaces } = await requireJournalWorkspace(
-    "EDITOR",
-    journalSlug,
+  const [{ user, journal, journalWorkspaces }, isActivated] = await Promise.all(
+    [
+      requireJournalWorkspace("EDITOR", journalSlug),
+      isJournalActivated(journalSlug),
+    ],
   );
-  const isActivated = await isJournalActivated(journalSlug);
   const workspaces = getAvailableWorkspaces(user);
   const workspace = workspaces.find(
     (item) => item.area === "editor" && item.journal?.id === journal.id,

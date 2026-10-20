@@ -114,9 +114,8 @@ test("break-glass email helper normalizes case, trims whitespace, and detects co
 });
 
 test("CAS Database Development Users: 5 accounts defined with initial minimal AUTHOR role", async () => {
-  const { CAS_DATABASE_DEV_USERS, ensureCasDevUsersInDatabase } = await import(
-    "@/lib/auth/dev-database-users"
-  );
+  const { CAS_DATABASE_DEV_USERS, ensureCasDevUsersInDatabase } =
+    await import("@/lib/auth/dev-database-users");
 
   assert.equal(CAS_DATABASE_DEV_USERS.length, 5);
 
@@ -147,10 +146,7 @@ test("CAS Database Development Users: 5 accounts defined with initial minimal AU
     string,
     { id: string; email: string; displayName: string; isActive: boolean }
   >();
-  const mockGlobalRoles = new Map<
-    string,
-    { userId: string; role: string }
-  >();
+  const mockGlobalRoles = new Map<string, { userId: string; role: string }>();
 
   const mockDb = {
     user: {
@@ -160,7 +156,12 @@ test("CAS Database Development Users: 5 accounts defined with initial minimal AU
         update,
       }: {
         where: { id: string };
-        create: { id: string; email: string; displayName: string; isActive: boolean };
+        create: {
+          id: string;
+          email: string;
+          displayName: string;
+          isActive: boolean;
+        };
         update: { email: string; displayName: string; isActive: boolean };
       }) => {
         const existing = mockUsers.get(where.id);
@@ -200,4 +201,3 @@ test("CAS Database Development Users: 5 accounts defined with initial minimal AU
     assert.ok(mockGlobalRoles.has(roleKey));
   }
 });
-

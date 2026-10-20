@@ -23,7 +23,7 @@ export default async function EditorialBoardPage() {
   return (
     <div className="space-y-16 pb-24">
       {/* CAS Page Hero */}
-      <header className="cas-page-hero">
+      <header className="cas-page-hero cas-page-hero-editorial-board">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>

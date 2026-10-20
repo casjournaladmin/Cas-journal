@@ -108,7 +108,10 @@ export default async function PublicArticlePage({
             Home
           </Link>{" "}
           /{" "}
-          <Link href="/current-issue" className="hover:underline">
+          <Link
+            href={`/journals/${article.issue.volume.journal.slug}`}
+            className="hover:underline"
+          >
             {article.issue.volume.journal.name}
           </Link>{" "}
           / Vol. {article.issue.volume.number}, Issue {article.issue.number}

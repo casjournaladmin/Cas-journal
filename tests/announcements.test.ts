@@ -196,3 +196,67 @@ test("Announcements: Creation, authorization, and updates", async () => {
   });
   assert.equal(deleteAjsbsRes.success, true);
 });
+
+test("Announcements: Public navigation link and draft/expired filtering", async () => {
+  const { siteConfig } = await import("@/lib/config/site");
+
+  // 1. Verify Announcements is integrated in public navigation
+  const navItem = siteConfig.publicNavigation.find(
+    (item) => item.label === "Announcements",
+  );
+  assert.ok(navItem, "Announcements link must be present in public navigation");
+  assert.equal(navItem.href, "/announcements");
+
+  // 2. Verify draft/inactive announcements are excluded from public results
+  const draftRes = await createAnnouncement({
+    title: "Draft Call - Not Yet Public",
+    category: "CALL_FOR_PAPERS",
+    targetJournal: "ALL",
+    content:
+      "This is a draft announcement that should not be visible publicly.",
+    isActive: false,
+    actor: superAdminActor,
+  });
+  assert.equal(draftRes.success, true);
+  const draftId = draftRes.announcement!.id;
+
+  // 3. Verify expired announcements are excluded from public results
+  const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const expiredRes = await createAnnouncement({
+    title: "Expired Call - Past Deadline",
+    category: "SPECIAL_ISSUE",
+    targetJournal: "ALL",
+    content: "This announcement has expired.",
+    expiresAt: pastDate,
+    isActive: true,
+    actor: superAdminActor,
+  });
+  assert.equal(expiredRes.success, true);
+  const expiredId = expiredRes.announcement!.id;
+
+  try {
+    const publicList = await getPublicAnnouncements();
+    const foundDraft = publicList.some((a) => a.id === draftId);
+    const foundExpired = publicList.some((a) => a.id === expiredId);
+
+    assert.equal(
+      foundDraft,
+      false,
+      "Draft/inactive announcements must not appear publicly",
+    );
+    assert.equal(
+      foundExpired,
+      false,
+      "Expired announcements must not appear publicly",
+    );
+  } finally {
+    await deleteAnnouncement({
+      announcementId: draftId,
+      actor: superAdminActor,
+    });
+    await deleteAnnouncement({
+      announcementId: expiredId,
+      actor: superAdminActor,
+    });
+  }
+});

@@ -6,6 +6,10 @@ import { assertSafeDatabaseForDestructiveOps } from "@/lib/db/guard";
 import { prisma } from "@/lib/db/prisma";
 import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
 import { isAuthorizedForJournal } from "@/lib/editorial/editorial-board-store";
+import {
+  handleReviewerApplicationReceived,
+  handleReviewerApplicationStatusChanged,
+} from "@/lib/notifications/event-handlers";
 
 export type ReviewerApplicationStatus = "PENDING" | "APPROVED" | "DECLINED";
 
@@ -156,6 +160,23 @@ export async function createReviewerApplication(input: {
     ? input.applicantUserId!.trim()
     : null;
 
+  // Prevent duplicate active applications
+  const existingApp = await getReviewerApplicationForUser({
+    id: applicantUserId ?? undefined,
+    email: input.email.trim().toLowerCase(),
+  });
+
+  if (
+    existingApp &&
+    (existingApp.status === "PENDING" || existingApp.status === "APPROVED")
+  ) {
+    return {
+      success: false,
+      error:
+        "You already have an active reviewer application under review or approved.",
+    };
+  }
+
   try {
     const created = await prisma.reviewerApplication.create({
       data: {
@@ -186,6 +207,12 @@ export async function createReviewerApplication(input: {
     if (input.applicantUserId && !mapped.applicantUserId) {
       mapped.applicantUserId = input.applicantUserId;
     }
+
+    await handleReviewerApplicationReceived({
+      applicationId: created.id,
+      applicantName: formatAcademicName(input.academicTitle, input.fullName),
+      targetJournal: input.targetJournal,
+    });
 
     return { success: true, trackingCode, application: mapped };
   } catch (error) {
@@ -316,104 +343,29 @@ export async function updateReviewerApplicationStatus({
       },
     });
 
-    // If approved, automatically assign the EDITOR role in the database
-    if (status === "APPROVED") {
-      try {
-        const { getJournalDbSlugs } =
-          await import("@/lib/editorial/editorial-board-data");
-
-        const targetUser = app.applicantUserId
-          ? await prisma.user.findUnique({
-              where: { id: app.applicantUserId },
-            })
-          : await prisma.user.findUnique({
-              where: { email: app.email },
-            });
-
-        if (targetUser) {
-          let journals: Array<{ id: string; slug: string }> = [];
-          if (app.targetJournal === "ALL") {
-            if (!isSuperAdmin(actor)) {
-              const actorJournals = (
-                actor as {
-                  journalRoles?: Array<{ journal?: { slug: string } }>;
-                }
-              )?.journalRoles
-                ?.map((r) => r.journal?.slug)
-                .filter(Boolean) as string[];
-              const allDbSlugs = (actorJournals ?? []).flatMap((s) =>
-                getJournalDbSlugs(s),
-              );
-              if (allDbSlugs.length > 0) {
-                journals = await prisma.journal.findMany({
-                  where: { slug: { in: allDbSlugs }, isActive: true },
-                  select: { id: true, slug: true },
-                });
-              }
-            } else {
-              journals = await prisma.journal.findMany({
-                where: { isActive: true },
-                select: { id: true, slug: true },
-              });
-            }
-          } else {
-            const allDbSlugs = getJournalDbSlugs(app.targetJournal);
-            journals = await prisma.journal.findMany({
-              where: { slug: { in: allDbSlugs }, isActive: true },
-              select: { id: true, slug: true },
-            });
-          }
-
-          const actorId = (actor as { id?: string })?.id;
-
-          for (const j of journals) {
-            await prisma.journalRoleAssignment.upsert({
-              where: {
-                userId_journalId_role: {
-                  userId: targetUser.id,
-                  journalId: j.id,
-                  role: "EDITOR",
-                },
-              },
-              update: {},
-              create: {
-                userId: targetUser.id,
-                journalId: j.id,
-                role: "EDITOR",
-              },
-            });
-
-            if (actorId && isValidUuid(actorId)) {
-              try {
-                await prisma.roleChangeEvent.create({
-                  data: {
-                    actorId,
-                    targetUserId: targetUser.id,
-                    role: "EDITOR",
-                    action: "ASSIGNED",
-                    journalId: j.id,
-                  },
-                });
-              } catch {
-                // Ignore audit log error if actorId is synthetic in test mocks
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error(
-          "Failed to auto-assign EDITOR role on reviewer approval:",
-          error,
-        );
-      }
-    }
-
     try {
       revalidatePath("/admin/reviewers");
       revalidatePath("/workspaces");
     } catch {
       // ignore outside Next.js request context
     }
+
+    const applicantUserId =
+      app.applicantUserId ??
+      (await prisma.user
+        .findUnique({
+          where: { email: app.email },
+          select: { id: true },
+        })
+        .then((u) => u?.id ?? null)
+        .catch(() => null));
+
+    await handleReviewerApplicationStatusChanged({
+      applicationId,
+      applicantUserId,
+      status,
+      targetJournal: app.targetJournal,
+    });
 
     return { success: true };
   } catch (error) {

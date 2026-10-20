@@ -20,11 +20,12 @@ export default async function JournalAdminLayout({
   params,
 }: JournalAdminLayoutProps) {
   const { journalSlug } = await params;
-  const { user, journal, journalWorkspaces } = await requireJournalWorkspace(
-    "JOURNAL_ADMIN",
-    journalSlug,
+  const [{ user, journal, journalWorkspaces }, isActivated] = await Promise.all(
+    [
+      requireJournalWorkspace("JOURNAL_ADMIN", journalSlug),
+      isJournalActivated(journalSlug),
+    ],
   );
-  const isActivated = await isJournalActivated(journalSlug);
   const isBreakGlass = isLeadSystemOwner(user);
 
   const workspaces = getAvailableWorkspaces(user);

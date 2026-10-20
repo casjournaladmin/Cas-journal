@@ -15,7 +15,7 @@ export default async function SubmissionsPage() {
   const hasActiveJournals = Object.values(activationMap).some(Boolean);
   return (
     <div>
-      <header className="cas-page-hero">
+      <header className="cas-page-hero cas-page-hero-authors">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
