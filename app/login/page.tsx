@@ -146,7 +146,7 @@ export default async function LoginPage({
       </header>
 
       {/* ── 2. Centerpiece Branding & Authentication on Frosted Blue Glass Panel ── */}
-      <section className="relative z-10 mx-auto my-auto flex w-full max-w-[28rem] flex-col items-center px-4 py-4 sm:px-6">
+      <section className="relative z-10 mx-auto my-auto flex w-full max-w-[32rem] flex-col items-center px-4 py-4 sm:px-6">
         <div className="w-full rounded-2xl border border-sky-300/30 bg-[#031d34]/75 p-6 shadow-[0_12px_40px_rgba(1,14,25,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-xl sm:p-8">
           {/* Luminous CJ Monogram */}
           <div className="mx-auto mb-3.5 grid size-13 place-items-center rounded-2xl bg-gradient-to-b from-[#0284c7] to-[#0369a1] font-serif text-lg font-bold text-white shadow-[0_0_28px_rgba(2,132,199,0.6),inset_0_1px_1px_rgba(255,255,255,0.4)]">

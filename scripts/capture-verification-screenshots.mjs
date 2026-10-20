@@ -158,6 +158,10 @@ async function run() {
     });
     await cdp.send("Page.navigate", { url: "http://localhost:3000/login" });
     await new Promise((r) => setTimeout(r, 2000));
+    await cdp.send("Runtime.evaluate", {
+      expression: `document.querySelector('details')?.setAttribute('open', 'true');`,
+    });
+    await new Promise((r) => setTimeout(r, 300));
     const loginDesktop = await cdp.send("Page.captureScreenshot", {
       format: "png",
     });
@@ -177,6 +181,10 @@ async function run() {
     });
     await cdp.send("Page.navigate", { url: "http://localhost:3000/login" });
     await new Promise((r) => setTimeout(r, 1500));
+    await cdp.send("Runtime.evaluate", {
+      expression: `document.querySelector('details')?.setAttribute('open', 'true');`,
+    });
+    await new Promise((r) => setTimeout(r, 300));
     const loginMobile = await cdp.send("Page.captureScreenshot", {
       format: "png",
     });
