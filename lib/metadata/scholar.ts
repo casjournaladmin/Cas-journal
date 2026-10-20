@@ -100,7 +100,11 @@ export function buildGoogleScholarMetadata(
   pdfUrl: string;
   other: Record<string, string | string[]>;
 } {
-  const cleanBaseUrl = baseUrl.replace(/\/$/, "");
+  const rawBase = baseUrl.replace(/\/$/, "");
+  const cleanBaseUrl =
+    rawBase.includes("localhost") || rawBase.includes("127.0.0.1")
+      ? rawBase
+      : rawBase.replace(/^http:\/\//, "https://");
   const journalSlug = article.issue.volume.journal.slug;
   const journalName = article.issue.volume.journal.name;
   const journalMeta = getJournalMetadata(journalSlug);

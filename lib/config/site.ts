@@ -97,3 +97,14 @@ export const siteConfig = {
     { label: "Contact Us", href: "/contact" },
   ],
 } as const;
+
+export function getBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (raw) {
+    if (raw.includes("localhost") || raw.includes("127.0.0.1")) {
+      return raw.replace(/\/$/, "");
+    }
+    return raw.replace(/^http:\/\//, "https://").replace(/\/$/, "");
+  }
+  return "https://casjournals.org";
+}

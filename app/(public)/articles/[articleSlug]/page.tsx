@@ -9,6 +9,7 @@ import { type CitationArticleMetadata } from "@/lib/citations/generator";
 import { prisma } from "@/lib/db/prisma";
 import { formatLongDate } from "@/lib/formatting/dates";
 import { getOrcidUrl } from "@/lib/utils/orcid";
+import { getBaseUrl } from "@/lib/config/site";
 
 import { buildGoogleScholarMetadata } from "@/lib/metadata/scholar";
 
@@ -56,7 +57,7 @@ export async function generateMetadata({
 
   if (!article || !article.isPublished) return { title: "Article Not Found" };
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const scholarMeta = buildGoogleScholarMetadata(article, baseUrl);
 
   return {
@@ -89,7 +90,7 @@ export default async function PublicArticlePage({
     ),
   );
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const citationMeta: CitationArticleMetadata = {
     title: article.title,
     journalName: article.issue.volume.journal.name,

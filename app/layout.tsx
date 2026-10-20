@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 
-import { siteConfig } from "@/lib/config/site";
+import { getBaseUrl, siteConfig } from "@/lib/config/site";
 import "./globals.css";
 
 const geist = localFont({
@@ -12,9 +12,7 @@ const geist = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  ),
+  metadataBase: new URL(getBaseUrl()),
   alternates: {
     canonical: "/",
   },
