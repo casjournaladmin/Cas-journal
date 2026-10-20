@@ -135,7 +135,7 @@ export function DevIdentitySwitcher({
                       {item.name}
                     </span>
                     <span
-                      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[9px] font-medium leading-none ${item.color}`}
+                      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[9px] leading-none font-medium ${item.color}`}
                     >
                       {item.role}
                     </span>

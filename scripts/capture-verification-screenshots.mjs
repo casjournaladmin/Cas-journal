@@ -22,10 +22,11 @@ async function getAdminCookies() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   );
 
-  const { data: linkData, error: linkErr } = await sbAdmin.auth.admin.generateLink({
-    type: "magiclink",
-    email: "casjournaladmin@gmail.com",
-  });
+  const { data: linkData, error: linkErr } =
+    await sbAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: "casjournaladmin@gmail.com",
+    });
   if (linkErr) throw linkErr;
 
   const token_hash = linkData.properties.hashed_token;
@@ -117,7 +118,10 @@ class CdpClient {
 async function run() {
   console.log("Preparing Supabase Super Admin session...");
   const adminCookies = await getAdminCookies();
-  console.log("Got cookies:", adminCookies.map((c) => c.name));
+  console.log(
+    "Got cookies:",
+    adminCookies.map((c) => c.name),
+  );
 
   console.log("Launching headless Chrome...");
   const chromeProc = launchChrome(9333);
@@ -154,6 +158,10 @@ async function run() {
     });
     await cdp.send("Page.navigate", { url: "http://localhost:3000/login" });
     await new Promise((r) => setTimeout(r, 2000));
+    await cdp.send("Runtime.evaluate", {
+      expression: `document.querySelector('details')?.setAttribute('open', 'true');`,
+    });
+    await new Promise((r) => setTimeout(r, 300));
     const loginDesktop = await cdp.send("Page.captureScreenshot", {
       format: "png",
     });
@@ -173,6 +181,10 @@ async function run() {
     });
     await cdp.send("Page.navigate", { url: "http://localhost:3000/login" });
     await new Promise((r) => setTimeout(r, 1500));
+    await cdp.send("Runtime.evaluate", {
+      expression: `document.querySelector('details')?.setAttribute('open', 'true');`,
+    });
+    await new Promise((r) => setTimeout(r, 300));
     const loginMobile = await cdp.send("Page.captureScreenshot", {
       format: "png",
     });
