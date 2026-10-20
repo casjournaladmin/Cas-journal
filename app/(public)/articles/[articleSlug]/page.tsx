@@ -14,7 +14,15 @@ import { buildGoogleScholarMetadata } from "@/lib/metadata/scholar";
 
 export const dynamic = "force-dynamic";
 
-const getArticleBySlug = cache(async (articleSlug: string) => {
+type ArticleDetailAuthor = {
+  id: string;
+  fullName: string;
+  affiliation: string | null;
+  orcid: string | null;
+  position: number;
+};
+
+async function fetchArticleFromDb(articleSlug: string) {
   return prisma.article.findUnique({
     where: { slug: articleSlug },
     include: {
@@ -34,7 +42,9 @@ const getArticleBySlug = cache(async (articleSlug: string) => {
       authors: { orderBy: { position: "asc" } },
     },
   });
-});
+}
+
+const getArticleBySlug = cache(fetchArticleFromDb);
 
 export async function generateMetadata({
   params,
@@ -74,7 +84,7 @@ export default async function PublicArticlePage({
   const distinctAffiliations = Array.from(
     new Set(
       article.authors
-        .map((a) => a.affiliation?.trim())
+        .map((a: ArticleDetailAuthor) => a.affiliation?.trim())
         .filter((aff): aff is string => Boolean(aff)),
     ),
   );
@@ -92,7 +102,7 @@ export default async function PublicArticlePage({
     pageEnd: article.pageEnd,
     doi: article.doi,
     canonicalUrl: `${baseUrl}/articles/${article.slug}`,
-    authors: article.authors.map((a) => ({
+    authors: article.authors.map((a: ArticleDetailAuthor) => ({
       fullName: a.fullName,
       affiliation: a.affiliation,
       orcid: a.orcid,
@@ -145,7 +155,7 @@ export default async function PublicArticlePage({
           {article.authors.length ? (
             <div className="mt-4 space-y-2">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-semibold text-[color:var(--color-subtle)]">
-                {article.authors.map((author) => {
+                {article.authors.map((author: ArticleDetailAuthor) => {
                   const orcidUrl = getOrcidUrl(author.orcid);
                   const affIndex = author.affiliation?.trim()
                     ? distinctAffiliations.indexOf(author.affiliation.trim())
@@ -200,7 +210,7 @@ export default async function PublicArticlePage({
 
               {distinctAffiliations.length > 0 ? (
                 <div className="space-y-0.5 pt-1 text-xs text-[color:var(--color-muted)]">
-                  {distinctAffiliations.map((aff, index) => (
+                  {distinctAffiliations.map((aff: string, index: number) => (
                     <div key={index} className="flex items-start gap-1.5">
                       <span className="font-semibold text-[color:var(--color-accent)]">
                         {index + 1}
