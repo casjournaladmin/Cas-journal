@@ -41,6 +41,9 @@ export default async function JournalAdminLayout({
     journal,
   };
 
+  const isSuper =
+    isBreakGlass || workspaces.some((item) => item.area === "platform");
+
   if (!isActivated) {
     return (
       <AuthenticatedShell
@@ -66,6 +69,14 @@ export default async function JournalAdminLayout({
       workspaces={workspaces}
       journalWorkspaces={journalWorkspaces}
       navigation={[
+        ...(isSuper
+          ? [
+              {
+                href: "/admin",
+                label: "← Super Admin",
+              },
+            ]
+          : []),
         {
           href: `/admin/${journal.slug}`,
           label: "Manuscripts",

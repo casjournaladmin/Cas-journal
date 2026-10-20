@@ -454,41 +454,39 @@ export async function assignTrackingIdBySubmissionId(input: {
         trackingNumber: { not: null },
       },
     });
-    trackingId = createTrackingNumber({
+    let seq = count + 1;
+    let candidate = createTrackingNumber({
       journalId: submission.journal.id,
       journalName: submission.journal.name,
       journalShortName: submission.journal.shortName,
       year: new Date().getFullYear(),
-      sequence: count + 1,
+      sequence: seq,
     });
+    while (
+      await prisma.submission.findUnique({
+        where: { trackingNumber: candidate },
+        select: { id: true },
+      })
+    ) {
+      seq += 1;
+      candidate = createTrackingNumber({
+        journalId: submission.journal.id,
+        journalName: submission.journal.name,
+        journalShortName: submission.journal.shortName,
+        year: new Date().getFullYear(),
+        sequence: seq,
+      });
+    }
+    trackingId = candidate;
   }
 
   const now = new Date();
   try {
     await prisma.submission.update({
-      where: { id: submission.id, journalId: input.journalId },
+      where: { id: submission.id },
       data: {
         trackingNumber: trackingId,
         version: { increment: 1 },
-        request: submission.request
-          ? {
-              update: {
-                where: { id: submission.request.id },
-                data: {
-                  status: "TRACKING_ASSIGNED",
-                  trackingAssignedAt: now,
-                  trackingAssignedById: input.actorId,
-                  version: { increment: 1 },
-                  messages: {
-                    create: {
-                      kind: "SYSTEM",
-                      body: `Tracking ID assigned: ${trackingId}`,
-                    },
-                  },
-                },
-              },
-            }
-          : undefined,
         events: {
           create: {
             type: "TRACKING_ID_ASSIGNED",
@@ -500,10 +498,29 @@ export async function assignTrackingIdBySubmissionId(input: {
       },
     });
 
+    if (submission.request) {
+      await prisma.submissionRequest.update({
+        where: { id: submission.request.id },
+        data: {
+          status: "TRACKING_ASSIGNED",
+          trackingAssignedAt: now,
+          trackingAssignedById: input.actorId,
+          version: { increment: 1 },
+          messages: {
+            create: {
+              kind: "SYSTEM",
+              body: `Tracking ID assigned: ${trackingId}`,
+            },
+          },
+        },
+      });
+    }
+
     await handleTrackingAssigned({
       submissionId: submission.id,
       trackingNumber: trackingId,
     });
+    return { trackingId };
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

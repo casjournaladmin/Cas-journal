@@ -3,12 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/ui/container";
+import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { siteConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
 import {
   buildJournalMetadataFromRecord,
   getJournalDbSlugs,
   getJournalMetadata,
+  JOURNAL_HERO_AFFILIATIONS,
   type JournalMetadata,
   resolveCanonicalJournalSlug,
 } from "@/lib/editorial/editorial-board-data";
@@ -144,27 +146,13 @@ export default async function JournalLandingPage({
   const chiefEditor = boardMembers.find(
     (m) => m.category === "CHIEF_EDITOR" || m.category === "EDITOR_IN_CHIEF",
   );
-  const deputyEditor = boardMembers.find((m) => m.category === "DEPUTY_EDITOR");
-  const managingEditor = boardMembers.find(
-    (m) => m.category === "MANAGING_EDITOR",
-  );
-  const associateEditors = boardMembers.filter(
-    (m) => m.category === "ASSOCIATE_EDITOR",
-  );
-  const boardMemberList = boardMembers.filter(
-    (m) => m.category === "BOARD_MEMBER",
-  );
-  const consultingEditors = boardMembers.filter(
-    (m) => m.category === "CONSULTING_EDITOR",
-  );
-  const advisoryBoard = boardMembers.filter(
-    (m) => m.category === "ADVISORY_BOARD",
-  );
 
   const submissionHref = `/author/submissions/new?journal=${meta.slug}`;
   const institutionalAffiliation = [meta.faculty, meta.institution]
     .filter((value) => Boolean(value && value.trim()))
     .join(", ");
+  const heroAffiliation =
+    JOURNAL_HERO_AFFILIATIONS[meta.slug] || institutionalAffiliation;
 
   const heroImage =
     JOURNAL_HERO_MAP[meta.slug] ||
@@ -185,8 +173,8 @@ export default async function JournalLandingPage({
             {meta.department ? ` · ${meta.department}` : ""}
           </span>
           <h1 className="cas-page-title">{meta.title}</h1>
-          {institutionalAffiliation ? (
-            <p className="cas-page-subtitle">{institutionalAffiliation}</p>
+          {heroAffiliation ? (
+            <p className="cas-page-subtitle">{heroAffiliation}</p>
           ) : (
             <p className="cas-page-subtitle">
               Peer-reviewed open-access scholarly journal published on a
@@ -269,6 +257,9 @@ export default async function JournalLandingPage({
           </div>
         </div>
       </section>
+
+      {/* ── Dedicated Secondary Journal Navigation ── */}
+      <JournalNavigation journalSlug={meta.slug} shortName={meta.shortName} />
 
       {/* ── SECTION 1: AIMS, SCOPE & TOPICAL COVERAGE ── */}
       <section className="border-b border-[color:var(--color-border)] py-12">
@@ -643,134 +634,55 @@ export default async function JournalLandingPage({
         </Container>
       </section>
 
-      {/* ── SECTION 4: EDITORIAL BOARD (TYPOGRAPHIC ROSTER) ── */}
+      {/* ── SECTION 4: EDITORIAL BOARD & GOVERNANCE HIGHLIGHT ── */}
       <section className="border-b border-[color:var(--color-border)] py-12">
         <Container>
-          <div className="flex flex-col gap-3 border-b border-[color:var(--color-border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                Governance &amp; Leadership
-              </p>
-              <h2 className="mt-1 font-serif text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-3xl">
-                Editorial Board
-              </h2>
+          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-8 sm:p-10">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-2xl space-y-2">
+                <span className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
+                  Scholarly Governance &amp; Leadership
+                </span>
+                <h2 className="font-serif text-2xl font-bold text-[color:var(--color-foreground)] sm:text-3xl">
+                  Editorial Board &amp; Referees
+                </h2>
+                <p className="text-xs leading-relaxed text-[color:var(--color-muted)] sm:text-sm">
+                  {meta.title} operates under an independent editorial
+                  governance board of recognized professors, scholars, and
+                  disciplinary specialists. All manuscript reviews follow
+                  rigorous double-blind evaluation in accordance with COPE
+                  standards.
+                </p>
+                {chiefEditor ? (
+                  <p className="pt-2 text-xs text-[color:var(--color-foreground)]">
+                    <strong className="text-[color:var(--color-accent)]">
+                      {chiefEditor.role}:
+                    </strong>{" "}
+                    {chiefEditor.name}{" "}
+                    {chiefEditor.affiliation ? (
+                      <span className="text-[color:var(--color-muted)]">
+                        ({chiefEditor.affiliation})
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 flex-col gap-3">
+                <Link
+                  href={`/journals/${meta.slug}/editorial-board`}
+                  className="cas-btn-primary text-center"
+                >
+                  Meet the Editorial Board →
+                </Link>
+                <Link
+                  href={`/apply-reviewer?journal=${meta.slug}`}
+                  className="cas-btn-secondary text-center"
+                >
+                  Apply as Reviewer
+                </Link>
+              </div>
             </div>
-            <Link
-              href="/editorial-board"
-              className="text-xs font-semibold text-[color:var(--color-accent)] hover:underline"
-            >
-              View Full Editorial Team →
-            </Link>
           </div>
-
-          {boardMembers.length === 0 ? (
-            <div className="mt-8 rounded-[var(--radius-lg)] border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-8 text-center">
-              <p className="font-serif text-base font-semibold text-[color:var(--color-foreground)]">
-                Editorial Board Roster Pending Publication
-              </p>
-              <p className="mx-auto mt-1 max-w-md text-xs text-[color:var(--color-muted)]">
-                The verified editorial board roster for {meta.title} will be
-                published shortly by the editorial office.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-8 space-y-10">
-              {/* Principal Officers / Leadership */}
-              {chiefEditor || deputyEditor || managingEditor ? (
-                <div>
-                  <h3 className="font-mono text-xs font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
-                    Editorial Leadership
-                  </h3>
-                  <div className="mt-4 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60">
-                    {[chiefEditor, deputyEditor, managingEditor]
-                      .filter(Boolean)
-                      .map((officer) => (
-                        <div
-                          key={officer!.id}
-                          className="flex flex-col gap-1 py-4 sm:flex-row sm:items-baseline sm:justify-between"
-                        >
-                          <div>
-                            <span className="font-mono text-[10px] font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
-                              {officer!.role}
-                            </span>
-                            <p className="font-serif text-base font-bold text-[color:var(--color-foreground)]">
-                              {officer!.name}
-                            </p>
-                          </div>
-                          {officer!.affiliation?.trim() ? (
-                            <p className="text-xs text-[color:var(--color-muted)] sm:max-w-md sm:text-right">
-                              {officer!.affiliation}
-                            </p>
-                          ) : null}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Associate Editors & Board Members */}
-              {associateEditors.length > 0 || boardMemberList.length > 0 ? (
-                <div>
-                  <h3 className="font-mono text-xs font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
-                    {associateEditors.length > 0
-                      ? "Associate Editors & Board Members"
-                      : "Editorial Board Members"}
-                  </h3>
-                  <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {[...associateEditors, ...boardMemberList].map((member) => (
-                      <div
-                        key={member.id}
-                        className="border-b border-[color:var(--color-border)]/40 pb-3"
-                      >
-                        <p className="font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
-                          {member.name}
-                        </p>
-                        <p className="mt-0.5 font-mono text-[10px] font-semibold text-[color:var(--color-accent)]">
-                          {member.role}
-                        </p>
-                        {member.affiliation?.trim() ? (
-                          <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
-                            {member.affiliation}
-                          </p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Consulting Editors / Advisory Council */}
-              {consultingEditors.length > 0 || advisoryBoard.length > 0 ? (
-                <div>
-                  <h3 className="font-mono text-xs font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
-                    {consultingEditors.length > 0
-                      ? "Consulting Editors & Advisory Council"
-                      : "Advisory Council"}
-                  </h3>
-                  <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {[...consultingEditors, ...advisoryBoard].map((member) => (
-                      <div
-                        key={member.id}
-                        className="border-b border-[color:var(--color-border)]/40 pb-3"
-                      >
-                        <p className="font-serif text-sm font-semibold text-[color:var(--color-foreground)]">
-                          {member.name}
-                        </p>
-                        <p className="mt-0.5 font-mono text-[10px] font-semibold text-[color:var(--color-accent)]">
-                          {member.role}
-                        </p>
-                        {member.affiliation?.trim() ? (
-                          <p className="mt-0.5 text-xs text-[color:var(--color-muted)]">
-                            {member.affiliation}
-                          </p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          )}
         </Container>
       </section>
 

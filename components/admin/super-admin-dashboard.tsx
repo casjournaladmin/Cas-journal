@@ -10,6 +10,7 @@ import {
 } from "@/lib/editorial/editorial-board-data";
 
 export type OperationalCounts = {
+  recentSubmissions?: number;
   newRequests?: number;
   pendingReceipts?: number;
   submissionRequests?: number;
@@ -129,12 +130,15 @@ export function SuperAdminDashboard({
       );
   }, [journals]);
 
-  const submissionRequestsCount =
-    operational.submissionRequests ??
+  const recentSubmissionsCount =
+    operational.recentSubmissions ??
+    operational.awaitingTracking ??
     (operational.newRequests ?? 0) + (operational.pendingReceipts ?? 0);
   const publishedArticlesCount = operational.publishedArticles ?? 0;
-  const awaitingActionCount =
-    operational.awaitingAction ?? operational.awaitingTracking;
+  const activeSubmissionsCount =
+    operational.activeSubmissions ??
+    operational.awaitingAction ??
+    operational.awaitingTracking;
 
   return (
     <div className="space-y-8 pb-4">
@@ -169,10 +173,10 @@ export function SuperAdminDashboard({
       <section>
         <div className="grid gap-4 sm:grid-cols-3">
           <MetricCard
-            count={submissionRequestsCount}
-            label="Submission Requests"
-            sublabel="Active and pending author requests"
-            actionLabel="View requests"
+            count={recentSubmissionsCount}
+            label="Recent Submissions"
+            sublabel="New manuscripts awaiting intake & tracking"
+            actionLabel="View submissions"
             href="/admin/submissions?status=SUBMITTED"
           />
           <MetricCard
@@ -183,7 +187,7 @@ export function SuperAdminDashboard({
             href="/admin/articles"
           />
           <MetricCard
-            count={awaitingActionCount}
+            count={activeSubmissionsCount}
             label="Manuscripts Awaiting Action"
             sublabel="Papers in review, revision, or decision"
             actionLabel="Review manuscripts"

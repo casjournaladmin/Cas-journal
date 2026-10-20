@@ -231,11 +231,11 @@ test("7 & 8. Journal Pages: Image-backed heroes and unbadged plain-text ISSN", (
 });
 
 test("9 & 10. Journal Pages: Mature academic layout & clean typographic editorial board", () => {
-  const journalPagePath = path.join(
+  const editorialBoardPagePath = path.join(
     process.cwd(),
-    "app/(public)/journals/[journalSlug]/page.tsx",
+    "app/(public)/journals/[journalSlug]/editorial-board/page.tsx",
   );
-  const content = fs.readFileSync(journalPagePath, "utf8");
+  const content = fs.readFileSync(editorialBoardPagePath, "utf8");
 
   // Boxed cards removed from editorial board
   assert.equal(
@@ -246,7 +246,7 @@ test("9 & 10. Journal Pages: Mature academic layout & clean typographic editoria
     "Boxed cards must be removed from editorial leadership",
   );
 
-  // Clean typographic roster present
+  // Clean typographic roster present on dedicated editorial board page
   assert.equal(content.includes("Editorial Leadership"), true);
   assert.equal(content.includes("officer!.role"), true);
   assert.equal(content.includes("officer!.name"), true);

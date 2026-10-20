@@ -620,7 +620,7 @@ export default async function Home() {
               }}
             >
               {currentIssueArticle?.abstract ??
-                "CAS Journals operates on a continuous rolling publication model. Accepted original research papers, structured reviews, and scholarly case studies are typeset and published online immediately upon final editorial sign-off."}
+                "CASJOURNALS operates on a continuous rolling publication model. Accepted original research papers, structured reviews, and scholarly case studies are typeset and published online immediately upon final editorial sign-off."}
             </p>
             <div
               style={{
@@ -678,7 +678,7 @@ export default async function Home() {
                 currentIssueArticle?.coverImageUrl ??
                 "/assets/images/scope-library.jpg"
               }
-              alt="Grand scholarly research library hall — CAS Journals"
+              alt="Grand scholarly research library hall — CASJOURNALS"
             />
           </div>
         </div>

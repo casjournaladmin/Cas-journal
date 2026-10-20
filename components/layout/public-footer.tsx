@@ -8,7 +8,7 @@ export function PublicFooter() {
       <div className="cas-footer-inner">
         <div className="cas-footer-grid">
           <div className="cas-footer-col">
-            <h4>CAS Journals</h4>
+            <h4>CASJOURNALS</h4>
             <p>
               <strong>CASJOURNALS:</strong> Platform for Peer-reviewed,
               Open-access journals for Institution and academic society
@@ -143,7 +143,7 @@ export function PublicFooter() {
 
         <div className="cas-footer-bottom">
           <div>
-            &copy; {currentYear}&ndash; Casjournals. All rights reserved.
+            &copy; {currentYear}&ndash; CASJOURNALS. All rights reserved.
           </div>
           <div>Peer-Reviewed Open-Access Scholarly Publishing</div>
         </div>

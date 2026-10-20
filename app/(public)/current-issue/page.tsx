@@ -85,7 +85,7 @@ export default async function CurrentIssuePage() {
           </h1>
           <p className="cas-page-desc">
             Continuous rolling publication of peer-reviewed research papers,
-            structured reviews, and case studies across CAS Journals.
+            structured reviews, and case studies across CASJOURNALS.
           </p>
         </div>
       </header>
@@ -99,7 +99,7 @@ export default async function CurrentIssuePage() {
                   Continuous Rolling Publication Model
                 </div>
                 <p>
-                  CAS Journals operates on a continuous rolling publication
+                  CASJOURNALS operates on a continuous rolling publication
                   model. Accepted original research papers, structured reviews,
                   and scholarly case studies are typeset, assigned Crossref
                   DOIs, and published online immediately upon final editorial
@@ -129,7 +129,7 @@ export default async function CurrentIssuePage() {
               ) : (
                 <p>
                   Editorial preparations for the inaugural Volume 1 (2026) are
-                  underway across CAS Journals. Formal manuscript submissions
+                  underway across CASJOURNALS. Formal manuscript submissions
                   will open shortly for our four disciplinary journals:{" "}
                   <strong>
                     Existentia: Concrescence Journal of Arts and Humanities

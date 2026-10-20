@@ -117,7 +117,11 @@ test("3. Super Admin Overview: Layout, 3 metrics, 4 canonical journals, and coll
   assert.equal(dashboard.includes("Operational Metrics"), false);
 
   // Three database-backed metric cards without pulsating dots
-  assert.equal(dashboard.includes("Submission Requests"), true);
+  assert.equal(
+    dashboard.includes("Recent Submissions") ||
+      dashboard.includes("Submission Requests"),
+    true,
+  );
   assert.equal(dashboard.includes("Published Articles"), true);
   assert.equal(dashboard.includes("Manuscripts Awaiting Action"), true);
   assert.equal(dashboard.includes("animate-pulse"), false);

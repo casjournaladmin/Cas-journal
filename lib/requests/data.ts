@@ -161,7 +161,9 @@ export async function getPlatformOperationalCounts() {
     }),
     prisma.article.count({ where: { isPublished: true } }),
   ]);
+  const recentSubmissions = awaitingTracking + newRequests + pendingReceipts;
   return {
+    recentSubmissions,
     newRequests,
     pendingReceipts,
     awaitingTracking,

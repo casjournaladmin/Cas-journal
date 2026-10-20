@@ -10,7 +10,9 @@ import {
 } from "@/lib/editorial/announcements-store";
 import {
   CANONICAL_JOURNAL_ORDER,
+  getJournalMetadata,
   getJournalOrderPriority,
+  resolveCanonicalJournalSlug,
 } from "@/lib/editorial/editorial-board-data";
 import { formatLongDate } from "@/lib/formatting/dates";
 
@@ -26,9 +28,9 @@ type JournalOptionItem = {
 };
 
 export const metadata: Metadata = {
-  title: "Announcements & Call for Papers | CAS Journals",
+  title: "Announcements & Call for Papers | CASJOURNALS",
   description:
-    "Official calls for papers, special issue deadlines, and publishing updates across CAS Journals.",
+    "Official calls for papers, special issue deadlines, and publishing updates across CASJOURNALS.",
 };
 
 export default async function AnnouncementsPage({
@@ -36,7 +38,14 @@ export default async function AnnouncementsPage({
 }: {
   searchParams: Promise<{ journal?: string }>;
 }) {
-  const { journal: activeJournal = "ALL" } = await searchParams;
+  const { journal: rawJournal = "ALL" } = await searchParams;
+  const activeJournal =
+    rawJournal && rawJournal !== "ALL"
+      ? resolveCanonicalJournalSlug(rawJournal)
+      : "ALL";
+  const activeJournalMeta =
+    activeJournal !== "ALL" ? getJournalMetadata(activeJournal) : null;
+
   const [announcements, dbJournals]: [Announcement[], DbJournalOption[]] =
     await Promise.all([
       getPublicAnnouncements(
@@ -87,7 +96,7 @@ export default async function AnnouncementsPage({
           </h1>
           <p className="cas-page-desc">
             Continuous rolling calls for Volume 1 (2026), special thematic
-            issues, and official editorial updates across CAS Journals.
+            issues, and official editorial updates across CASJOURNALS.
           </p>
         </div>
       </header>
@@ -121,25 +130,45 @@ export default async function AnnouncementsPage({
               Rolling Call for Papers &bull; Volume 1 (2026)
             </span>
             <h2 className="mt-3 font-serif text-2xl font-bold text-[#032b45]">
-              Continuous Rolling Submissions Across All CAS Journals
+              {activeJournalMeta
+                ? `Continuous Rolling Submissions — ${activeJournalMeta.title}`
+                : "Continuous Rolling Submissions Across All CASJOURNALS"}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              CAS Journals invites original empirical research papers,
-              theoretical discourses, critical reviews, and policy analyses for
-              publication across{" "}
-              <strong>
-                Existentia: Concrescence Journal of Arts and Humanities
-              </strong>
-              ,{" "}
-              <strong>
-                Concrescence Journal of Multi-Disciplinary Research
-              </strong>
-              , <strong>Izu: Journal of Critical Perspectives</strong>, and{" "}
-              <strong>The Polis: Journal of Political Studies</strong>. Initial
-              submission is free (₦0 upfront).
+              {activeJournalMeta ? (
+                <>
+                  <strong>{activeJournalMeta.title}</strong> (
+                  {activeJournalMeta.shortName}) invites original empirical
+                  research papers, theoretical discourses, and critical essays
+                  for Volume 1. Initial submission is free (₦0 upfront).
+                </>
+              ) : (
+                <>
+                  CASJOURNALS invites original empirical research papers,
+                  theoretical discourses, critical reviews, and policy analyses
+                  for publication across{" "}
+                  <strong>
+                    Existentia: Concrescence Journal of Arts and Humanities
+                  </strong>
+                  ,{" "}
+                  <strong>
+                    Concrescence Journal of Multi-Disciplinary Research
+                  </strong>
+                  , <strong>Izu: Journal of Critical Perspectives</strong>, and{" "}
+                  <strong>The Polis: Journal of Political Studies</strong>.
+                  Initial submission is free (₦0 upfront).
+                </>
+              )}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/submit" className="cas-btn-primary">
+              <Link
+                href={
+                  activeJournalMeta
+                    ? `/author/submissions/new?journal=${activeJournalMeta.slug}`
+                    : "/submit"
+                }
+                className="cas-btn-primary"
+              >
                 Submit Your Paper
               </Link>
               <Link href="/author-guidelines" className="cas-btn-secondary">
@@ -193,7 +222,7 @@ export default async function AnnouncementsPage({
                       <span>·</span>
                       <span className="font-semibold text-[color:var(--color-accent)] uppercase">
                         {item.targetJournal === "ALL"
-                          ? "All CAS Journals"
+                          ? "All CASJOURNALS"
                           : `Journal: ${item.targetJournal.toUpperCase()}`}
                       </span>
                     </div>

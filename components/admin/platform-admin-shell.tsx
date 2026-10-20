@@ -142,7 +142,7 @@ export function PlatformAdminShell({
               <Link
                 href="/admin"
                 className="grid size-8 place-items-center rounded-[var(--radius-sm)] bg-[#0284c7] font-serif text-xs font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
-                title="CAS Journals Overview"
+                title="CASJOURNALS Overview"
               >
                 CJ
               </Link>
@@ -176,13 +176,13 @@ export function PlatformAdminShell({
                 <Link
                   href="/admin"
                   className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-[#0284c7] font-serif text-[14px] font-bold tracking-tight text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] transition hover:opacity-95"
-                  title="CAS Journals Overview"
+                  title="CASJOURNALS Overview"
                 >
                   CJ
                 </Link>
                 <div className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate font-serif text-[15px] font-bold tracking-tight text-[color:var(--color-foreground)]">
-                    CAS Journals
+                    CASJOURNALS
                   </span>
                   <span className="shrink-0 rounded bg-[color:var(--color-accent-soft)] px-1.5 py-0.5 text-[9px] font-bold tracking-wider whitespace-nowrap text-[color:var(--color-accent)] uppercase">
                     Admin
@@ -409,7 +409,7 @@ export function PlatformAdminShell({
                   CJ
                 </span>
                 <span className="font-serif text-sm font-bold text-[color:var(--color-foreground)]">
-                  CAS Journals
+                  CASJOURNALS
                 </span>
                 <span className="rounded bg-[color:var(--color-accent-soft)] px-1.5 py-0.5 text-[9px] font-bold text-[color:var(--color-accent)] uppercase">
                   Admin

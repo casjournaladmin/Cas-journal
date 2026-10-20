@@ -445,6 +445,8 @@ export async function submitDirectArticleAction(
 
   revalidatePath("/author");
   revalidatePath("/author/submissions");
+  revalidatePath("/admin");
+  revalidatePath("/admin/submissions");
   revalidatePath(`/admin/${journalSlug}`);
   revalidatePath(`/admin/${journalSlug}/submissions`);
 

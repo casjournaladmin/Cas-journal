@@ -27,7 +27,7 @@ export function BrandMark({
               isInverse ? "text-white" : "text-[color:var(--color-foreground)]"
             }`}
           >
-            CAS Journals
+            CASJOURNALS
           </span>
           <span
             className={`mt-0.5 hidden text-[10px] font-semibold tracking-[0.08em] uppercase xl:block ${

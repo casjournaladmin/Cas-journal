@@ -11,7 +11,7 @@ export default function AboutPage() {
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
             <span className="sep">/</span>
-            <span>About CAS Journals</span>
+            <span>About CASJOURNALS</span>
           </div>
           <h1 className="cas-page-title">
             Advancing Knowledge. Inspiring Growth.
@@ -30,14 +30,14 @@ export default function AboutPage() {
               <div>
                 <h2>Platform Mission &amp; Scholarly Mandate</h2>
                 <p>
-                  CAS Journals is committed to advancing knowledge and
+                  CASJOURNALS is committed to advancing knowledge and
                   encouraging scholarly dialogue across a wide range of
                   disciplines. We provide a trusted platform for sharing
                   high-quality research and original ideas, reflecting our
                   dedication to academic excellence and intellectual growth.
                 </p>
                 <p>
-                  All journals hosted on the CAS Journals platform operate under
+                  All journals hosted on the CASJOURNALS platform operate under
                   rigorous double-anonymised peer review, assign permanent
                   Crossref Digital Object Identifiers (DOIs), and publish
                   immediately online under the Creative Commons Attribution 4.0
@@ -81,7 +81,7 @@ export default function AboutPage() {
                       Platform
                     </dt>
                     <dd className="mt-0.5 font-semibold text-[color:var(--color-foreground)]">
-                      CAS Journals
+                      CASJOURNALS
                     </dd>
                   </div>
                   <div>

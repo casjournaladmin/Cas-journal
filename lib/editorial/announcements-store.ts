@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { isSuperAdmin } from "@/lib/auth/permissions";
 import { assertSafeDatabaseForDestructiveOps } from "@/lib/db/guard";
 import { prisma } from "@/lib/db/prisma";
-import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
+import {
+  getJournalDbSlugs,
+  resolveCanonicalJournalSlug,
+} from "@/lib/editorial/editorial-board-data";
 import { isAuthorizedForJournal } from "@/lib/editorial/editorial-board-store";
 
 export type AnnouncementCategory =
@@ -104,10 +107,22 @@ export async function getPublicAnnouncements(
       ? resolveCanonicalJournalSlug(journalSlug)
       : null;
 
+  const targetList = canonical
+    ? Array.from(
+        new Set([
+          "ALL",
+          "all",
+          canonical,
+          canonical.toUpperCase(),
+          ...getJournalDbSlugs(canonical),
+        ]),
+      )
+    : undefined;
+
   const records = await prisma.announcement.findMany({
     where: {
       isActive: true,
-      ...(canonical ? { targetJournal: { in: ["ALL", canonical] } } : {}),
+      ...(targetList ? { targetJournal: { in: targetList } } : {}),
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
     },
     orderBy: { publishedAt: "desc" },

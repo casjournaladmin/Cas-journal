@@ -7,9 +7,9 @@ import { getJournalEditorialBoard } from "@/lib/editorial/editorial-board-store"
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Editorial Team & Governance | CAS Journals",
+  title: "Editorial Team & Governance | CASJOURNALS",
   description:
-    "Editorial board leadership, governance structure, and call for expressions of interest across CAS Journals.",
+    "Editorial board leadership, governance structure, and call for expressions of interest across CASJOURNALS.",
 };
 
 export default async function EditorialBoardPage() {
@@ -33,7 +33,7 @@ export default async function EditorialBoardPage() {
           <h1 className="cas-page-title">Editorial Boards &amp; Governance</h1>
           <p className="cas-page-desc">
             Distinguished academic leadership overseeing peer review rigour,
-            publication ethics, and scholarly excellence across CAS Journals.
+            publication ethics, and scholarly excellence across CASJOURNALS.
           </p>
         </div>
       </header>
@@ -159,14 +159,14 @@ export default async function EditorialBoardPage() {
                 marginBottom: "24px",
               }}
             >
-              CAS Journals operates an institutional governance model overseen
-              by dedicated editorial boards, academic societies, and independent
+              CASJOURNALS operates an institutional governance model overseen by
+              dedicated editorial boards, academic societies, and independent
               disciplinary scholars.
             </p>
 
             <h2>Editorial Governance Structure</h2>
             <p>
-              Each journal on the CAS Journals platform is led by an
+              Each journal on the CASJOURNALS platform is led by an
               Editor-in-Chief, supported by an Associate Editorial Board and
               international Advisory Panels across academic disciplines:
             </p>
@@ -196,7 +196,7 @@ export default async function EditorialBoardPage() {
 
             <h2>Call for Expressions of Interest</h2>
             <p>
-              In accordance with our platform expansion for 2026, CAS Journals
+              In accordance with our platform expansion for 2026, CASJOURNALS
               welcomes expressions of interest from distinguished academics to
               serve as Section Editors, Thematic Guest Editors, or Advisory
               Board Members.
@@ -233,7 +233,7 @@ export default async function EditorialBoardPage() {
               <p>
                 <strong>Editorial Recruitment Secretariat:</strong>
                 <br />
-                CAS Journals Publishing Directorate
+                CASJOURNALS Publishing Directorate
                 <br />
                 Email:{" "}
                 <a

@@ -5,9 +5,9 @@ import { activeJournalsConfig } from "@/lib/config/site";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
 export const metadata: Metadata = {
-  title: "Submit Your Paper | CAS Journals",
+  title: "Submit Your Paper | CASJOURNALS",
   description:
-    "Online manuscript submission portal, preparation checklist, and transparent open-access publication policies for CAS Journals.",
+    "Online manuscript submission portal, preparation checklist, and transparent open-access publication policies for CASJOURNALS.",
 };
 
 export default async function SubmissionsPage() {
@@ -24,7 +24,7 @@ export default async function SubmissionsPage() {
           </div>
           <h1 className="cas-page-title">Submit Your Paper</h1>
           <p className="cas-page-desc">
-            Online manuscript submission portal for CAS Journals. Initial
+            Online manuscript submission portal for CASJOURNALS. Initial
             submission is completely free with zero upfront review fee.
           </p>
         </div>

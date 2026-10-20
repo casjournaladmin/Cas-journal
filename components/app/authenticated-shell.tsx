@@ -129,6 +129,15 @@ export function AuthenticatedShell({
             <NavigationLinks items={navigationItems} />
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+            {availableWorkspaces.some((w) => w.area === "platform") ? (
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-sky-500/30 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold text-[color:var(--color-accent)] transition hover:bg-[color:var(--color-accent)] hover:text-white"
+                title="Return to Super Admin Operating Center"
+              >
+                <span>← Super Admin</span>
+              </Link>
+            ) : null}
             <Link
               href="/"
               className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-2.5 py-1.5 text-xs font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] xl:inline-flex"
@@ -186,6 +195,14 @@ export function AuthenticatedShell({
                   <NavigationLinks items={navigationItems} mobile />
                 </nav>
                 <div className="mt-3 space-y-1 border-t border-[color:var(--color-border)] pt-3">
+                  {availableWorkspaces.some((w) => w.area === "platform") ? (
+                    <Link
+                      href="/admin"
+                      className="block rounded-[var(--radius-md)] bg-sky-500/10 px-3 py-2 text-sm font-semibold text-[color:var(--color-accent)] hover:bg-sky-500/20"
+                    >
+                      ← Back to Super Admin
+                    </Link>
+                  ) : null}
                   <Link
                     href="/"
                     className="block rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-strong)]"

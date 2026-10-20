@@ -64,6 +64,13 @@ export const CANONICAL_JOURNAL_ORDER: readonly string[] = [
   "polis",
 ];
 
+export const JOURNAL_HERO_AFFILIATIONS: Record<string, string> = {
+  existentia: "Faculty of Humanity, Imo State University, Nigeria",
+  cjmr: "Faculty of Humanity, Imo State University, Nigeria",
+  izu: "Department of Philosophy, Imo State University, Nigeria",
+  polis: "Department of Philosophy, Imo State University, Nigeria",
+};
+
 export function getJournalOrderPriority(slug: string): number {
   const canonical = resolveCanonicalJournalSlug(slug);
   const index = (CANONICAL_JOURNAL_ORDER as readonly string[]).indexOf(

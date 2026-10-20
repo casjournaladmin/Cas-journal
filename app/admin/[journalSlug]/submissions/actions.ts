@@ -64,7 +64,12 @@ function errorState(error: unknown): ActionState {
 
 function refresh(journalSlug: string, submissionId: string) {
   revalidatePath(`/admin/${journalSlug}/submissions/${submissionId}`);
+  revalidatePath(`/admin/${journalSlug}/submissions`);
+  revalidatePath(`/admin/${journalSlug}`);
+  revalidatePath("/admin/submissions");
+  revalidatePath("/admin");
   revalidatePath(`/author/submissions/${submissionId}`);
+  revalidatePath("/author/submissions");
 }
 
 export async function markRevisionReceivedAction(

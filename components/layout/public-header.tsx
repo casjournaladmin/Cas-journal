@@ -13,7 +13,7 @@ export function PublicHeader() {
     <header className="cas-header-wrapper">
       <nav className="cas-nav" aria-label="Main Navigation">
         <Link href="/" className="cas-logo">
-          CAS Journals
+          CASJOURNALS
         </Link>
 
         <PublicDesktopNav />

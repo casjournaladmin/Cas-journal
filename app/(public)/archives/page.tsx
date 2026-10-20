@@ -172,7 +172,7 @@ export default async function ArchivesPage({
           <p className="cas-page-desc">
             {activeJournalObj
               ? `Published volumes, issues, and full-text articles for ${activeJournalObj.name} (${activeJournalObj.shortName}).`
-              : "Past volumes, published issues, and full-text open-access repository across CAS Journals."}
+              : "Past volumes, published issues, and full-text open-access repository across CASJOURNALS."}
           </p>
         </div>
       </header>
@@ -238,7 +238,7 @@ export default async function ArchivesPage({
                   ? `No articles found matching "${trimmedQ}"`
                   : activeJournalObj
                     ? `Articles for the inaugural volume of ${activeJournalObj.name} are currently under editorial review.`
-                    : "The CAS Journals archive repository will populate as Volume 1 issues are published."}
+                    : "The CASJOURNALS archive repository will populate as Volume 1 issues are published."}
               </h3>
               <p className="mx-auto mt-2 max-w-lg text-xs text-[color:var(--color-muted)]">
                 {isSearchMode

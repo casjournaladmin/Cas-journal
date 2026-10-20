@@ -4,9 +4,9 @@ import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { activeJournalsConfig } from "@/lib/config/site";
 
 export const metadata: Metadata = {
-  title: "Contact Editorial Office | CAS Journals",
+  title: "Contact Editorial Office | CASJOURNALS",
   description:
-    "Direct communication channels, editorial helpdesk, and author support inquiry portal for CAS Journals.",
+    "Direct communication channels, editorial helpdesk, and author support inquiry portal for CASJOURNALS.",
 };
 
 export default function ContactPage() {
@@ -39,7 +39,7 @@ export default function ContactPage() {
                 marginBottom: "24px",
               }}
             >
-              Get in touch with the CAS Journals editorial management office for
+              Get in touch with the CASJOURNALS editorial management office for
               inquiries regarding manuscript submissions, peer review status,
               APC waivers, or institutional partnerships.
             </p>

@@ -60,12 +60,12 @@ export const activeJournalsConfig: readonly PublicJournalConfigItem[] = [
 ];
 
 export const siteConfig = {
-  name: "CAS Journals",
-  shortName: "CAS Journals",
+  name: "CASJOURNALS",
+  shortName: "CASJOURNALS",
   description:
-    "CAS Journals provides a trusted open-access platform for peer-reviewed academic publishing across social sciences, humanities, and allied fields.",
+    "CASJOURNALS provides a trusted open-access platform for peer-reviewed academic publishing across social sciences, humanities, and allied fields.",
   faculty: "Academic Publishing Directorate",
-  institution: "CAS Journals",
+  institution: "CASJOURNALS",
   activeJournals: activeJournalsConfig,
   publicNavigation: [
     { label: "Home", href: "/" },
