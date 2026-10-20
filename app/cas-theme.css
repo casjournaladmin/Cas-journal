@@ -465,7 +465,13 @@ img {
    ========================================================================== */
 
 .cas-page-hero {
-  background: linear-gradient(135deg, #032b45 0%, #075985 100%);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(3, 43, 69, 0.92) 0%,
+      rgba(7, 89, 133, 0.88) 100%
+    ),
+    url("/assets/images/hero-scholarly-bg.jpg") center 35% / cover no-repeat;
   color: #ffffff;
   padding: 145px 24px 64px;
   position: relative;
@@ -477,7 +483,7 @@ img {
     linear-gradient(
       135deg,
       rgba(3, 43, 69, 0.9) 0%,
-      rgba(7, 89, 133, 0.8) 100%
+      rgba(7, 89, 133, 0.85) 100%
     ),
     url("/assets/images/author-banner.jpg") center 40% / cover no-repeat;
 }
@@ -487,7 +493,7 @@ img {
     linear-gradient(
       135deg,
       rgba(3, 43, 69, 0.9) 0%,
-      rgba(7, 89, 133, 0.8) 100%
+      rgba(7, 89, 133, 0.85) 100%
     ),
     url("/assets/images/current-issue-banner.jpg") center 35% / cover no-repeat;
 }
@@ -497,7 +503,7 @@ img {
     linear-gradient(
       135deg,
       rgba(3, 43, 69, 0.9) 0%,
-      rgba(7, 89, 133, 0.8) 100%
+      rgba(7, 89, 133, 0.85) 100%
     ),
     url("/assets/images/archive-banner.jpg") center 30% / cover no-repeat;
 }
@@ -507,7 +513,7 @@ img {
     linear-gradient(
       135deg,
       rgba(3, 43, 69, 0.9) 0%,
-      rgba(7, 89, 133, 0.8) 100%
+      rgba(7, 89, 133, 0.85) 100%
     ),
     url("/assets/images/hero-library-architecture.jpg") center 35% / cover
       no-repeat;
@@ -518,9 +524,50 @@ img {
     linear-gradient(
       135deg,
       rgba(3, 43, 69, 0.9) 0%,
-      rgba(7, 89, 133, 0.8) 100%
+      rgba(7, 89, 133, 0.85) 100%
     ),
     url("/assets/images/contact-university.jpg") center 40% / cover no-repeat;
+}
+
+.cas-page-hero.cas-page-hero-about {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(3, 43, 69, 0.9) 0%,
+      rgba(7, 89, 133, 0.85) 100%
+    ),
+    url("/assets/images/hero-library-architecture.jpg") center 35% / cover
+      no-repeat;
+}
+
+.cas-page-hero.cas-page-hero-editorial-board {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(3, 43, 69, 0.9) 0%,
+      rgba(7, 89, 133, 0.85) 100%
+    ),
+    url("/assets/images/hero-bates-hall.jpg") center 35% / cover no-repeat;
+}
+
+.cas-page-hero.cas-page-hero-announcements {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(3, 43, 69, 0.9) 0%,
+      rgba(7, 89, 133, 0.85) 100%
+    ),
+    url("/assets/images/bates-hall-desks.jpg") center 35% / cover no-repeat;
+}
+
+.cas-page-hero.cas-page-hero-reviewer {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(3, 43, 69, 0.9) 0%,
+      rgba(7, 89, 133, 0.85) 100%
+    ),
+    url("/assets/images/reading-room-warm.jpg") center 35% / cover no-repeat;
 }
 
 .cas-page-hero-inner {

@@ -13,10 +13,11 @@ export async function requireJournalWorkspace(
   journalSlug: string,
 ) {
   const user = await requireAuthenticatedUser();
+  const normalizedSlug = journalSlug.trim().toLowerCase();
   const assignment = user.journalRoles.find(
     (item) =>
       item.role === role &&
-      item.journal.slug === journalSlug &&
+      item.journal.slug.toLowerCase() === normalizedSlug &&
       item.journal.isActive,
   );
 
@@ -24,7 +25,10 @@ export async function requireJournalWorkspace(
 
   if (!journal && isSuperAdmin(user)) {
     journal = await prisma.journal.findFirst({
-      where: { slug: journalSlug, isActive: true },
+      where: {
+        slug: { equals: normalizedSlug, mode: "insensitive" },
+        isActive: true,
+      },
       select: {
         id: true,
         slug: true,

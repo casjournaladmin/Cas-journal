@@ -3,6 +3,8 @@
 import { headers } from "next/headers";
 import { getCurrentUser } from "@/lib/auth/authorization";
 import {
+  dismissAllNotifications,
+  dismissNotification,
   getUnreadCount,
   listNotifications,
   markAllNotificationsAsRead,
@@ -152,6 +154,65 @@ export async function markAllNotificationsReadAction(): Promise<
       error instanceof Error ? error.message : String(error),
     );
     return { success: false, error: "Unable to mark notifications as read." };
+  }
+}
+
+/**
+ * Dismisses an individual notification for the currently authenticated user.
+ */
+export async function dismissNotificationAction(
+  notificationId: string,
+): Promise<ActionResponse<NotificationRecord>> {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !user.isActive) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    if (
+      !notificationId ||
+      typeof notificationId !== "string" ||
+      !notificationId.trim()
+    ) {
+      return { success: false, error: "Invalid notification ID." };
+    }
+
+    const updated = await dismissNotification(notificationId.trim(), user.id);
+
+    if (!updated) {
+      return { success: false, error: "Notification not found." };
+    }
+
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error(
+      "[Notification Action] Failed to dismiss notification:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return { success: false, error: "Unable to dismiss notification." };
+  }
+}
+
+/**
+ * Dismisses all active notifications for the currently authenticated user.
+ */
+export async function dismissAllNotificationsAction(): Promise<
+  ActionResponse<{ count: number }>
+> {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !user.isActive) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const result = await dismissAllNotifications(user.id);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error(
+      "[Notification Action] Failed to dismiss all notifications:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return { success: false, error: "Unable to dismiss all notifications." };
   }
 }
 

@@ -134,12 +134,8 @@ test("Default editorial board configurations for CJMR, Izu, Polis", () => {
     cjmrBoard.find((m) => m.category === "EDITOR_IN_CHIEF")?.name,
     "Uche Oputa, PhD",
   );
-  assert.ok(
-    cjmrBoard.some((m) => m.name === "Chidi K. Ogonnaya, PhD"),
-  );
-  assert.ok(
-    cjmrBoard.some((m) => m.name === "Bellarmine Nneji, PhD"),
-  );
+  assert.ok(cjmrBoard.some((m) => m.name === "Chidi K. Ogonnaya, PhD"));
+  assert.ok(cjmrBoard.some((m) => m.name === "Bellarmine Nneji, PhD"));
 
   const izuBoard = getDefaultEditorialBoard("izu");
   assert.equal(izuBoard.length, 2);
@@ -254,7 +250,10 @@ test("Journal-scoped authorization enforces boundary on governance mutations", a
   };
 
   // 1. Check helper
-  assert.equal(isAuthorizedForJournal(existentiaAdminActor, "existentia"), true);
+  assert.equal(
+    isAuthorizedForJournal(existentiaAdminActor, "existentia"),
+    true,
+  );
   assert.equal(isAuthorizedForJournal(existentiaAdminActor, "cjmr"), false);
   assert.equal(isAuthorizedForJournal(authorActor, "existentia"), false);
 
@@ -305,7 +304,6 @@ test("Navbar streamlining and footer navigation consistency", async () => {
     "Home",
     "Journals",
     "For Authors",
-    "Current Issue",
     "Archive",
     "Indexing & Abstracting",
     "Contact",

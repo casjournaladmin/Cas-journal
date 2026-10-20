@@ -213,3 +213,55 @@ test("8. Dedicated dev actions module exports server action functions", async ()
   assert.equal(typeof devActions.switchDevIdentityAction, "function");
   assert.equal(typeof devActions.clearDevIdentityAction, "function");
 });
+
+test("9. Gmail user with EDITOR role on Izu resolves case-insensitively and accesses workspace", () => {
+  const gmailEditor = {
+    id: "3993f003-3c46-4a58-9893-05447569aaef",
+    email: "hinatalabs.co@gmail.com",
+    displayName: "Hinata Labs",
+    isActive: true,
+    globalRoles: [{ role: "AUTHOR" as const }],
+    journalRoles: [
+      {
+        journalId: "cmve0lnmo0005p3v16c6jlw7b",
+        role: "EDITOR" as const,
+        journal: {
+          id: "cmve0lnmo0005p3v16c6jlw7b",
+          slug: "izu",
+          name: "Izu: Journal of Critical Perspectives",
+          shortName: "IZU",
+          isActive: true,
+        },
+      },
+    ],
+  };
+
+  // Authorization checks
+  assert.equal(canAccessApplicationArea(gmailEditor, "editor"), true);
+  assert.equal(hasJournalRole(gmailEditor, "izu", "EDITOR"), true);
+  // Case-insensitive checks
+  assert.equal(hasJournalRole(gmailEditor, "IZU", "EDITOR"), true);
+  assert.equal(hasJournalRole(gmailEditor, "Izu", "EDITOR"), true);
+
+  // Post login destination
+  assert.equal(getPostLoginDestination(gmailEditor), "/editor/izu");
+
+  // Available workspaces
+  const workspaces = getAvailableWorkspaces(gmailEditor);
+  assert.equal(workspaces.length, 1);
+  assert.equal(workspaces[0].href, "/editor/izu");
+  assert.equal(workspaces[0].area, "editor");
+
+  // Non-editor author stays denied from editor area
+  const regularAuthor = {
+    id: "author-uuid-999",
+    email: "regular@author.com",
+    displayName: "Regular Author",
+    isActive: true,
+    globalRoles: [{ role: "AUTHOR" as const }],
+    journalRoles: [],
+  };
+  assert.equal(canAccessApplicationArea(regularAuthor, "editor"), false);
+  assert.equal(hasJournalRole(regularAuthor, "izu", "EDITOR"), false);
+  assert.equal(getPostLoginDestination(regularAuthor), "/author");
+});

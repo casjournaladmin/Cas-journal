@@ -86,7 +86,7 @@ export function InternalChatBox({
         timer = setTimeout(async () => {
           await fetchMessages();
           schedulePoll();
-        }, 15000);
+        }, 4000);
       }
     };
 

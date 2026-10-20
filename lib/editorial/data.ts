@@ -361,7 +361,14 @@ export async function getBlindedAssignment(input: {
           roundNumber: true,
           status: true,
           submissionVersion: {
-            select: { id: true, versionNumber: true, kind: true },
+            select: {
+              id: true,
+              versionNumber: true,
+              kind: true,
+              manuscriptStoredFile: {
+                select: { mimeType: true, originalFileName: true },
+              },
+            },
           },
           submission: {
             select: {

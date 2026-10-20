@@ -66,88 +66,38 @@ export function PublicDesktopNav() {
                 type="button"
                 aria-expanded={isOpen}
                 aria-haspopup="true"
+                aria-controls="journals-dropdown-menu"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className={`cas-nav-link inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent ${
+                className={`cas-nav-link inline-flex cursor-pointer items-center border-0 bg-transparent ${
                   isOpen || isActive ? "active" : ""
                 }`}
               >
                 <span>{item.label}</span>
-                <svg
-                  aria-hidden="true"
-                  className={`size-3.5 transition-transform duration-200 ${
-                    isOpen ? "rotate-180 text-[#38bdf8]" : ""
-                  }`}
-                  viewBox="0 0 16 16"
-                  fill="none"
-                >
-                  <path
-                    d="M4 6L8 10L12 6"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
               </button>
 
               {isOpen ? (
-                <div className="animate-in fade-in slide-in-from-top-2 absolute top-full left-0 z-[100] w-[660px] pt-3 duration-150">
-                  <div className="overflow-hidden rounded-2xl border border-[#075985]/60 bg-[#032b45] p-3.5 text-[#f0f9ff] shadow-2xl backdrop-blur-xl">
-                    <div className="flex items-center justify-between border-b border-sky-400/20 px-3 pb-2.5">
-                      <p className="font-mono text-[11px] font-bold tracking-wider text-[#38bdf8] uppercase">
-                        CAS Scholarly Journals
-                      </p>
-                      <span className="text-[11px] text-sky-200/70">
-                        Peer-Reviewed &bull; Open Access
-                      </span>
-                    </div>
-
-                    <div className="mt-2.5 grid grid-cols-2 gap-2">
-                      {item.children.map((subItem) => (
-                        <Link
-                          key={subItem.href}
-                          href={subItem.href}
-                          onClick={() => setIsOpen(false)}
-                          className="group flex flex-col justify-between rounded-xl border border-transparent bg-white/[0.04] p-3 transition hover:border-sky-400/40 hover:bg-white/10"
-                        >
-                          <div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="rounded bg-sky-500/20 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wide text-sky-300">
-                                {subItem.shortName}
-                              </span>
-                            </div>
-                            <h4 className="mt-2 text-xs font-semibold leading-snug text-white transition group-hover:text-sky-300">
-                              {subItem.label}
-                            </h4>
-                            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sky-100/75">
-                              {subItem.description}
-                            </p>
-                          </div>
-                          <div className="mt-2.5 flex items-center text-[10px] font-semibold text-[#38bdf8] opacity-0 transition group-hover:opacity-100">
-                            <span>View Journal Portal</span>
-                            <span className="ml-1">→</span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-
-                    <div className="mt-2.5 flex items-center justify-between border-t border-sky-400/20 px-3 pt-2.5">
+                <div
+                  id="journals-dropdown-menu"
+                  role="menu"
+                  className="animate-in fade-in slide-in-from-top-1 absolute top-full left-0 z-[100] w-72 pt-2 duration-150"
+                >
+                  <div className="overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] py-1.5 shadow-xl backdrop-blur-md">
+                    {item.children.map((subItem) => (
                       <Link
-                        href="/editorial-board"
+                        key={subItem.href}
+                        href={subItem.href}
+                        role="menuitem"
                         onClick={() => setIsOpen(false)}
-                        className="text-xs font-medium text-sky-200/80 transition hover:text-white"
+                        className="group flex items-center justify-between px-3.5 py-2.5 text-xs font-medium text-[color:var(--color-foreground)] transition hover:bg-[color:var(--color-surface)] hover:text-[color:var(--color-accent)] focus:bg-[color:var(--color-surface)] focus:text-[color:var(--color-accent)] focus-visible:outline-none"
                       >
-                        Editorial Governance &amp; Boards
+                        <span className="leading-snug">{subItem.label}</span>
+                        {subItem.shortName ? (
+                          <span className="ml-2 shrink-0 rounded bg-[color:var(--color-surface-strong)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[color:var(--color-subtle)] group-hover:text-[color:var(--color-accent)]">
+                            {subItem.shortName}
+                          </span>
+                        ) : null}
                       </Link>
-                      <Link
-                        href="/archives"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-[#38bdf8] transition hover:text-white"
-                      >
-                        <span>Browse All Archives</span>
-                        <span>→</span>
-                      </Link>
-                    </div>
+                    ))}
                   </div>
                 </div>
               ) : null}

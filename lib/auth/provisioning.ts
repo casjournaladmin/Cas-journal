@@ -116,34 +116,43 @@ const prismaAuthorProvisioningStore: AuthorProvisioningStore = {
     const { prisma } = await import("@/lib/db/prisma");
     const isBreakGlass = isBreakGlassSuperAdminEmail(input.email);
 
+    const existingByEmail = await prisma.user.findUnique({
+      where: { email: input.email },
+      select: { id: true },
+    });
+
+    const targetId = existingByEmail ? existingByEmail.id : input.id;
+
     await prisma.user.upsert({
-      where: { id: input.id },
+      where: { id: targetId },
       update: {
         email: input.email,
         ...(isBreakGlass ? { isActive: true } : {}),
       },
       create: {
-        ...input,
+        id: targetId,
+        email: input.email,
+        displayName: input.displayName,
         isActive: true,
       },
     });
 
     await prisma.userGlobalRole.upsert({
-      where: { userId_role: { userId: input.id, role: "AUTHOR" } },
+      where: { userId_role: { userId: targetId, role: "AUTHOR" } },
       update: {},
-      create: { userId: input.id, role: "AUTHOR" },
+      create: { userId: targetId, role: "AUTHOR" },
     });
 
     if (isBreakGlass) {
       await prisma.userGlobalRole.upsert({
-        where: { userId_role: { userId: input.id, role: "SUPER_ADMIN" } },
+        where: { userId_role: { userId: targetId, role: "SUPER_ADMIN" } },
         update: {},
-        create: { userId: input.id, role: "SUPER_ADMIN" },
+        create: { userId: targetId, role: "SUPER_ADMIN" },
       });
     }
 
     return prisma.user.findUniqueOrThrow({
-      where: { id: input.id },
+      where: { id: targetId },
       include: provisionedUserInclude,
     });
   },

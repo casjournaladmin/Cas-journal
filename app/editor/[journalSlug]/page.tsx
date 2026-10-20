@@ -68,13 +68,47 @@ export default async function JournalEditorPage({
             ))}
           </ol>
         ) : (
-          <div className="px-6 py-16 text-center">
-            <p className="text-sm font-semibold">
-              No active review assignments.
+          <div className="px-6 py-14 text-center sm:px-12 sm:py-16">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[color:var(--color-accent)]/10 text-[color:var(--color-accent)]">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-6"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </div>
+            <span className="mt-4 inline-block rounded-full bg-[color:var(--color-accent-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--color-accent)]">
+              Editor Account Active · {journal.shortName ?? journal.name}
+            </span>
+            <h2 className="mt-3 font-serif text-xl font-medium tracking-tight text-[color:var(--color-foreground)] sm:text-2xl">
+              No Active Review Assignments
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[color:var(--color-muted)]">
+              You are an authorized Editor for {journal.name}. When manuscripts
+              are assigned to you for blinded peer review, they will appear
+              here.
             </p>
-            <p className="mt-2 text-xs text-[color:var(--color-subtle)]">
-              New assignments for this journal will appear here.
-            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href={`/editor/${journal.slug}/chat`}
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 py-2 text-xs font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
+              >
+                <span>💬 Open Team Chat</span>
+              </Link>
+              <Link
+                href="/account"
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 py-2 text-xs font-semibold text-[color:var(--color-muted)] transition hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-foreground)]"
+              >
+                <span>Account & Permissions</span>
+              </Link>
+            </div>
           </div>
         )}
       </div>

@@ -41,7 +41,7 @@ export default async function ApplyReviewerPage({
 
   return (
     <div>
-      <header className="cas-page-hero">
+      <header className="cas-page-hero cas-page-hero-reviewer">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>

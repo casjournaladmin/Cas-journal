@@ -13,7 +13,12 @@ import {
 } from "@/lib/requests/validation";
 import { createTrackingNumber } from "@/lib/submissions/tracking";
 import { isJournalActivated } from "@/lib/editorial/journal-activation";
-import { handleRequestMessageSent } from "@/lib/notifications/event-handlers";
+import {
+  handleManuscriptSubmitted,
+  handleRequestMessageSent,
+  handleSubmissionRequestCreated,
+  handleTrackingAssigned,
+} from "@/lib/notifications/event-handlers";
 export class RequestMutationError extends Error {
   constructor(
     message: string,
@@ -127,7 +132,7 @@ export async function startSubmissionRequest({
     );
 
   const teamName = operations.department?.name ?? operations.name;
-  return prisma.submissionRequest.create({
+  const created = await prisma.submissionRequest.create({
     data: {
       authorId,
       departmentId: operations.departmentId,
@@ -141,6 +146,10 @@ export async function startSubmissionRequest({
     },
     select: { id: true },
   });
+
+  await handleSubmissionRequestCreated(created.id);
+
+  return created;
 }
 
 export async function sendRequestMessage(input: {
@@ -408,6 +417,8 @@ export async function finalizeRequestSubmission(
       },
     });
   });
+
+  await handleManuscriptSubmitted(submissionId);
 }
 
 export async function assignTrackingIdBySubmissionId(input: {
@@ -487,6 +498,11 @@ export async function assignTrackingIdBySubmissionId(input: {
           },
         },
       },
+    });
+
+    await handleTrackingAssigned({
+      submissionId: submission.id,
+      trackingNumber: trackingId,
     });
   } catch (error) {
     if (

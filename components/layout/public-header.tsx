@@ -13,7 +13,7 @@ export function PublicHeader() {
     <header className="cas-header-wrapper">
       <nav className="cas-nav" aria-label="Main Navigation">
         <Link href="/" className="cas-logo">
-          CAS Journals <span>.</span>
+          CAS Journals
         </Link>
 
         <PublicDesktopNav />
@@ -47,7 +47,7 @@ export function PublicHeader() {
                   className="cas-nav-link cas-mobile-dropdown-btn border-0 bg-transparent text-left"
                 >
                   <span>{item.label}</span>
-                  <span className="text-xs text-sky-300 font-bold">
+                  <span className="text-xs font-bold text-sky-300">
                     {journalsOpen ? "−" : "+"}
                   </span>
                 </button>

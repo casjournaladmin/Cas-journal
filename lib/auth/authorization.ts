@@ -84,6 +84,13 @@ export const getCurrentUser = cache(async () => {
       include: applicationUserInclude,
     });
 
+    if (!user && userEmail) {
+      user = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: applicationUserInclude,
+      });
+    }
+
     if (userEmail && isBreakGlassSuperAdminEmail(userEmail)) {
       if (
         !user ||

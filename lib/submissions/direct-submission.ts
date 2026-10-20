@@ -3,6 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db/prisma";
 import { isJournalActivated } from "@/lib/editorial/journal-activation";
+import { handleManuscriptSubmitted } from "@/lib/notifications/event-handlers";
 import {
   createSubmissionObjectPath,
   storageBuckets,
@@ -300,6 +301,8 @@ export async function createDirectArticleSubmission(input: {
         },
       },
     });
+
+    await handleManuscriptSubmitted(submission.id);
 
     return { submissionId: submission.id };
   } catch (err: unknown) {

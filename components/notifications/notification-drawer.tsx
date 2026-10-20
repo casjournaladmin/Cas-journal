@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 
 const emptySubscribe = () => () => {};
 
@@ -52,12 +53,13 @@ function getPushPermissionClient(): NotificationPermission | "unsupported" {
   }
   return Notification.permission;
 }
-import { useRouter } from "next/navigation";
 
 import {
   listUserNotificationsAction,
   markAllNotificationsReadAction,
   markNotificationReadAction,
+  dismissNotificationAction,
+  dismissAllNotificationsAction,
   getPushSubscriptionStatusAction,
   savePushSubscriptionAction,
   removePushSubscriptionAction,
@@ -105,6 +107,7 @@ export function NotificationDrawer({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadTrigger, setReloadTrigger] = useState<number>(0);
 
   // Browser Web Push capability and state
   const isIosRestricted = useSyncExternalStore(
@@ -241,7 +244,7 @@ export function NotificationDrawer({
     return () => {
       active = false;
     };
-  }, [isOpen, filter]);
+  }, [isOpen, filter, reloadTrigger]);
 
   // Load more notifications for pagination
   const handleLoadMore = async () => {
@@ -293,6 +296,56 @@ export function NotificationDrawer({
     onUnreadCountChangeRef.current?.(0);
 
     await markAllNotificationsReadAction();
+  };
+
+  // Dismiss single notification
+  const handleDismiss = async (notifId: string) => {
+    const target = notifications.find((n) => n.id === notifId);
+    if (!target) return;
+
+    // Optimistically remove from list
+    setNotifications((prev) => prev.filter((item) => item.id !== notifId));
+    if (!target.isRead) {
+      const nextUnread = Math.max(0, unreadCount - 1);
+      setUnreadCount(nextUnread);
+      onUnreadCountChangeRef.current?.(nextUnread);
+    }
+
+    try {
+      const res = await dismissNotificationAction(notifId);
+      if (!res.success) {
+        setReloadTrigger((prev) => prev + 1);
+      }
+    } catch {
+      setReloadTrigger((prev) => prev + 1);
+    }
+  };
+
+  // Dismiss all notifications
+  const handleDismissAll = async () => {
+    if (notifications.length === 0) return;
+
+    const previousNotifications = notifications;
+    const previousUnread = unreadCount;
+
+    // Optimistically clear
+    setNotifications([]);
+    setUnreadCount(0);
+    setHasMore(false);
+    onUnreadCountChangeRef.current?.(0);
+
+    try {
+      const res = await dismissAllNotificationsAction();
+      if (!res.success) {
+        setNotifications(previousNotifications);
+        setUnreadCount(previousUnread);
+        onUnreadCountChangeRef.current?.(previousUnread);
+      }
+    } catch {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnread);
+      onUnreadCountChangeRef.current?.(previousUnread);
+    }
   };
 
   // Click entire notification card: mark read, close drawer, navigate smoothly
@@ -594,29 +647,56 @@ export function NotificationDrawer({
             </button>
           </div>
 
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={handleMarkAllAsRead}
-              className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-emerald-400 transition hover:text-emerald-300 hover:underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
-            >
-              <svg
-                className="size-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                aria-hidden="true"
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllAsRead}
+                className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-emerald-400 transition hover:text-emerald-300 hover:underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m4.5 12.75 6 6 9-13.5"
-                />
-              </svg>
-              <span>Mark all read</span>
-            </button>
-          )}
+                <svg
+                  className="size-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m4.5 12.75 6 6 9-13.5"
+                  />
+                </svg>
+                <span>Mark all read</span>
+              </button>
+            )}
+
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDismissAll}
+                className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[color:var(--color-subtle)] transition hover:text-rose-300 hover:underline focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
+                title="Dismiss all notifications"
+              >
+                <svg
+                  className="size-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                <span>Clear all</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Web Push Control Bar (Paused pending verification) */}
@@ -645,8 +725,8 @@ export function NotificationDrawer({
                     Push alerts on iPhone &amp; iPad
                   </p>
                   <p className="mt-1 leading-relaxed text-[color:var(--color-subtle)]">
-                    iOS requires adding CAS Journals to your Home Screen for push
-                    alerts. Tap the Share icon{" "}
+                    iOS requires adding CAS Journals to your Home Screen for
+                    push alerts. Tap the Share icon{" "}
                     <span className="font-mono font-bold text-[color:var(--color-foreground)]">
                       ⎋
                     </span>{" "}
@@ -790,7 +870,7 @@ export function NotificationDrawer({
               <p className="text-xs font-medium text-rose-300">{error}</p>
               <button
                 type="button"
-                onClick={() => setFilter(filter)}
+                onClick={() => setReloadTrigger((prev) => prev + 1)}
                 className="mt-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-1.5 text-xs font-semibold text-rose-200 transition hover:bg-rose-500/20"
               >
                 Retry
@@ -913,14 +993,60 @@ export function NotificationDrawer({
 
                   {/* Footer Action Row */}
                   <div className="mt-3.5 flex items-center justify-between border-t border-[color:var(--color-border)]/50 pt-2.5">
-                    {!notif.isRead ? (
+                    <div className="flex items-center gap-2">
+                      {!notif.isRead ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleMarkAsRead(notif.id);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[color:var(--color-subtle)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
+                        >
+                          <svg
+                            className="size-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m4.5 12.75 6 6 9-13.5"
+                            />
+                          </svg>
+                          <span>Mark as read</span>
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[color:var(--color-subtle)]/60">
+                          <svg
+                            className="size-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m4.5 12.75 6 6 9-13.5"
+                            />
+                          </svg>
+                          <span>Read</span>
+                        </span>
+                      )}
+
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          void handleMarkAsRead(notif.id);
+                          void handleDismiss(notif.id);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[color:var(--color-subtle)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[color:var(--color-subtle)] transition hover:bg-rose-500/10 hover:text-rose-400 focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
+                        title="Dismiss notification"
                       >
                         <svg
                           className="size-3"
@@ -933,30 +1059,12 @@ export function NotificationDrawer({
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            d="m4.5 12.75 6 6 9-13.5"
+                            d="M6 18L18 6M6 6l12 12"
                           />
                         </svg>
-                        <span>Mark as read</span>
+                        <span>Dismiss</span>
                       </button>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-[color:var(--color-subtle)]/60">
-                        <svg
-                          className="size-3"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          stroke="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="m4.5 12.75 6 6 9-13.5"
-                          />
-                        </svg>
-                        <span>Read</span>
-                      </span>
-                    )}
+                    </div>
 
                     <div className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 group-hover:text-emerald-300">
                       <span>View details</span>

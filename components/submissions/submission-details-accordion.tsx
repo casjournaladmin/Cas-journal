@@ -176,25 +176,54 @@ export function SubmissionDetailsAccordion({
                       </p>
                     </div>
                     {ver.downloadUrl ? (
-                      <a
-                        href={ver.downloadUrl}
-                        title={`Download Version ${ver.versionNumber}`}
-                        aria-label={`Download Version ${ver.versionNumber}`}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="size-4"
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {ver.originalFileName
+                          ?.toLowerCase()
+                          .endsWith(".pdf") ? (
+                          <a
+                            href={ver.downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`View Version ${ver.versionNumber} in browser`}
+                            aria-label={`View Version ${ver.versionNumber} in browser`}
+                            className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              className="size-4"
+                            >
+                              <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                              <path
+                                fillRule="evenodd"
+                                d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.147.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </a>
+                        ) : null}
+                        <a
+                          href={`${ver.downloadUrl}?download=1`}
+                          download
+                          title={`Download Version ${ver.versionNumber}`}
+                          aria-label={`Download Version ${ver.versionNumber}`}
+                          className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 3a.75.75 0 0 1 .75.75v8.19l2.72-2.72a.75.75 0 1 1 1.06 1.06l-4 4a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06l2.72 2.72V3.75A.75.75 0 0 1 10 3ZM3.75 14.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 15.25 18H4.75A1.75 1.75 0 0 1 3 16.25v-1.5a.75.75 0 0 1 .75-.75Z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </a>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="size-4"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 3a.75.75 0 0 1 .75.75v8.19l2.72-2.72a.75.75 0 1 1 1.06 1.06l-4 4a.75.75 0 0 1-1.06 0l-4-4a.75.75 0 1 1 1.06-1.06l2.72 2.72V3.75A.75.75 0 0 1 10 3ZM3.75 14.25a.75.75 0 0 1 .75.75v1.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 15.25 18H4.75A1.75 1.75 0 0 1 3 16.25v-1.5a.75.75 0 0 1 .75-.75Z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </a>
+                      </div>
                     ) : null}
                   </div>
                 ))}

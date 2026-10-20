@@ -23,16 +23,6 @@ export async function switchDevIdentityAction(formData: FormData) {
 
   const identity = ALL_DEV_IDENTITIES[rawKey as DevIdentityKey];
 
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      const { ensureCasDevUsersInDatabase } =
-        await import("@/lib/auth/dev-database-users");
-      await ensureCasDevUsersInDatabase();
-    } catch {
-      // Ignore background error
-    }
-  }
-
   const cookieStore = await cookies();
   cookieStore.set(DEV_IDENTITY_COOKIE_NAME, rawKey, {
     path: "/",

@@ -38,7 +38,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
     if (activeJournals.length > 0) {
       journalSlugs = Array.from(
-        new Set([...canonicalJournalSlugs, ...activeJournals.map((j) => j.slug)]),
+        new Set([
+          ...canonicalJournalSlugs,
+          ...activeJournals.map((j) => j.slug),
+        ]),
       );
     }
   } catch {

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createNotification,
+  dismissAllNotifications,
+  dismissNotification,
   generateIdempotencyKey,
   getUnreadCount,
   isSafeInternalActionUrl,
@@ -15,8 +17,12 @@ import {
   resolveSuperAdminRecipients,
 } from "@/lib/notifications";
 import {
+  handleEditorialDecisionIssued,
   handleInternalChatMessageSent,
+  handleManuscriptSubmitted,
   handleRequestMessageSent,
+  handleReviewerAssigned,
+  handleTrackingAssigned,
 } from "@/lib/notifications/event-handlers";
 import type {
   NotificationRecord,
@@ -80,7 +86,12 @@ function createInMemoryNotificationDb() {
       findFirst: async ({
         where,
       }: {
-        where: { id?: string; userId?: string; idempotencyKey?: string };
+        where: {
+          id?: string;
+          userId?: string;
+          idempotencyKey?: string;
+          isDismissed?: boolean;
+        };
       }) => {
         for (const item of notifications.values()) {
           let match = true;
@@ -89,6 +100,11 @@ function createInMemoryNotificationDb() {
           if (
             where.idempotencyKey &&
             item.idempotencyKey !== where.idempotencyKey
+          )
+            match = false;
+          if (
+            typeof where.isDismissed === "boolean" &&
+            (item.isDismissed ?? false) !== where.isDismissed
           )
             match = false;
           if (match) return { ...item };
@@ -101,13 +117,18 @@ function createInMemoryNotificationDb() {
         skip = 0,
         take = 25,
       }: {
-        where: { userId: string; isRead?: boolean };
+        where: { userId: string; isRead?: boolean; isDismissed?: boolean };
         orderBy?: { createdAt: "asc" | "desc" };
         skip?: number;
         take?: number;
       }) => {
         const results = Array.from(notifications.values()).filter((item) => {
           if (item.userId !== where.userId) return false;
+          if (
+            typeof where.isDismissed === "boolean" &&
+            (item.isDismissed ?? false) !== where.isDismissed
+          )
+            return false;
           if (typeof where.isRead === "boolean" && item.isRead !== where.isRead)
             return false;
           return true;
@@ -123,10 +144,15 @@ function createInMemoryNotificationDb() {
       count: async ({
         where,
       }: {
-        where: { userId: string; isRead?: boolean };
+        where: { userId: string; isRead?: boolean; isDismissed?: boolean };
       }) => {
         return Array.from(notifications.values()).filter((item) => {
           if (item.userId !== where.userId) return false;
+          if (
+            typeof where.isDismissed === "boolean" &&
+            (item.isDismissed ?? false) !== where.isDismissed
+          )
+            return false;
           if (typeof where.isRead === "boolean" && item.isRead !== where.isRead)
             return false;
           return true;
@@ -175,6 +201,8 @@ function createInMemoryNotificationDb() {
           idempotencyKey: data.idempotencyKey ?? null,
           isRead: false,
           readAt: null,
+          isDismissed: false,
+          dismissedAt: null,
           createdAt: new Date(),
         };
         notifications.set(id, record);
@@ -185,7 +213,12 @@ function createInMemoryNotificationDb() {
         data,
       }: {
         where: { id: string };
-        data: { isRead: boolean; readAt: Date };
+        data: {
+          isRead?: boolean;
+          readAt?: Date;
+          isDismissed?: boolean;
+          dismissedAt?: Date;
+        };
       }) => {
         const item = notifications.get(where.id);
         if (!item) throw new Error("Record to update not found.");
@@ -197,12 +230,22 @@ function createInMemoryNotificationDb() {
         where,
         data,
       }: {
-        where: { userId: string; isRead?: boolean };
-        data: { isRead: boolean; readAt: Date };
+        where: { userId: string; isRead?: boolean; isDismissed?: boolean };
+        data: {
+          isRead?: boolean;
+          readAt?: Date;
+          isDismissed?: boolean;
+          dismissedAt?: Date;
+        };
       }) => {
         let count = 0;
         for (const [id, item] of notifications.entries()) {
           if (item.userId !== where.userId) continue;
+          if (
+            typeof where.isDismissed === "boolean" &&
+            (item.isDismissed ?? false) !== where.isDismissed
+          )
+            continue;
           if (typeof where.isRead === "boolean" && item.isRead !== where.isRead)
             continue;
           notifications.set(id, { ...item, ...data });
@@ -823,4 +866,443 @@ test("Event Handler: handleRequestMessageSent notifies correct recipient parties
   assert.ok(authorNotif);
   assert.equal(authorNotif.type, "REQUEST_MESSAGE");
   assert.equal(authorNotif.actionUrl, "/author/requests/req-001");
+});
+
+test("Event Handler: handleManuscriptSubmitted notifies admins and sends author submission confirmation", async () => {
+  const db = createInMemoryNotificationDb();
+
+  const authorId = "00000000-0000-4000-a000-000000000010";
+  const superAdminId = "00000000-0000-4000-a000-000000000099";
+  const journalAdminId = "00000000-0000-4000-a000-000000000011";
+  const journalId = "j-izu-001";
+
+  db._store.userGlobalRoles.push({
+    userId: superAdminId,
+    role: "SUPER_ADMIN",
+  });
+  db._store.journalRoleAssignments.push({
+    userId: journalAdminId,
+    journalId,
+    role: "JOURNAL_ADMIN",
+  });
+
+  db._store.submissions.set("sub-101", {
+    id: "sub-101",
+    ownerId: authorId,
+    journalId,
+    title: "Critical Perspectives in Modern Academia",
+    journal: { slug: "izu", name: "Izu Journal", shortName: "IZU" },
+  } as unknown as { id: string; ownerId: string; journalId: string });
+
+  await handleManuscriptSubmitted("sub-101", db);
+
+  const notifs = Array.from(db._store.notifications.values());
+
+  // Submitting author receives submission confirmation
+  const authorNotif = notifs.find((n) => n.userId === authorId);
+  assert.ok(authorNotif, "Author must receive submission confirmation");
+  assert.equal(authorNotif.type, "MANUSCRIPT_SUBMITTED");
+  assert.equal(authorNotif.title, "Manuscript Submission Received");
+  assert.equal(authorNotif.actionUrl, "/author/requests");
+
+  // Super admin receives intake notification
+  const superAdminNotif = notifs.find((n) => n.userId === superAdminId);
+  assert.ok(superAdminNotif, "Super admin must receive intake notification");
+  assert.equal(superAdminNotif.title, "New Manuscript Submitted");
+  assert.equal(superAdminNotif.actionUrl, "/admin/izu/submissions/sub-101");
+
+  // Journal admin receives intake notification
+  const journalAdminNotif = notifs.find((n) => n.userId === journalAdminId);
+  assert.ok(
+    journalAdminNotif,
+    "Journal admin must receive intake notification",
+  );
+  assert.equal(journalAdminNotif.title, "New Manuscript Submitted");
+
+  // Re-dispatching does not create duplicates (idempotency)
+  await handleManuscriptSubmitted("sub-101", db);
+  const notifsAfterRetry = Array.from(db._store.notifications.values());
+  assert.equal(
+    notifsAfterRetry.length,
+    3,
+    "Idempotency must prevent duplicate notifications on retry",
+  );
+});
+
+test("Event Handler: handleTrackingAssigned notifies submitting author", async () => {
+  const db = createInMemoryNotificationDb();
+
+  const authorId = "00000000-0000-4000-a000-000000000010";
+  const journalId = "j-izu-001";
+
+  db._store.submissions.set("sub-102", {
+    id: "sub-102",
+    ownerId: authorId,
+    journalId,
+    title: "Understanding Epistemology",
+  } as unknown as { id: string; ownerId: string; journalId: string });
+
+  await handleTrackingAssigned(
+    {
+      submissionId: "sub-102",
+      trackingNumber: "CAS-IZU-2026-00001",
+    },
+    db,
+  );
+
+  const notifs = Array.from(db._store.notifications.values());
+  assert.equal(notifs.length, 1);
+  assert.equal(notifs[0].userId, authorId);
+  assert.equal(notifs[0].type, "TRACKING_ASSIGNED");
+  assert.ok(notifs[0].message.includes("CAS-IZU-2026-00001"));
+  assert.equal(notifs[0].actionUrl, "/author/submissions/sub-102");
+});
+
+test("Event Handler: handleReviewerAssigned notifies assigned editor", async () => {
+  const db = createInMemoryNotificationDb();
+
+  const editorId = "00000000-0000-4000-a000-000000000003";
+  const journalId = "j-izu-001";
+
+  db._store.submissions.set("sub-103", {
+    id: "sub-103",
+    ownerId: "some-author",
+    journalId,
+    title: "Philosophy of Logic",
+    journal: { slug: "izu" },
+  } as unknown as { id: string; ownerId: string; journalId: string });
+
+  await handleReviewerAssigned(
+    {
+      submissionId: "sub-103",
+      editorId,
+      roundNumber: 1,
+    },
+    db,
+  );
+
+  const notifs = Array.from(db._store.notifications.values());
+  assert.equal(notifs.length, 1);
+  assert.equal(notifs[0].userId, editorId);
+  assert.equal(notifs[0].type, "REVIEWER_ASSIGNED");
+  assert.equal(notifs[0].actionUrl, "/editor/izu");
+});
+
+test("Event Handler: handleEditorialDecisionIssued notifies author", async () => {
+  const db = createInMemoryNotificationDb();
+
+  const authorId = "00000000-0000-4000-a000-000000000010";
+  const journalId = "j-izu-001";
+
+  db._store.submissions.set("sub-104", {
+    id: "sub-104",
+    ownerId: authorId,
+    journalId,
+    title: "Metaphysics of Presence",
+  } as unknown as { id: string; ownerId: string; journalId: string });
+
+  await handleEditorialDecisionIssued(
+    {
+      submissionId: "sub-104",
+      decision: "ACCEPT",
+      roundNumber: 1,
+    },
+    db,
+  );
+
+  const notifs = Array.from(db._store.notifications.values());
+  assert.equal(notifs.length, 1);
+  assert.equal(notifs[0].userId, authorId);
+  assert.equal(notifs[0].type, "EDITORIAL_DECISION");
+  assert.equal(notifs[0].actionUrl, "/author/submissions/sub-104");
+});
+
+test("Notification Lifecycle: dismissNotification removes notification from active lists and unread count", async () => {
+  const db = createInMemoryNotificationDb();
+  const userId = "00000000-0000-4000-a000-000000000001";
+
+  const { notification: n1 } = await createNotification(
+    {
+      userId,
+      type: "MANUSCRIPT_SUBMITTED",
+      title: "Manuscript 1",
+      message: "First notification",
+      actionUrl: "/author/submissions/1",
+    },
+    db,
+  );
+
+  const { notification: n2 } = await createNotification(
+    {
+      userId,
+      type: "CORRECTION_REQUESTED",
+      title: "Manuscript 2",
+      message: "Second notification",
+      actionUrl: "/author/submissions/2",
+    },
+    db,
+  );
+
+  // Initial state: 2 unread, 2 in list
+  assert.equal(await getUnreadCount(userId, db), 2);
+  let list = await listNotifications(userId, undefined, db);
+  assert.equal(list.totalCount, 2);
+  assert.equal(list.unreadCount, 2);
+
+  // Dismiss n1
+  const dismissed = await dismissNotification(n1.id, userId, db);
+  assert.ok(dismissed);
+  assert.equal(dismissed.isDismissed, true);
+  assert.ok(dismissed.dismissedAt instanceof Date);
+
+  // Unread count decreases to 1
+  assert.equal(await getUnreadCount(userId, db), 1);
+
+  // Active list only contains n2
+  list = await listNotifications(userId, undefined, db);
+  assert.equal(list.totalCount, 1);
+  assert.equal(list.unreadCount, 1);
+  assert.equal(list.notifications[0].id, n2.id);
+
+  // Still exists in underlying store for audit/archival
+  const rawRecord = db._store.notifications.get(n1.id);
+  assert.ok(rawRecord);
+  assert.equal(rawRecord.isDismissed, true);
+});
+
+test("Notification Lifecycle: dismissNotification enforces strict user ownership", async () => {
+  const db = createInMemoryNotificationDb();
+  const user1 = "00000000-0000-4000-a000-000000000001";
+  const user2 = "00000000-0000-4000-a000-000000000002";
+
+  const { notification } = await createNotification(
+    {
+      userId: user1,
+      type: "MANUSCRIPT_SUBMITTED",
+      title: "Private notification",
+      message: "For User 1 only",
+      actionUrl: "/author/submissions/1",
+    },
+    db,
+  );
+
+  // User 2 attempts to dismiss User 1's notification -> denied (returns null)
+  const result = await dismissNotification(notification.id, user2, db);
+  assert.equal(result, null);
+
+  // User 1's notification is untouched
+  const list = await listNotifications(user1, undefined, db);
+  assert.equal(list.totalCount, 1);
+  assert.equal(list.notifications[0].isDismissed, false);
+});
+
+test("Notification Lifecycle: dismissNotification is idempotent", async () => {
+  const db = createInMemoryNotificationDb();
+  const userId = "00000000-0000-4000-a000-000000000001";
+
+  const { notification } = await createNotification(
+    {
+      userId,
+      type: "MANUSCRIPT_SUBMITTED",
+      title: "Test",
+      message: "Test message",
+      actionUrl: "/author",
+    },
+    db,
+  );
+
+  const first = await dismissNotification(notification.id, userId, db);
+  assert.ok(first);
+  assert.equal(first.isDismissed, true);
+
+  // Second call does not fail or duplicate
+  const second = await dismissNotification(notification.id, userId, db);
+  assert.ok(second);
+  assert.equal(second.isDismissed, true);
+});
+
+test("Notification Lifecycle: dismissAllNotifications clears active list for user", async () => {
+  const db = createInMemoryNotificationDb();
+  const userId = "00000000-0000-4000-a000-000000000001";
+  const otherUser = "00000000-0000-4000-a000-000000000002";
+
+  // Create 3 for user 1
+  for (let i = 1; i <= 3; i++) {
+    await createNotification(
+      {
+        userId,
+        type: "MANUSCRIPT_SUBMITTED",
+        title: `Notification ${i}`,
+        message: `Message ${i}`,
+        actionUrl: `/author/${i}`,
+      },
+      db,
+    );
+  }
+
+  // Create 1 for user 2
+  await createNotification(
+    {
+      userId: otherUser,
+      type: "MANUSCRIPT_SUBMITTED",
+      title: "Other user notification",
+      message: "Should remain",
+      actionUrl: "/author/other",
+    },
+    db,
+  );
+
+  assert.equal(await getUnreadCount(userId, db), 3);
+  assert.equal(await getUnreadCount(otherUser, db), 1);
+
+  // Dismiss all for user 1
+  const res = await dismissAllNotifications(userId, db);
+  assert.equal(res.count, 3);
+
+  // User 1 list is empty
+  const user1List = await listNotifications(userId, undefined, db);
+  assert.equal(user1List.totalCount, 0);
+  assert.equal(user1List.unreadCount, 0);
+  assert.equal(await getUnreadCount(userId, db), 0);
+
+  // User 2 list is untouched
+  const user2List = await listNotifications(otherUser, undefined, db);
+  assert.equal(user2List.totalCount, 1);
+  assert.equal(user2List.unreadCount, 1);
+  assert.equal(await getUnreadCount(otherUser, db), 1);
+});
+
+test("Notification Lifecycle: markAllNotificationsAsRead only affects non-dismissed unread records", async () => {
+  const db = createInMemoryNotificationDb();
+  const userId = "00000000-0000-4000-a000-000000000001";
+
+  const { notification: activeUnread } = await createNotification(
+    {
+      userId,
+      type: "MANUSCRIPT_SUBMITTED",
+      title: "Active Unread",
+      message: "Active message",
+      actionUrl: "/author/active",
+    },
+    db,
+  );
+
+  const { notification: dismissedUnread } = await createNotification(
+    {
+      userId,
+      type: "TRACKING_ASSIGNED",
+      title: "Dismissed Unread",
+      message: "Dismissed message",
+      actionUrl: "/author/dismissed",
+    },
+    db,
+  );
+
+  // Dismiss one while it is unread
+  await dismissNotification(dismissedUnread.id, userId, db);
+
+  // Mark all as read
+  const markRes = await markAllNotificationsAsRead(userId, db);
+  assert.equal(markRes.count, 1); // Only the active one was touched
+
+  // Active unread is now read
+  const activeCheck = await db.notification.findFirst({
+    where: { id: activeUnread.id },
+  });
+  assert.equal(activeCheck?.isRead, true);
+
+  // Dismissed unread remains unread (or unchanged) in history without interfering
+  const dismissedCheck = await db.notification.findFirst({
+    where: { id: dismissedUnread.id },
+  });
+  assert.equal(dismissedCheck?.isDismissed, true);
+  assert.equal(dismissedCheck?.isRead, false);
+});
+
+test("Notification Lifecycle: All vs Unread filtering correctly reflects read and dismissed states", async () => {
+  const db = createInMemoryNotificationDb();
+  const userId = "00000000-0000-4000-a000-000000000001";
+
+  // Item 1: Unread active
+  const { notification: n1 } = await createNotification(
+    {
+      userId,
+      type: "MANUSCRIPT_SUBMITTED",
+      title: "Unread 1",
+      message: "msg 1",
+      actionUrl: "/1",
+    },
+    db,
+  );
+
+  // Item 2: Read active
+  const { notification: n2 } = await createNotification(
+    {
+      userId,
+      type: "TRACKING_ASSIGNED",
+      title: "Read 2",
+      message: "msg 2",
+      actionUrl: "/2",
+    },
+    db,
+  );
+  await markNotificationAsRead(n2.id, userId, db);
+
+  // Item 3: Dismissed unread
+  const { notification: n3 } = await createNotification(
+    {
+      userId,
+      type: "CORRECTION_REQUESTED",
+      title: "Dismissed 3",
+      message: "msg 3",
+      actionUrl: "/3",
+    },
+    db,
+  );
+  await dismissNotification(n3.id, userId, db);
+
+  // All active notifications (should be n1 and n2, excluding dismissed n3)
+  const allList = await listNotifications(userId, { filter: "all" }, db);
+  assert.equal(allList.totalCount, 2);
+  assert.equal(allList.unreadCount, 1);
+  assert.deepEqual(
+    allList.notifications.map((n) => n.id).sort(),
+    [n1.id, n2.id].sort(),
+  );
+
+  // Unread active notifications (should be n1 only)
+  const unreadList = await listNotifications(userId, { filter: "unread" }, db);
+  assert.equal(unreadList.totalCount, 1);
+  assert.equal(unreadList.unreadCount, 1);
+  assert.equal(unreadList.notifications[0].id, n1.id);
+});
+
+test("Notification Lifecycle: Historical records remain in database after dismissal", async () => {
+  const db = createInMemoryNotificationDb();
+  const userId = "00000000-0000-4000-a000-000000000001";
+
+  const { notification } = await createNotification(
+    {
+      userId,
+      type: "ARTICLE_PUBLISHED",
+      title: "Permanent Record",
+      message: "Must not be deleted",
+      actionUrl: "/articles/test",
+    },
+    db,
+  );
+
+  await dismissNotification(notification.id, userId, db);
+
+  // Active list is empty
+  const activeList = await listNotifications(userId, undefined, db);
+  assert.equal(activeList.totalCount, 0);
+
+  // Direct database query proves record was NOT deleted
+  const directRecord = await db.notification.findFirst({
+    where: { id: notification.id },
+  });
+  assert.ok(directRecord, "Historical record must remain in database");
+  assert.equal(directRecord.isDismissed, true);
+  assert.ok(directRecord.dismissedAt instanceof Date);
 });
