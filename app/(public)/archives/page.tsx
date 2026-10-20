@@ -29,83 +29,83 @@ export default async function ArchivesPage({
   const trimmedQ = q?.trim() || "";
   const isSearchMode = trimmedQ.length > 0;
 
-  const [allActiveJournals, articles] = await Promise.all([
-    prisma.journal.findMany({
-      where: {
-        isActive: true,
-        slug: { in: [...CANONICAL_JOURNAL_ORDER] },
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        shortName: true,
-        department: { select: { name: true } },
-      },
-      orderBy: { name: "asc" },
-    }),
-    prisma.article.findMany({
-      where: {
-        isPublished: true,
-        ...(journal
-          ? { issue: { volume: { journal: { slug: journal } } } }
-          : {}),
-        ...(isSearchMode
-          ? {
-              OR: [
-                { title: { contains: trimmedQ, mode: "insensitive" as const } },
-                {
-                  abstract: {
-                    contains: trimmedQ,
-                    mode: "insensitive" as const,
-                  },
+  const allActiveJournalsPromise = prisma.journal.findMany({
+    where: {
+      isActive: true,
+      slug: { in: [...CANONICAL_JOURNAL_ORDER] },
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      shortName: true,
+      department: { select: { name: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const articlesPromise = prisma.article.findMany({
+    where: {
+      isPublished: true,
+      ...(journal ? { issue: { volume: { journal: { slug: journal } } } } : {}),
+      ...(isSearchMode
+        ? {
+            OR: [
+              { title: { contains: trimmedQ, mode: "insensitive" as const } },
+              {
+                abstract: {
+                  contains: trimmedQ,
+                  mode: "insensitive" as const,
                 },
-                { doi: { contains: trimmedQ, mode: "insensitive" as const } },
-                {
-                  authors: {
-                    some: {
-                      fullName: {
-                        contains: trimmedQ,
-                        mode: "insensitive" as const,
-                      },
+              },
+              { doi: { contains: trimmedQ, mode: "insensitive" as const } },
+              {
+                authors: {
+                  some: {
+                    fullName: {
+                      contains: trimmedQ,
+                      mode: "insensitive" as const,
                     },
                   },
                 },
-              ],
-            }
-          : {}),
-      },
-      orderBy: isSearchMode
-        ? [{ publishedAt: "desc" }, { title: "asc" }]
-        : [
-            { issue: { volume: { year: "desc" } } },
-            { issue: { volume: { number: "desc" } } },
-            { issue: { number: "desc" } },
-            { issueOrder: "asc" },
-            { pageStart: "asc" },
-            { publishedAt: "desc" },
-          ],
-      include: {
-        issue: {
-          include: {
-            volume: {
-              include: {
-                journal: {
-                  select: {
-                    name: true,
-                    slug: true,
-                    shortName: true,
-                    department: { select: { name: true } },
-                  },
+              },
+            ],
+          }
+        : {}),
+    },
+    orderBy: isSearchMode
+      ? [{ publishedAt: "desc" }, { title: "asc" }]
+      : [
+          { issue: { volume: { year: "desc" } } },
+          { issue: { volume: { number: "desc" } } },
+          { issue: { number: "desc" } },
+          { issueOrder: "asc" },
+          { pageStart: "asc" },
+          { publishedAt: "desc" },
+        ],
+    include: {
+      issue: {
+        include: {
+          volume: {
+            include: {
+              journal: {
+                select: {
+                  name: true,
+                  slug: true,
+                  shortName: true,
+                  department: { select: { name: true } },
                 },
               },
             },
           },
         },
-        authors: { orderBy: { position: "asc" } },
       },
-    }),
-  ]);
+      authors: { orderBy: { position: "asc" } },
+    },
+  });
+
+  const allActiveJournals = await allActiveJournalsPromise;
+  const articles = await articlesPromise;
 
   const catalogJournals: CatalogJournalItem[] =
     allActiveJournals.length > 0
@@ -199,7 +199,7 @@ export default async function ArchivesPage({
             >
               All Journals
             </Link>
-            {catalogJournals.map((j) => {
+            {catalogJournals.map((j: CatalogJournalItem) => {
               const href = trimmedQ
                 ? `/archives?journal=${j.slug}&q=${encodeURIComponent(trimmedQ)}`
                 : `/archives?journal=${j.slug}`;
@@ -286,7 +286,7 @@ export default async function ArchivesPage({
                 </Link>
               </div>
 
-              {articles.map((article) => (
+              {articles.map((article: PublishedArticle) => (
                 <article
                   key={article.id}
                   className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-6 transition hover:border-[color:var(--color-accent)]"
