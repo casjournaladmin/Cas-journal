@@ -65,14 +65,14 @@ export function DevIdentitySwitcher({
     users && users.length > 0 ? users : DEFAULT_DATABASE_USERS;
 
   return (
-    <details className="group mt-6 rounded-xl border border-dashed border-sky-400/25 bg-[#032338]/60 text-xs backdrop-blur-sm transition-colors">
+    <details className="group mt-6 rounded-xl border border-sky-400/20 bg-[#021422]/65 text-xs backdrop-blur-md transition-colors">
       <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl p-3.5 font-medium text-sky-200/80 select-none hover:text-white focus-visible:outline-2 focus-visible:outline-sky-400 [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2.5">
           <svg
             aria-hidden="true"
             viewBox="0 0 20 20"
             fill="currentColor"
-            className="size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"
+            className="size-4 shrink-0 text-sky-400 transition-transform duration-200 group-open:rotate-90"
           >
             <path
               fillRule="evenodd"
@@ -83,16 +83,27 @@ export function DevIdentitySwitcher({
           <span className="font-semibold text-white">
             Development testing accounts
           </span>
-          <span className="rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300">
-            DEV ONLY
+          <span className="rounded-full border border-sky-400/30 bg-sky-500/15 px-2 py-0.5 text-[9px] font-semibold tracking-wider text-sky-300 uppercase">
+            Dev Only
           </span>
         </span>
-        <span className="text-[11px] text-sky-300/60 group-open:hidden">
-          Expand
+        <span className="text-[11px] text-sky-300/60 transition group-open:rotate-180">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="size-4"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+              clipRule="evenodd"
+            />
+          </svg>
         </span>
       </summary>
 
-      <div className="space-y-4 border-t border-sky-500/20 p-4 pt-3">
+      <div className="space-y-3 border-t border-sky-500/20 p-4 pt-3">
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-sky-200/70">
             5 database-backed test accounts. Roles assigned via /admin/access.
@@ -107,7 +118,7 @@ export function DevIdentitySwitcher({
           </form>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="space-y-2">
           {activeUsers.map((item) => (
             <form key={item.key} action={switchDevIdentityAction}>
               <input type="hidden" name="identity" value={item.key} />
@@ -116,20 +127,25 @@ export function DevIdentitySwitcher({
               ) : null}
               <button
                 type="submit"
-                className="flex w-full cursor-pointer flex-col items-start rounded-lg border border-sky-500/20 bg-[#021827]/80 p-2.5 text-left transition hover:border-sky-400 hover:bg-[#03243a] hover:shadow-xs active:scale-[0.99]"
+                className="group flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-sky-500/20 bg-[#021827]/75 px-3 py-2.5 text-left transition hover:border-sky-400/50 hover:bg-[#03243a]/90 active:scale-[0.99]"
               >
-                <div className="flex w-full items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-white">
-                    {item.name}
-                  </span>
-                  <span
-                    className={`rounded border px-1.5 py-0.5 text-[9px] font-semibold ${item.color}`}
-                  >
-                    {item.role}
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap">
+                    <span className="truncate text-xs font-semibold text-white group-hover:text-sky-200">
+                      {item.name}
+                    </span>
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[9px] font-medium leading-none ${item.color}`}
+                    >
+                      {item.role}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 truncate text-[11px] text-sky-300/70 group-hover:text-sky-200/90">
+                    {item.email}
+                  </p>
                 </div>
-                <span className="mt-0.5 font-mono text-[10px] text-sky-300/70">
-                  {item.email}
+                <span className="shrink-0 text-xs font-semibold text-sky-400/60 transition group-hover:translate-x-0.5 group-hover:text-sky-300">
+                  →
                 </span>
               </button>
             </form>

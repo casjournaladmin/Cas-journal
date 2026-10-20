@@ -65,54 +65,6 @@ function initials(name: string) {
     .join("");
 }
 
-function AccountMenu({
-  user,
-  hasMultipleWorkspaces,
-}: {
-  user: ShellUser;
-  hasMultipleWorkspaces?: boolean;
-}) {
-  return (
-    <details name="admin-shell-menu" className="app-popover group relative">
-      <summary
-        aria-label="Open account menu"
-        className="flex size-9 cursor-pointer list-none items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-xs font-bold text-[color:var(--color-accent)] transition hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-focus)]"
-      >
-        {initials(user.displayName)}
-      </summary>
-      <div className="absolute top-[calc(100%+0.65rem)] right-0 z-40 w-72 rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 shadow-[var(--shadow-menu)]">
-        <div className="px-3 py-2.5">
-          <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)]">
-            {user.displayName}
-          </p>
-          <p className="mt-1 truncate text-xs text-[color:var(--color-subtle)]">
-            {user.email ?? "Authenticated account"}
-          </p>
-          <span className="mt-2 inline-block rounded-full bg-[color:var(--color-accent-soft)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--color-accent)]">
-            Super Administrator
-          </span>
-        </div>
-        <div className="my-1 h-px bg-[color:var(--color-border)]" />
-        {hasMultipleWorkspaces ? (
-          <Link
-            href="/workspaces"
-            className="block rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-[color:var(--color-muted)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
-          >
-            Switch workspace
-          </Link>
-        ) : null}
-        <Link
-          href="/account"
-          className="block rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-[color:var(--color-muted)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
-        >
-          Account and memberships
-        </Link>
-        <SignOutForm className="mt-1 w-full rounded-[var(--radius-md)] px-3 py-2.5 text-left text-sm font-medium text-[color:var(--color-muted)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]" />
-      </div>
-    </details>
-  );
-}
-
 function subscribeSidebar(callback: () => void) {
   window.addEventListener("storage", callback);
   return () => window.removeEventListener("storage", callback);
@@ -172,14 +124,14 @@ export function PlatformAdminShell({
   const sectionLabel = currentItem ? currentItem.label : "Console";
 
   return (
-    <div className="flex min-h-screen bg-[color:var(--color-app-background)] text-[color:var(--color-foreground)]">
-      {/* ── Persistent Desktop Sidebar ── */}
+    <div className="cas-paper-bg flex min-h-screen text-[color:var(--color-foreground)]">
+      {/* ── Persistent Desktop Sidebar: Anchored Full-Height with Independent Scroll ── */}
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] transition-[width] duration-200 ease-in-out lg:flex ${
+        className={`cas-glass-surface sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-[color:var(--color-border)] transition-[width] duration-200 ease-in-out lg:flex ${
           isCollapsed ? "w-16" : "w-64"
         }`}
       >
-        {/* Brand Header — Exact 4rem / 64px height aligned with top navigation */}
+        {/* Brand Header — Exact 4rem / 64px height aligned with main utility header */}
         <div
           className={`flex h-16 shrink-0 items-center border-b border-[color:var(--color-border)] ${
             isCollapsed ? "justify-center px-2" : "justify-between px-4"
@@ -229,7 +181,7 @@ export function PlatformAdminShell({
                   CJ
                 </Link>
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate font-serif text-[14px] font-bold tracking-tight text-[color:var(--color-foreground)]">
+                  <span className="truncate font-serif text-[15px] font-bold tracking-tight text-[color:var(--color-foreground)]">
                     CAS Journals
                   </span>
                   <span className="shrink-0 rounded bg-[color:var(--color-accent-soft)] px-1.5 py-0.5 text-[9px] font-bold tracking-wider whitespace-nowrap text-[color:var(--color-accent)] uppercase">
@@ -264,11 +216,11 @@ export function PlatformAdminShell({
           )}
         </div>
 
-        {/* Scrollable Navigation */}
+        {/* Scrollable Navigation — flex-1 min-h-0 with independent scroll */}
         <div
-          className={`flex-1 overflow-y-auto ${
+          className={`min-h-0 flex-1 overflow-y-auto ${
             isCollapsed ? "px-2 py-4" : "px-3 py-4"
-          }`}
+          } space-y-1`}
         >
           {!isCollapsed ? (
             <p className="px-3 pb-2.5 text-[10px] font-semibold tracking-wider text-[color:var(--color-muted)] uppercase">
@@ -281,10 +233,11 @@ export function PlatformAdminShell({
           />
         </div>
 
-        {/* Bottom Utility Controls */}
-        <div className="shrink-0 space-y-1.5 border-t border-[color:var(--color-border)] p-2">
+        {/* ── Anchored Sidebar Footer: Restored Account Block & Utility Controls ── */}
+        <div className="shrink-0 space-y-2 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)]/60 p-2.5">
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-2 py-1">
+              {/* Public Portal Icon */}
               <Link
                 href="/"
                 title="Public Portal"
@@ -306,6 +259,8 @@ export function PlatformAdminShell({
                   />
                 </svg>
               </Link>
+
+              {/* Switch workspace (if multiple available) */}
               {availableWorkspaces.length > 1 ? (
                 <Link
                   href="/workspaces"
@@ -329,53 +284,110 @@ export function PlatformAdminShell({
                   </svg>
                 </Link>
               ) : null}
+
+              {/* Appearance Toggle */}
               <div
                 title="Toggle appearance"
                 className="grid size-9 place-items-center"
               >
                 <ThemeToggle />
               </div>
+
+              {/* User Account Popover */}
+              <details className="group relative">
+                <summary
+                  aria-label="User account menu"
+                  className="flex size-9 cursor-pointer list-none items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-xs font-bold text-[color:var(--color-accent)] transition hover:border-[color:var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[color:var(--color-focus)]"
+                >
+                  {initials(user.displayName)}
+                </summary>
+                <div className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-[var(--radius-lg)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-2 shadow-lg backdrop-blur-md">
+                  <div className="px-3 py-2">
+                    <p className="truncate text-xs font-semibold text-[color:var(--color-foreground)]">
+                      {user.displayName}
+                    </p>
+                    <p className="truncate text-[10px] text-[color:var(--color-subtle)]">
+                      {user.email ?? "Authenticated account"}
+                    </p>
+                  </div>
+                  <div className="my-1 h-px bg-[color:var(--color-border)]" />
+                  <Link
+                    href="/account"
+                    className="block rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)]"
+                  >
+                    Account and memberships
+                  </Link>
+                  <SignOutForm className="mt-1 w-full rounded-[var(--radius-md)] px-3 py-1.5 text-left text-xs font-medium text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)]" />
+                </div>
+              </details>
             </div>
           ) : (
-            <>
-              <Link
-                href="/"
-                className="flex items-center justify-between rounded-[var(--radius-md)] px-3 py-2 text-xs font-semibold text-[color:var(--color-muted)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)]"
-              >
-                <span>Public Portal</span>
-                <span aria-hidden="true" className="opacity-70">
-                  ↗
-                </span>
-              </Link>
-              {availableWorkspaces.length > 1 ? (
+            <div className="space-y-2">
+              {/* Utilities row: Public Portal & Appearance */}
+              <div className="flex items-center justify-between px-1">
                 <Link
-                  href="/workspaces"
-                  className="flex items-center justify-between rounded-[var(--radius-md)] px-3 py-2 text-xs font-semibold text-[color:var(--color-muted)] transition hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)]"
+                  href="/"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-muted)] transition hover:text-[color:var(--color-foreground)]"
                 >
-                  <span>Switch workspace</span>
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 20 20"
-                    className="size-3.5 opacity-70"
-                  >
-                    <path
-                      d="M6.5 4.5l-3 3 3 3M13.5 15.5l3-3-3-3M3.5 7.5h10M16.5 12.5h-10"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.5"
-                    />
-                  </svg>
+                  <span>Public Portal</span>
+                  <span aria-hidden="true" className="opacity-70">
+                    ↗
+                  </span>
                 </Link>
-              ) : null}
-              <div className="flex items-center justify-between border-t border-[color:var(--color-border)]/60 px-3 pt-2">
-                <span className="text-[11px] font-medium text-[color:var(--color-muted)]">
-                  Appearance
-                </span>
-                <ThemeToggle />
+                <div className="flex items-center gap-1">
+                  {availableWorkspaces.length > 1 ? (
+                    <Link
+                      href="/workspaces"
+                      title="Switch workspace"
+                      className="grid size-8 place-items-center rounded-[var(--radius-sm)] text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-strong)] hover:text-[color:var(--color-foreground)]"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 20 20"
+                        className="size-3.5 opacity-70"
+                      >
+                        <path
+                          d="M6.5 4.5l-3 3 3 3M13.5 15.5l3-3-3-3M3.5 7.5h10M16.5 12.5h-10"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                        />
+                      </svg>
+                    </Link>
+                  ) : null}
+                  <ThemeToggle />
+                </div>
               </div>
-            </>
+
+              {/* Restored Account / Member Profile Block */}
+              <div className="cas-glass-card rounded-[var(--radius-md)] p-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[color:var(--color-accent-soft)] text-xs font-bold text-[color:var(--color-accent)]">
+                    {initials(user.displayName)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-[color:var(--color-foreground)]">
+                      {user.displayName}
+                    </p>
+                    <span className="inline-block text-[9px] font-bold tracking-wider text-[color:var(--color-accent)] uppercase">
+                      Super Administrator
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-border)]/60 pt-2 text-[11px]">
+                  <Link
+                    href="/account"
+                    className="font-medium text-[color:var(--color-muted)] transition hover:text-[color:var(--color-foreground)] hover:underline"
+                  >
+                    Account
+                  </Link>
+                  <SignOutForm className="cursor-pointer font-medium text-[color:var(--color-muted)] transition hover:text-[color:var(--color-danger)] hover:underline" />
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </aside>
@@ -450,10 +462,10 @@ export function PlatformAdminShell({
         </div>
       ) : null}
 
-      {/* ── Main Layout Column ── */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Compact Top Utility Bar — Exact 4rem / 64px height */}
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]/95 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+      {/* ── Main Layout Column: Aligned & Independent Scroll ── */}
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        {/* Compact Top Utility Bar — Exact 4rem / 64px height aligned with sidebar header */}
+        <header className="cas-glass-surface sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-[color:var(--color-border)] px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             {/* Mobile Hamburger Button */}
             <button
@@ -490,7 +502,7 @@ export function PlatformAdminShell({
           <div className="flex items-center gap-2.5 sm:gap-3">
             <Link
               href="/"
-              className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-2.5 py-1.5 text-xs font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] sm:inline-flex"
+              className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]/75 px-2.5 py-1.5 text-xs font-semibold text-[color:var(--color-foreground)] backdrop-blur-sm transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] sm:inline-flex"
             >
               <span>Public Portal</span>
               <span aria-hidden="true" className="opacity-70">
@@ -501,10 +513,13 @@ export function PlatformAdminShell({
             <div className="lg:hidden">
               <ThemeToggle />
             </div>
-            <AccountMenu
-              user={user}
-              hasMultipleWorkspaces={availableWorkspaces.length > 1}
-            />
+            <Link
+              href="/account"
+              className="flex size-9 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-xs font-bold text-[color:var(--color-accent)] transition hover:border-[color:var(--color-accent)]"
+              title={`${user.displayName} (${user.email ?? "Account"})`}
+            >
+              {initials(user.displayName)}
+            </Link>
           </div>
         </header>
 

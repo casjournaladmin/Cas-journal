@@ -116,8 +116,8 @@ export function AuthenticatedShell({
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-app-background)]">
-      <header className="sticky top-0 z-30 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]/95 backdrop-blur-xl">
+    <div className="cas-paper-bg min-h-screen">
+      <header className="cas-glass-surface sticky top-0 z-30 border-b border-[color:var(--color-border)]">
         <div className="mx-auto flex h-[4.25rem] max-w-[90rem] items-center gap-3 px-4 sm:gap-4 sm:px-6 xl:px-8">
           <div className="shrink-0">
             <BrandMark href={overviewHref} />

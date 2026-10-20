@@ -1,7 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { LoginForm } from "@/app/login/login-form";
-import { ScholarlyBookFolio } from "@/components/auth/scholarly-book-folio";
 import { getSafeLoginReturnPath } from "@/lib/auth/submission-entry";
 import { prisma } from "@/lib/db/prisma";
 import type { DevUserItem } from "@/components/auth/dev-identity-switcher";
@@ -97,69 +97,40 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="relative flex min-h-screen w-full flex-col justify-between overflow-x-hidden bg-[#010c16] text-white selection:bg-sky-500/30">
-      {/* ── Immersive Full-Screen Cinematic Blue Galaxy Background ── */}
+    <main className="relative flex min-h-screen w-full flex-col justify-between overflow-x-hidden bg-[#02101e] text-white selection:bg-sky-500/30">
+      {/* ── Immersive Cosmic Blue Atmosphere with Supplied Books-in-Cosmos Asset ── */}
       <div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
+        className="pointer-events-none absolute inset-0 overflow-hidden select-none"
         aria-hidden="true"
       >
-        {/* Deep midnight navy and near-black blue base with rich electric-blue and cyan nebula gradients */}
+        <Image
+          src="/assets/images/login-cosmic-books.jpg"
+          alt="Scholarly cosmic books — CAS Journals"
+          fill
+          priority
+          sizes="100vw"
+          className="scale-100 object-cover object-center opacity-95 transition-opacity duration-300"
+        />
+
+        {/* Delicate outer edge vignette to keep cosmic books, nebulae & stars radiantly visible */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 90% 65% at 50% 38%, rgba(2, 132, 199, 0.28) 0%, rgba(7, 89, 133, 0.22) 28%, rgba(3, 43, 69, 0.45) 55%, #010c16 100%)",
+              "radial-gradient(ellipse 110% 95% at 50% 40%, transparent 40%, rgba(2, 16, 30, 0.45) 80%, rgba(2, 16, 30, 0.85) 100%)",
           }}
         />
-
-        {/* Concentrated blue-white celestial light source behind the central book */}
-        <div className="absolute top-[35%] left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-400/20 blur-[90px]" />
-        <div className="absolute top-[38%] left-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300/25 blur-[50px]" />
-        <div className="absolute top-[42%] left-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-[100%] bg-blue-600/10 blur-[120px]" />
-
-        {/* Fine restrained orbital paths & luminous celestial rings */}
-        <div className="absolute top-[38%] left-1/2 h-[420px] w-[760px] -translate-x-1/2 -translate-y-1/2 rounded-[100%] border border-sky-400/15 shadow-[0_0_60px_rgba(56,189,248,0.08)]" />
-        <div className="absolute top-[38%] left-1/2 h-[600px] w-[1040px] -translate-x-1/2 -translate-y-1/2 rounded-[100%] border border-sky-400/8" />
-
-        {/* Procedural multi-layer starfield with subtle twinkles */}
-        <div
-          className="absolute inset-0 opacity-70"
-          style={{
-            backgroundImage: `
-              radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.9) 1px, transparent 0),
-              radial-gradient(1.5px 1.5px at 28% 32%, rgba(56,189,248,0.85) 1px, transparent 0),
-              radial-gradient(1px 1px at 45% 15%, rgba(255,255,255,0.8) 1px, transparent 0),
-              radial-gradient(2px 2px at 62% 24%, rgba(56,189,248,0.9) 1px, transparent 0),
-              radial-gradient(1px 1px at 78% 12%, rgba(255,255,255,0.75) 1px, transparent 0),
-              radial-gradient(1.5px 1.5px at 88% 36%, rgba(186,230,254,0.85) 1px, transparent 0),
-              radial-gradient(1px 1px at 18% 68%, rgba(255,255,255,0.7) 1px, transparent 0),
-              radial-gradient(2px 2px at 35% 82%, rgba(56,189,248,0.8) 1px, transparent 0),
-              radial-gradient(1px 1px at 58% 75%, rgba(255,255,255,0.85) 1px, transparent 0),
-              radial-gradient(1.5px 1.5px at 72% 88%, rgba(56,189,248,0.75) 1px, transparent 0),
-              radial-gradient(1px 1px at 84% 64%, rgba(255,255,255,0.65) 1px, transparent 0),
-              radial-gradient(1px 1px at 94% 80%, rgba(186,230,254,0.8) 1px, transparent 0)
-            `,
-            backgroundSize: "100% 100%",
-          }}
-        />
-
-        {/* Delicate cosmic dust / nebula clouds */}
-        <div
-          className="absolute inset-0 opacity-40 mix-blend-screen"
-          style={{
-            background:
-              "radial-gradient(circle 380px at 25% 45%, rgba(14, 165, 233, 0.14) 0%, transparent 70%), radial-gradient(circle 420px at 75% 40%, rgba(2, 132, 199, 0.16) 0%, transparent 70%)",
-          }}
-        />
+        {/* Soft atmospheric gradients at top and bottom for header and footer legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#02101e]/60 via-transparent to-[#02101e]/75" />
       </div>
 
       {/* ── 1. Minimal Top Navigation ── */}
       <header className="relative z-20 flex shrink-0 items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
         <Link
           href="/"
-          className="group flex items-center gap-2.5 opacity-90 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="group flex items-center gap-2.5 rounded-full border border-sky-400/20 bg-[#02182b]/60 px-3.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-md transition hover:border-sky-300/40 hover:bg-[#02182b]/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
-          <span className="grid size-8 place-items-center rounded bg-[#0284c7] font-serif text-xs font-bold text-white shadow-[0_0_12px_rgba(2,132,199,0.5),inset_0_0_0_1px_rgba(255,255,255,0.25)]">
+          <span className="grid size-7 place-items-center rounded bg-[#0284c7] font-serif text-xs font-bold text-white shadow-[0_0_12px_rgba(2,132,199,0.5),inset_0_0_0_1px_rgba(255,255,255,0.25)]">
             CJ
           </span>
           <span className="font-serif text-sm font-semibold tracking-[-0.015em] text-white">
@@ -168,39 +139,41 @@ export default async function LoginPage({
         </Link>
         <Link
           href="/"
-          className="text-xs font-medium text-sky-200/70 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="rounded-full border border-sky-400/15 bg-[#02182b]/50 px-3 py-1.5 text-xs font-medium text-sky-200/80 backdrop-blur-md transition hover:border-sky-300/35 hover:bg-[#02182b]/70 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
           ← Back to journal site
         </Link>
       </header>
 
-      {/* ── 2. Visual Centerpiece & Authentication ── */}
-      <section className="relative z-10 mx-auto my-auto flex w-full max-w-[28rem] flex-col items-center px-4 py-4 text-center sm:px-6">
-        {/* Abstract Luminous Open Book constructed from layered geometry of light */}
-        <div className="w-full">
-          <ScholarlyBookFolio />
-        </div>
+      {/* ── 2. Centerpiece Branding & Authentication on Frosted Blue Glass Panel ── */}
+      <section className="relative z-10 mx-auto my-auto flex w-full max-w-[28rem] flex-col items-center px-4 py-4 sm:px-6">
+        <div className="w-full rounded-2xl border border-sky-300/30 bg-[#031d34]/75 p-6 shadow-[0_12px_40px_rgba(1,14,25,0.7),inset_0_1px_1px_rgba(255,255,255,0.25)] backdrop-blur-xl sm:p-8">
+          {/* Luminous CJ Monogram */}
+          <div className="mx-auto mb-3.5 grid size-13 place-items-center rounded-2xl bg-gradient-to-b from-[#0284c7] to-[#0369a1] font-serif text-lg font-bold text-white shadow-[0_0_28px_rgba(2,132,199,0.6),inset_0_1px_1px_rgba(255,255,255,0.4)]">
+            CJ
+          </div>
 
-        {/* Brand identity & Tagline */}
-        <div className="mt-2 text-center">
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            CAS Journals
-          </h1>
-          <p className="mt-1 text-xs font-medium tracking-wide text-sky-200/90 sm:text-sm">
-            Advancing Knowledge. Inspiring Growth.
-          </p>
-          <p className="mt-1.5 text-xs text-sky-200/65">
-            Sign in to access your CAS Journals workspace.
-          </p>
-        </div>
+          {/* Brand identity & Tagline */}
+          <div className="text-center">
+            <h1 className="font-serif text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_14px_rgba(2,132,199,0.5)] sm:text-4xl">
+              CAS Journals
+            </h1>
+            <p className="mt-1.5 text-xs font-medium tracking-wide text-sky-200/95 sm:text-sm">
+              Advancing Knowledge. Inspiring Growth.
+            </p>
+            <p className="mt-2 text-xs text-sky-200/75">
+              Sign in to access your CAS Journals workspace.
+            </p>
+          </div>
 
-        {/* Refined Google sign-in button & collapsed dev testing section */}
-        <div className="w-full">
-          <LoginForm
-            returnTo={returnTo ?? undefined}
-            oauthError={typeof error === "string" ? error : undefined}
-            devUsers={devUsers}
-          />
+          {/* Refined Google sign-in button & collapsed dev testing section */}
+          <div className="w-full">
+            <LoginForm
+              returnTo={returnTo ?? undefined}
+              oauthError={typeof error === "string" ? error : undefined}
+              devUsers={devUsers}
+            />
+          </div>
         </div>
       </section>
 
