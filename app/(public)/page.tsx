@@ -329,7 +329,7 @@ export default async function Home() {
           </p>
 
           <div className="cas-apc-free-banner">
-            &check; Submission is Free &mdash; Zero Upfront Submission Fee
+            Submission is Free &mdash; Zero Upfront Submission Fee
           </div>
 
           <div className="cas-apc-rates">

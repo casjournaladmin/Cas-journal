@@ -20,13 +20,13 @@
 
 :root,
 html[data-theme="light"] {
-  /* Editorial Paper Background with subtle cool ivory/sky tint */
-  --background: #fbfdfd;
-  --app-background: #f4f8fb;
+  /* Clean Plain White Background */
+  --background: #ffffff;
+  --app-background: #ffffff;
   --foreground: #032b45;
 
-  /* Tactile Editorial Paper Texture (high-definition procedural SVG grain) */
-  --paper-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.62' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.08  0 0 0 0 0.18  0 0 0 0 0.32  0 0 0 0.075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperNoise)'/%3E%3C/svg%3E");
+  /* Paper grain texture disabled: restored plain white theme */
+  --paper-grain: none;
 
   /* Unmistakable Light Blue Glass Surfaces */
   --surface: rgba(240, 248, 255, 0.72);
@@ -62,13 +62,12 @@ html[data-theme="light"] {
 }
 
 html[data-theme="dark"] {
-  /* Deep Midnight Navy Paper Base */
+  /* Deep Midnight Navy Base */
   --background: #021422;
   --app-background: #01121d;
   --foreground: #f0f9ff;
 
-  /* Dark mode paper grain: subtle luminous cellulose speckle */
-  --paper-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperNoiseDark'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.62' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.55  0 0 0 0 0.82  0 0 0 0 1.0  0 0 0 0.055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperNoiseDark)'/%3E%3C/svg%3E");
+  --paper-grain: none;
 
   /* Translucent Dark Blue Glass Surfaces */
   --surface: rgba(4, 28, 48, 0.72);

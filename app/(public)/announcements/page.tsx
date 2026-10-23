@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AnnouncementImage } from "@/components/announcements/announcement-image";
+import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { Container } from "@/components/ui/container";
 import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
@@ -88,18 +89,36 @@ export default async function AnnouncementsPage({
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
+            {activeJournalMeta ? (
+              <>
+                <span className="sep">/</span>
+                <Link href={`/journals/${activeJournalMeta.slug}`}>
+                  {activeJournalMeta.shortName}
+                </Link>
+              </>
+            ) : null}
             <span className="sep">/</span>
             <span>Call for Papers &amp; Announcements</span>
           </div>
           <h1 className="cas-page-title">
-            Call for Papers &amp; Editorial Notices
+            {activeJournalMeta
+              ? `${activeJournalMeta.shortName} Calls for Papers & Editorial Notices`
+              : "Call for Papers & Editorial Notices"}
           </h1>
           <p className="cas-page-desc">
-            Continuous rolling calls for Volume 1 (2026), special thematic
-            issues, and official editorial updates across CASJOURNALS.
+            {activeJournalMeta
+              ? `Continuous rolling calls for Volume 1 (2026), special thematic issues, and official editorial updates for ${activeJournalMeta.title}.`
+              : "Continuous rolling calls for Volume 1 (2026), special thematic issues, and official editorial updates across CASJOURNALS."}
           </p>
         </div>
       </header>
+
+      {activeJournalMeta ? (
+        <JournalNavigation
+          journalSlug={activeJournalMeta.slug}
+          shortName={activeJournalMeta.shortName}
+        />
+      ) : null}
 
       <Container>
         <div className="mx-auto max-w-4xl space-y-8">

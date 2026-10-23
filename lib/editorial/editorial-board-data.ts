@@ -340,7 +340,9 @@ export const CANONICAL_JOURNAL_METADATA: Record<string, JournalMetadata> = {
 };
 
 export function resolveCanonicalJournalSlug(slug: string): string {
-  return slug.toLowerCase().trim();
+  const s = slug.toLowerCase().trim();
+  if (s === "concrescence") return "cjmr";
+  return s;
 }
 
 export function getJournalDbSlugs(slug: string): string[] {

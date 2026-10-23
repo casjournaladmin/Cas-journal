@@ -4,14 +4,8 @@ import path from "node:path";
 import test from "node:test";
 
 import { siteConfig } from "@/lib/config/site";
-import {
-  JOURNAL_HERO_AFFILIATIONS,
-  resolveCanonicalJournalSlug,
-} from "@/lib/editorial/editorial-board-data";
-import {
-  getJournalAboutData,
-  JOURNAL_ABOUT_DATA,
-} from "@/lib/editorial/journal-about-data";
+import { JOURNAL_HERO_AFFILIATIONS } from "@/lib/editorial/editorial-board-data";
+import { getJournalAboutData } from "@/lib/editorial/journal-about-data";
 
 test("1. Journal hero affiliations match exact required wording", () => {
   assert.equal(
@@ -84,7 +78,8 @@ test("4. Dedicated navigation component for every journal", () => {
   assert.ok(fs.existsSync(navComponentPath));
   const navContent = fs.readFileSync(navComponentPath, "utf8");
 
-  assert.ok(navContent.includes('"Home"'));
+  assert.ok(navContent.includes('"Journal Home"'));
+  assert.ok(!navContent.includes('{ label: "Home", href: "/" }'));
   assert.ok(navContent.includes('"About"'));
   assert.ok(navContent.includes('"Editorial Board"'));
   assert.ok(navContent.includes('"Author Guidelines"'));
@@ -136,9 +131,8 @@ test("6. Dedicated Editorial Board page route exists and links from journal land
 });
 
 test("7. Journal-specific announcements query isolation", async () => {
-  const { getPublicAnnouncements } = await import(
-    "@/lib/editorial/announcements-store"
-  );
+  const { getPublicAnnouncements } =
+    await import("@/lib/editorial/announcements-store");
   assert.equal(typeof getPublicAnnouncements, "function");
 });
 
@@ -180,5 +174,6 @@ test("10. Super Admin return navigation provided from journal-scoped views", () 
     "app/admin/[journalSlug]/layout.tsx",
   );
   const layoutContent = fs.readFileSync(journalLayoutPath, "utf8");
-  assert.ok(layoutContent.includes("← Super Admin"));
+  // Left duplicate must be removed; right action in authenticated-shell is retained
+  assert.ok(!layoutContent.includes('"← Super Admin"'));
 });

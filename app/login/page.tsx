@@ -109,7 +109,7 @@ export default async function LoginPage({
       >
         <Image
           src="/assets/images/login-cosmic-books.jpg"
-          alt="Scholarly cosmic books — CAS Journals"
+          alt="Scholarly cosmic books — CASJOURNALS"
           fill
           priority
           sizes="100vw"
@@ -138,7 +138,7 @@ export default async function LoginPage({
             CJ
           </span>
           <span className="font-serif text-sm font-semibold tracking-[-0.015em] text-white">
-            CAS Journals
+            CASJOURNALS
           </span>
         </Link>
         <Link
@@ -160,13 +160,13 @@ export default async function LoginPage({
           {/* Brand identity & Tagline */}
           <div className="text-center">
             <h1 className="font-serif text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_14px_rgba(2,132,199,0.5)] sm:text-4xl">
-              CAS Journals
+              CASJOURNALS
             </h1>
             <p className="mt-1.5 text-xs font-medium tracking-wide text-sky-200/95 sm:text-sm">
               Advancing Knowledge. Inspiring Growth.
             </p>
             <p className="mt-2 text-xs text-sky-200/75">
-              Sign in to access your CAS Journals workspace.
+              Sign in to access your CASJOURNALS workspace.
             </p>
           </div>
 

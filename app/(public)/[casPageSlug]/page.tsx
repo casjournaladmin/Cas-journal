@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CAS_STATIC_PAGES } from "@/lib/config/cas-pages";
+import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
 
 const AUTHOR_SIDEBAR_LINKS = [
   { href: "/author-guidelines", label: "Author Guidelines" },
@@ -47,6 +48,11 @@ export default async function CasStaticPageRoute({
   params: Promise<{ casPageSlug: string }>;
 }) {
   const { casPageSlug } = await params;
+  const canonicalJournal = resolveCanonicalJournalSlug(casPageSlug);
+  if (["existentia", "cjmr", "izu", "polis"].includes(canonicalJournal)) {
+    redirect(`/journals/${canonicalJournal}`);
+  }
+
   const page = CAS_STATIC_PAGES[casPageSlug];
 
   if (!page) {

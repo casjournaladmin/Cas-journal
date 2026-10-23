@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Container } from "@/components/ui/container";
 
 interface JournalNavigationProps {
@@ -9,50 +10,72 @@ interface JournalNavigationProps {
   shortName?: string;
 }
 
-export function JournalNavigation({
+interface NavItem {
+  label: string;
+  href: string;
+  exact?: boolean;
+  isActive?: boolean;
+  highlight?: boolean;
+}
+
+function JournalNavigationContent({
   journalSlug,
   shortName,
 }: JournalNavigationProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeJournalParam = searchParams?.get("journal");
 
-  const navItems = [
-    { label: "Home", href: "/" },
+  const isCurrentJournalActive =
+    activeJournalParam === journalSlug ||
+    (journalSlug === "cjmr" && activeJournalParam === "concrescence") ||
+    (journalSlug === "concrescence" && activeJournalParam === "cjmr");
+
+  const navItems: NavItem[] = [
     {
       label: "Journal Home",
       href: `/journals/${journalSlug}`,
       exact: true,
+      isActive:
+        (pathname === `/journals/${journalSlug}` ||
+          pathname === `/${journalSlug}`) &&
+        !pathname.includes("/about") &&
+        !pathname.includes("/editorial-board"),
     },
     {
       label: "About",
       href: `/journals/${journalSlug}/about`,
       exact: true,
+      isActive:
+        pathname === `/journals/${journalSlug}/about` ||
+        pathname === `/${journalSlug}/about`,
     },
     {
       label: "Editorial Board",
       href: `/journals/${journalSlug}/editorial-board`,
       exact: true,
+      isActive:
+        pathname === `/journals/${journalSlug}/editorial-board` ||
+        pathname === `/${journalSlug}/editorial-board`,
     },
     {
       label: "Author Guidelines",
-      href: "/author-guidelines",
+      href: `/journals/${journalSlug}#guidelines`,
     },
     {
       label: "Current Issue",
-      href: `/current-issue`,
+      href: `/current-issue?journal=${journalSlug}`,
+      isActive: pathname.startsWith("/current-issue") && isCurrentJournalActive,
     },
     {
       label: "Archives",
       href: `/archives?journal=${journalSlug}`,
-      isActive:
-        pathname.startsWith("/archives") &&
-        pathname.includes(`journal=${journalSlug}`),
+      isActive: pathname.startsWith("/archives") && isCurrentJournalActive,
     },
     {
       label: "Announcements",
       href: `/announcements?journal=${journalSlug}`,
-      isActive:
-        pathname.startsWith("/announcements") &&
-        pathname.includes(`journal=${journalSlug}`),
+      isActive: pathname.startsWith("/announcements") && isCurrentJournalActive,
     },
     {
       label: "Submit",
@@ -61,7 +84,8 @@ export function JournalNavigation({
     },
     {
       label: "Contact",
-      href: "/contact",
+      href: `/contact?journal=${journalSlug}`,
+      isActive: pathname.startsWith("/contact") && isCurrentJournalActive,
     },
   ];
 
@@ -76,9 +100,7 @@ export function JournalNavigation({
             const isCurrent =
               item.isActive !== undefined
                 ? item.isActive
-                : item.exact
-                  ? pathname === item.href
-                  : pathname === item.href;
+                : pathname === item.href;
 
             if (item.highlight) {
               return (
@@ -110,5 +132,28 @@ export function JournalNavigation({
         </div>
       </Container>
     </nav>
+  );
+}
+
+export function JournalNavigation(props: JournalNavigationProps) {
+  return (
+    <Suspense
+      fallback={
+        <nav
+          aria-label={`${props.shortName || "Journal"} Section Navigation`}
+          className="sticky top-0 z-20 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)]/95 shadow-xs backdrop-blur-md"
+        >
+          <Container>
+            <div className="flex items-center gap-1 py-2.5">
+              <span className="text-xs text-[color:var(--color-muted)]">
+                {props.shortName} Navigation
+              </span>
+            </div>
+          </Container>
+        </nav>
+      }
+    >
+      <JournalNavigationContent {...props} />
+    </Suspense>
   );
 }

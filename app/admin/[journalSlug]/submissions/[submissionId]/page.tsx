@@ -471,28 +471,6 @@ export default async function EditorialSubmissionPage({
               </ol>
             </Section>
           ) : null}
-
-          {/* Admin Removal / Danger Zone */}
-          <section className="rounded-[var(--radius-lg)] border border-red-500/20 bg-red-950/10 p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-red-400">
-                  Delete Manuscript Submission
-                </h3>
-                <p className="mt-1 text-xs text-[color:var(--color-muted)]">
-                  Permanently remove this manuscript submission, author files,
-                  and review history from the system.
-                </p>
-              </div>
-              <DeleteManuscriptButton
-                submissionId={submission.id}
-                submissionTitle={submission.title ?? "Untitled manuscript"}
-                journalSlug={journal.slug}
-                redirectTo={`/admin/${journal.slug}/submissions`}
-                variant="button"
-              />
-            </div>
-          </section>
         </main>
 
         <aside className="space-y-6">

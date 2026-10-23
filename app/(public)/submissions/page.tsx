@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { activeJournalsConfig } from "@/lib/config/site";
+import {
+  getJournalMetadata,
+  resolveCanonicalJournalSlug,
+} from "@/lib/editorial/editorial-board-data";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
 export const metadata: Metadata = {
@@ -10,25 +15,57 @@ export const metadata: Metadata = {
     "Online manuscript submission portal, preparation checklist, and transparent open-access publication policies for CASJOURNALS.",
 };
 
-export default async function SubmissionsPage() {
+export default async function SubmissionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ journal?: string }>;
+}) {
+  const { journal } = (await searchParams) ?? {};
+  const canonical = journal ? resolveCanonicalJournalSlug(journal) : null;
+  const journalMeta = canonical ? getJournalMetadata(canonical) : null;
+
   const activationMap = await getJournalActivationMap();
   const hasActiveJournals = Object.values(activationMap).some(Boolean);
+  const targetSubmissionHref = canonical
+    ? `/author/submissions/new?journal=${canonical}`
+    : publicSubmissionEntryPath;
+
   return (
     <div>
       <header className="cas-page-hero cas-page-hero-authors">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
+            {journalMeta ? (
+              <>
+                <span className="sep">/</span>
+                <Link href={`/journals/${journalMeta.slug}`}>
+                  {journalMeta.shortName}
+                </Link>
+              </>
+            ) : null}
             <span className="sep">/</span>
             <span>Submit Your Paper</span>
           </div>
-          <h1 className="cas-page-title">Submit Your Paper</h1>
+          <h1 className="cas-page-title">
+            {journalMeta
+              ? `Submit Your Paper &mdash; ${journalMeta.shortName}`
+              : "Submit Your Paper"}
+          </h1>
           <p className="cas-page-desc">
-            Online manuscript submission portal for CASJOURNALS. Initial
-            submission is completely free with zero upfront review fee.
+            {journalMeta
+              ? `Online manuscript submission portal for ${journalMeta.title}. Initial submission is completely free with zero upfront review fee.`
+              : "Online manuscript submission portal for CASJOURNALS. Initial submission is completely free with zero upfront review fee."}
           </p>
         </div>
       </header>
+
+      {journalMeta ? (
+        <JournalNavigation
+          journalSlug={journalMeta.slug}
+          shortName={journalMeta.shortName}
+        />
+      ) : null}
 
       <main className="cas-content-section">
         <div className="cas-layout-with-sidebar">
@@ -103,11 +140,10 @@ export default async function SubmissionsPage() {
             ) : null}
 
             <div className="not-prose my-6 flex flex-wrap gap-4">
-              <Link
-                href={publicSubmissionEntryPath}
-                className="cas-btn-primary"
-              >
-                Continue to Author Submission Portal →
+              <Link href={targetSubmissionHref} className="cas-btn-primary">
+                {journalMeta
+                  ? `Submit to ${journalMeta.shortName} →`
+                  : "Continue to Author Submission Portal →"}
               </Link>
               <Link href="/login" className="cas-btn-secondary">
                 Sign In to Track Existing Submission

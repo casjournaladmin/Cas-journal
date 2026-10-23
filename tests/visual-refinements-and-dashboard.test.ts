@@ -194,10 +194,10 @@ test("4. Login Page Redesign: Full-screen immersive experience with cosmic books
   assert.equal(fs.existsSync(assetPath), true);
 
   // Brand copy directly centered with CJ emblem
-  assert.equal(login.includes("CAS Journals"), true);
+  assert.equal(login.includes("CASJOURNALS"), true);
   assert.equal(login.includes("Advancing Knowledge. Inspiring Growth."), true);
   assert.equal(
-    login.includes("Sign in to access your CAS Journals workspace."),
+    login.includes("Sign in to access your CASJOURNALS workspace."),
     true,
   );
 

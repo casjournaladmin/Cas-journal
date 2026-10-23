@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { PublicSearchBar } from "@/components/public-search-bar";
 import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
 import { IssueArchiveExplorer } from "@/components/public/issue-archive-explorer";
@@ -7,7 +8,9 @@ import { activeJournalsConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
 import {
   CANONICAL_JOURNAL_ORDER,
+  getJournalDbSlugs,
   getJournalOrderPriority,
+  resolveCanonicalJournalSlug,
 } from "@/lib/editorial/editorial-board-data";
 
 export const dynamic = "force-dynamic";
@@ -44,10 +47,15 @@ export default async function ArchivesPage({
     orderBy: { name: "asc" },
   });
 
+  const canonical = journal ? resolveCanonicalJournalSlug(journal) : null;
+  const dbSlugs = canonical ? getJournalDbSlugs(canonical) : null;
+
   const articlesPromise = prisma.article.findMany({
     where: {
       isPublished: true,
-      ...(journal ? { issue: { volume: { journal: { slug: journal } } } } : {}),
+      ...(dbSlugs
+        ? { issue: { volume: { journal: { slug: { in: dbSlugs } } } } }
+        : {}),
       ...(isSearchMode
         ? {
             OR: [
@@ -163,6 +171,14 @@ export default async function ArchivesPage({
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
+            {activeJournalObj ? (
+              <>
+                <span className="sep">/</span>
+                <Link href={`/journals/${activeJournalObj.slug}`}>
+                  {activeJournalObj.shortName || activeJournalObj.name}
+                </Link>
+              </>
+            ) : null}
             <span className="sep">/</span>
             <span>Archive</span>
           </div>
@@ -176,6 +192,13 @@ export default async function ArchivesPage({
           </p>
         </div>
       </header>
+
+      {canonical ? (
+        <JournalNavigation
+          journalSlug={canonical}
+          shortName={activeJournalObj?.shortName || canonical.toUpperCase()}
+        />
+      ) : null}
 
       {/* Search & Filter Ribbon */}
       <section>

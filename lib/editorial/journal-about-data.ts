@@ -3,6 +3,8 @@ export interface JournalAboutTopicSection {
   items: string[];
 }
 
+import { resolveCanonicalJournalSlug } from "@/lib/editorial/editorial-board-data";
+
 export interface JournalAboutData {
   slug: string;
   title: string;
@@ -401,6 +403,6 @@ export const JOURNAL_ABOUT_DATA: Record<string, JournalAboutData> = {
 };
 
 export function getJournalAboutData(slug: string): JournalAboutData | null {
-  const canonical = slug.toLowerCase().trim();
+  const canonical = resolveCanonicalJournalSlug(slug);
   return JOURNAL_ABOUT_DATA[canonical] ?? null;
 }

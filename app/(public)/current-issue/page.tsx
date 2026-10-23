@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
 import {
   type ArchiveIssueGroup,
@@ -7,16 +8,35 @@ import {
 import { Container } from "@/components/ui/container";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { prisma } from "@/lib/db/prisma";
+import {
+  getJournalDbSlugs,
+  getJournalMetadata,
+  resolveCanonicalJournalSlug,
+} from "@/lib/editorial/editorial-board-data";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
 export const dynamic = "force-dynamic";
 
-export default async function CurrentIssuePage() {
+export default async function CurrentIssuePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ journal?: string }>;
+}) {
+  const { journal } = (await searchParams) ?? {};
+  const canonical = journal ? resolveCanonicalJournalSlug(journal) : null;
+  const dbSlugs = canonical ? getJournalDbSlugs(canonical) : null;
+  const journalMeta = canonical ? getJournalMetadata(canonical) : null;
+
   const [publishedArticles, activationMap] = await Promise.all([
     prisma.article.findMany({
       where: {
         isPublished: true,
-        issue: { isClosed: false },
+        issue: {
+          isClosed: false,
+          ...(dbSlugs
+            ? { volume: { journal: { slug: { in: dbSlugs } } } }
+            : {}),
+        },
       },
       orderBy: [
         { issue: { volume: { year: "desc" } } },
@@ -77,18 +97,36 @@ export default async function CurrentIssuePage() {
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
+            {journalMeta ? (
+              <>
+                <span className="sep">/</span>
+                <Link href={`/journals/${journalMeta.slug}`}>
+                  {journalMeta.shortName}
+                </Link>
+              </>
+            ) : null}
             <span className="sep">/</span>
             <span>Current Issue</span>
           </div>
           <h1 className="cas-page-title">
-            Current Issue &mdash; Inaugural Volume 1 (2026)
+            {journalMeta
+              ? `${journalMeta.shortName} Current Issue &mdash; Volume 1 (2026)`
+              : "Current Issue &mdash; Inaugural Volume 1 (2026)"}
           </h1>
           <p className="cas-page-desc">
-            Continuous rolling publication of peer-reviewed research papers,
-            structured reviews, and case studies across CASJOURNALS.
+            {journalMeta
+              ? `Continuous rolling publication of peer-reviewed research papers for ${journalMeta.title}.`
+              : "Continuous rolling publication of peer-reviewed research papers, structured reviews, and case studies across CASJOURNALS."}
           </p>
         </div>
       </header>
+
+      {journalMeta ? (
+        <JournalNavigation
+          journalSlug={journalMeta.slug}
+          shortName={journalMeta.shortName}
+        />
+      ) : null}
 
       <section>
         <Container>

@@ -11,7 +11,7 @@
   --cas-blue-accent: #0ea5e9;
   --cas-sky-light: #e0f2fe;
   --cas-sky-subtle: #f0f9ff;
-  --cas-bg: var(--background, #fbfdfd);
+  --cas-bg: var(--background, #ffffff);
   --cas-card: var(--surface-raised, rgba(255, 255, 255, 0.85));
   --cas-border: var(--border, rgba(186, 230, 253, 0.7));
   --cas-border-subtle: rgba(186, 230, 253, 0.45);

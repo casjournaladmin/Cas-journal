@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { activeJournalsConfig } from "@/lib/config/site";
+import {
+  getJournalMetadata,
+  resolveCanonicalJournalSlug,
+} from "@/lib/editorial/editorial-board-data";
 
 export const metadata: Metadata = {
   title: "Contact Editorial Office | CASJOURNALS",
@@ -9,23 +14,51 @@ export const metadata: Metadata = {
     "Direct communication channels, editorial helpdesk, and author support inquiry portal for CASJOURNALS.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ journal?: string }>;
+}) {
+  const { journal } = (await searchParams) ?? {};
+  const canonical = journal ? resolveCanonicalJournalSlug(journal) : null;
+  const journalMeta = canonical ? getJournalMetadata(canonical) : null;
+
   return (
     <div>
       <header className="cas-page-hero cas-page-hero-contact">
         <div className="cas-page-hero-inner">
           <div className="cas-breadcrumbs">
             <Link href="/">Home</Link>
+            {journalMeta ? (
+              <>
+                <span className="sep">/</span>
+                <Link href={`/journals/${journalMeta.slug}`}>
+                  {journalMeta.shortName}
+                </Link>
+              </>
+            ) : null}
             <span className="sep">/</span>
             <span>Contact</span>
           </div>
-          <h1 className="cas-page-title">Contact Editorial Office</h1>
+          <h1 className="cas-page-title">
+            {journalMeta
+              ? `Contact ${journalMeta.shortName} Editorial Office`
+              : "Contact Editorial Office"}
+          </h1>
           <p className="cas-page-desc">
-            Direct communication channels, editorial helpdesk, and author
-            support inquiry portal.
+            {journalMeta
+              ? `Direct communication channels and author support for ${journalMeta.title}.`
+              : "Direct communication channels, editorial helpdesk, and author support inquiry portal."}
           </p>
         </div>
       </header>
+
+      {journalMeta ? (
+        <JournalNavigation
+          journalSlug={journalMeta.slug}
+          shortName={journalMeta.shortName}
+        />
+      ) : null}
 
       <main className="cas-content-section">
         <div className="cas-layout-single">
@@ -61,26 +94,39 @@ export default function ContactPage() {
                     marginBottom: "12px",
                   }}
                 >
-                  Editorial Office
+                  {journalMeta
+                    ? `${journalMeta.shortName} Editorial Office`
+                    : "Editorial Office"}
                 </h3>
                 <p style={{ fontSize: "14px", marginBottom: "8px" }}>
                   <strong>Email:</strong>{" "}
                   <a
-                    href="mailto:editorial@casjournals.org"
+                    href={`mailto:${journalMeta?.contactEmail || "editorial@casjournals.org"}`}
                     style={{ color: "#0284c7" }}
                   >
-                    editorial@casjournals.org
+                    {journalMeta?.contactEmail || "editorial@casjournals.org"}
                   </a>
                 </p>
-                <p style={{ fontSize: "14px", marginBottom: "8px" }}>
-                  <strong>Submissions Helpdesk:</strong>{" "}
-                  <a
-                    href="mailto:submissions@casjournals.org"
-                    style={{ color: "#0284c7" }}
-                  >
-                    submissions@casjournals.org
-                  </a>
-                </p>
+                {journalMeta?.contactPhone ? (
+                  <p style={{ fontSize: "14px", marginBottom: "8px" }}>
+                    <strong>Phone:</strong> {journalMeta.contactPhone}
+                  </p>
+                ) : null}
+                {journalMeta?.officeAddress ? (
+                  <p style={{ fontSize: "14px", marginBottom: "8px" }}>
+                    <strong>Address:</strong> {journalMeta.officeAddress}
+                  </p>
+                ) : (
+                  <p style={{ fontSize: "14px", marginBottom: "8px" }}>
+                    <strong>Submissions Helpdesk:</strong>{" "}
+                    <a
+                      href="mailto:submissions@casjournals.org"
+                      style={{ color: "#0284c7" }}
+                    >
+                      submissions@casjournals.org
+                    </a>
+                  </p>
+                )}
                 <p style={{ fontSize: "14px", marginBottom: 0 }}>
                   <strong>Office Hours:</strong> Monday &ndash; Friday, 9:00 AM
                   &ndash; 5:00 PM (GMT+1)
