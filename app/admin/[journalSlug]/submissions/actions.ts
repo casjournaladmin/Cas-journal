@@ -24,6 +24,11 @@ import {
 import { createArticleObjectPath, storageBuckets } from "@/lib/storage/paths";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionState } from "@/lib/submissions/types";
+import {
+  requestPublishingUploadUrl,
+  verifyUploadedPublishingObject,
+  type PublishingUploadCategory,
+} from "@/lib/storage/publishing-upload";
 
 const decisionTypes: EditorialDecisionType[] = [
   "ACCEPT",
@@ -339,6 +344,25 @@ export async function skipToPublishingAction(
   }
 }
 
+export async function requestSubmissionPublishingUploadUrlAction(input: {
+  journalSlug: string;
+  originalFileName: string;
+  sizeBytes: number;
+  mimeType?: string;
+  category: PublishingUploadCategory;
+}) {
+  try {
+    const data = await requestPublishingUploadUrl(input);
+    return { success: true, data };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to authorize upload.",
+    };
+  }
+}
+
 export async function publishArticleAction(
   journalSlug: string,
   submissionId: string,
@@ -378,87 +402,152 @@ export async function publishArticleAction(
 
     const supabase = createAdminClient();
 
-    // 1. Handle Final Production File
-    const prodFile = formData.get("productionFile");
-    if (prodFile && prodFile instanceof File && prodFile.size > 0) {
-      const allowedMimes = [
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-      ];
-      const ext = prodFile.name.split(".").pop()?.toLowerCase();
-      if (
-        !allowedMimes.includes(prodFile.type) &&
-        ext !== "pdf" &&
-        ext !== "docx" &&
-        ext !== "doc"
-      ) {
-        return {
-          error:
-            "Upload a valid PDF or DOCX file as the Final Production File.",
-        };
-      }
+    // Check for direct-to-storage upload paths
+    const directProductionPath = (
+      formData.get("productionObjectPath") as string
+    )?.trim();
+    const directProductionFileName = (
+      formData.get("productionOriginalFileName") as string
+    )?.trim();
+    const directProductionMimeType =
+      (formData.get("productionMimeType") as string)?.trim() ||
+      "application/pdf";
 
-      const bytes = new Uint8Array(await prodFile.arrayBuffer());
-      const path = createArticleObjectPath({
-        journalId: journal.id,
-        articleId: submissionId,
-        originalFileName: prodFile.name,
+    const directCoverPath = (formData.get("coverObjectPath") as string)?.trim();
+    const directCoverFileName = (
+      formData.get("coverOriginalFileName") as string
+    )?.trim();
+    const directCoverMimeType =
+      (formData.get("coverMimeType") as string)?.trim() || "image/jpeg";
+
+    if (directProductionPath) {
+      // 1. Direct-to-storage verification for production file
+      const verified = await verifyUploadedPublishingObject({
+        bucket: storageBuckets.publishedArticleFiles,
+        objectPath: directProductionPath,
+        expectedJournalSlug: journal.slug,
+        category: "manuscript",
       });
-
-      const { error: uploadErr } = await supabase.storage
-        .from(storageBuckets.publishedArticleFiles)
-        .upload(path, bytes, {
-          contentType: prodFile.type || "application/octet-stream",
-          upsert: true,
-          duplex: "half",
-        });
-
-      if (uploadErr) {
-        throw new Error(`Production file upload failed: ${uploadErr.message}`);
-      }
-
-      productionObjectPath = path;
+      productionObjectPath = directProductionPath;
       productionFileData = {
         bucket: storageBuckets.publishedArticleFiles,
-        objectPath: path,
-        originalFileName: prodFile.name,
-        mimeType: prodFile.type || "application/octet-stream",
-        sizeBytes: prodFile.size,
+        objectPath: directProductionPath,
+        originalFileName:
+          directProductionFileName ||
+          directProductionPath.split("/").pop() ||
+          "manuscript.pdf",
+        mimeType: directProductionMimeType || verified.mimeType,
+        sizeBytes: verified.sizeBytes,
       };
-    }
 
-    // 2. Handle Article Cover File
-    const coverFile = formData.get("coverImageFile");
-    if (coverFile && coverFile instanceof File && coverFile.size > 0) {
-      const bytes = new Uint8Array(await coverFile.arrayBuffer());
-      const path = createArticleObjectPath({
-        journalId: journal.id,
-        articleId: submissionId,
-        originalFileName: coverFile.name,
-      });
-
-      const { error: coverErr } = await supabase.storage
-        .from(storageBuckets.publishedArticleFiles)
-        .upload(path, bytes, {
-          contentType: coverFile.type || "image/jpeg",
-          upsert: true,
-          duplex: "half",
+      if (directCoverPath) {
+        const verifiedCover = await verifyUploadedPublishingObject({
+          bucket: storageBuckets.publishedArticleFiles,
+          objectPath: directCoverPath,
+          expectedJournalSlug: journal.slug,
+          category: "cover",
         });
-
-      if (!coverErr) {
-        coverObjectPath = path;
+        coverObjectPath = directCoverPath;
         const { data } = supabase.storage
           .from(storageBuckets.publishedArticleFiles)
-          .getPublicUrl(path);
+          .getPublicUrl(directCoverPath);
         coverImageUrl = data.publicUrl;
         coverFileData = {
           bucket: storageBuckets.publishedArticleFiles,
-          objectPath: path,
-          originalFileName: coverFile.name,
-          mimeType: coverFile.type || "image/jpeg",
-          sizeBytes: coverFile.size,
+          objectPath: directCoverPath,
+          originalFileName:
+            directCoverFileName ||
+            directCoverPath.split("/").pop() ||
+            "cover.jpg",
+          mimeType: directCoverMimeType || verifiedCover.mimeType,
+          sizeBytes: verifiedCover.sizeBytes,
         };
+      }
+    } else {
+      // 2. Fallback for backwards compatibility with multipart File uploads
+      const prodFile = formData.get("productionFile");
+      if (prodFile && prodFile instanceof File && prodFile.size > 0) {
+        const allowedMimes = [
+          "application/pdf",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/msword",
+        ];
+        const ext = prodFile.name.split(".").pop()?.toLowerCase();
+        if (
+          !allowedMimes.includes(prodFile.type) &&
+          ext !== "pdf" &&
+          ext !== "docx" &&
+          ext !== "doc"
+        ) {
+          return {
+            error:
+              "Upload a valid PDF or DOCX file as the Final Production File.",
+          };
+        }
+
+        const bytes = new Uint8Array(await prodFile.arrayBuffer());
+        const path = createArticleObjectPath({
+          journalId: journal.id,
+          articleId: submissionId,
+          originalFileName: prodFile.name,
+        });
+
+        const { error: uploadErr } = await supabase.storage
+          .from(storageBuckets.publishedArticleFiles)
+          .upload(path, bytes, {
+            contentType: prodFile.type || "application/octet-stream",
+            upsert: true,
+            duplex: "half",
+          });
+
+        if (uploadErr) {
+          throw new Error(
+            `Production file upload failed: ${uploadErr.message}`,
+          );
+        }
+
+        productionObjectPath = path;
+        productionFileData = {
+          bucket: storageBuckets.publishedArticleFiles,
+          objectPath: path,
+          originalFileName: prodFile.name,
+          mimeType: prodFile.type || "application/octet-stream",
+          sizeBytes: prodFile.size,
+        };
+      }
+
+      // Handle Cover File fallback
+      const coverFile = formData.get("coverImageFile");
+      if (coverFile && coverFile instanceof File && coverFile.size > 0) {
+        const bytes = new Uint8Array(await coverFile.arrayBuffer());
+        const path = createArticleObjectPath({
+          journalId: journal.id,
+          articleId: submissionId,
+          originalFileName: coverFile.name,
+        });
+
+        const { error: coverErr } = await supabase.storage
+          .from(storageBuckets.publishedArticleFiles)
+          .upload(path, bytes, {
+            contentType: coverFile.type || "image/jpeg",
+            upsert: true,
+            duplex: "half",
+          });
+
+        if (!coverErr) {
+          coverObjectPath = path;
+          const { data } = supabase.storage
+            .from(storageBuckets.publishedArticleFiles)
+            .getPublicUrl(path);
+          coverImageUrl = data.publicUrl;
+          coverFileData = {
+            bucket: storageBuckets.publishedArticleFiles,
+            objectPath: path,
+            originalFileName: coverFile.name,
+            mimeType: coverFile.type || "image/jpeg",
+            sizeBytes: coverFile.size,
+          };
+        }
       }
     }
 

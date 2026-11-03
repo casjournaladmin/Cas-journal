@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { updateArticleAction, type AdminArticleFormState } from "../../actions";
+import {
+  updateArticleAction,
+  requestLegacyPublishingUploadUrlAction,
+  type AdminArticleFormState,
+} from "../../actions";
+import { DirectStorageUploader } from "@/components/admin/direct-storage-uploader";
 
 export type ArticleAuthorData = {
   id?: string;
@@ -51,6 +56,18 @@ export function AdminArticleEditForm({
     updateArticleAction,
     initialState,
   );
+
+  const [manuscriptUploadState, setManuscriptUploadState] = useState({
+    isUploading: false,
+    isUploaded: false,
+    hasError: false,
+  });
+
+  const [coverUploadState, setCoverUploadState] = useState({
+    isUploading: false,
+    isUploaded: false,
+    hasError: false,
+  });
 
   const [authors, setAuthors] = useState<
     Array<{
@@ -363,35 +380,39 @@ export function AdminArticleEditForm({
 
       {/* File Replacement Inputs */}
       <div className="grid gap-6 sm:grid-cols-2">
-        <label className="block text-xs font-semibold text-[color:var(--color-foreground)]">
-          Replace Manuscript PDF (Optional)
-          <input
-            name="manuscriptPdf"
-            type="file"
-            accept=".pdf,application/pdf"
-            className="app-field mt-1.5"
-          />
-          <span className="mt-1 block text-[11px] font-normal text-[color:var(--color-muted)]">
-            {article.existingPdfFileName
-              ? `Current PDF: ${article.existingPdfFileName} (leave empty to keep)`
-              : "Upload a replacement PDF file"}
-          </span>
-        </label>
+        <DirectStorageUploader
+          journalSlug={article.issue.volume.journal.slug}
+          category="manuscript"
+          namePrefix="manuscript"
+          label="Replace Manuscript PDF (Optional)"
+          accept=".pdf,application/pdf"
+          required={false}
+          initialFileName={article.existingPdfFileName}
+          helpText={
+            article.existingPdfFileName
+              ? `Current file: ${article.existingPdfFileName} (leave untouched to keep)`
+              : "Upload replacement PDF directly to secure storage."
+          }
+          requestUploadUrlAction={requestLegacyPublishingUploadUrlAction}
+          onUploadStateChange={setManuscriptUploadState}
+        />
 
-        <label className="block text-xs font-semibold text-[color:var(--color-foreground)]">
-          Replace Cover Image (Optional)
-          <input
-            name="coverImage"
-            type="file"
-            accept="image/*"
-            className="app-field mt-1.5"
-          />
-          <span className="mt-1 block text-[11px] font-normal text-[color:var(--color-muted)]">
-            {article.coverImageUrl
+        <DirectStorageUploader
+          journalSlug={article.issue.volume.journal.slug}
+          category="cover"
+          namePrefix="coverImage"
+          label="Replace Cover Image (Optional)"
+          accept="image/jpeg,image/png,image/webp,.pdf,application/pdf"
+          required={false}
+          initialFileName={article.coverImageUrl ? "Current Cover Image" : null}
+          helpText={
+            article.coverImageUrl
               ? "Current cover set. Upload new file to replace."
-              : "Upload an optional cover image"}
-          </span>
-        </label>
+              : "Upload replacement cover image."
+          }
+          requestUploadUrlAction={requestLegacyPublishingUploadUrlAction}
+          onUploadStateChange={setCoverUploadState}
+        />
       </div>
 
       {/* Submit / Cancel Actions */}
@@ -404,11 +425,18 @@ export function AdminArticleEditForm({
         </Link>
         <button
           type="submit"
-          disabled={pending}
+          disabled={
+            pending ||
+            manuscriptUploadState.isUploading ||
+            coverUploadState.isUploading
+          }
           className="button-primary inline-flex items-center gap-2"
         >
           {pending ? (
             <span>Saving Changes...</span>
+          ) : manuscriptUploadState.isUploading ||
+            coverUploadState.isUploading ? (
+            <span>Uploading to Storage...</span>
           ) : (
             <span>Save Article Changes</span>
           )}

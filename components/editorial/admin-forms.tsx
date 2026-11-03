@@ -12,8 +12,10 @@ import {
   markRevisionReceivedAction,
   passAssessmentAction,
   publishArticleAction,
+  requestSubmissionPublishingUploadUrlAction,
   skipToPublishingAction,
 } from "@/app/admin/[journalSlug]/submissions/actions";
+import { DirectStorageUploader } from "@/components/admin/direct-storage-uploader";
 import type { ActionState } from "@/lib/submissions/types";
 
 const initialState: ActionState = {};
@@ -37,13 +39,15 @@ function Message({ state }: { state: ActionState }) {
 function SubmitButton({
   children,
   pendingLabel = "Saving…",
+  disabled = false,
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
-    <button className="button-primary" disabled={pending}>
+    <button className="button-primary" disabled={pending || disabled}>
       {pending ? pendingLabel : children}
     </button>
   );
@@ -347,27 +351,44 @@ export function PublishArticleForm({
   const bound = publishArticleAction.bind(null, journalSlug, submissionId);
   const [state, action] = useActionState(bound, initialState);
 
+  const [productionUploadState, setProductionUploadState] = useState({
+    isUploading: false,
+    isUploaded: false,
+    hasError: false,
+  });
+
+  const [coverUploadState, setCoverUploadState] = useState({
+    isUploading: false,
+    isUploaded: false,
+    hasError: false,
+  });
+
   return (
     <form action={action} className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-xs font-semibold">
-          Final Production File (PDF / DOCX)
-          <input
-            name="productionFile"
-            type="file"
-            accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
-            className="app-field mt-1.5 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-[color:var(--color-surface-strong)] file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-[color:var(--color-accent)]"
-          />
-        </label>
-        <label className="block text-xs font-semibold">
-          Article Cover Page (Optional)
-          <input
-            name="coverImageFile"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,.pdf,application/pdf"
-            className="app-field mt-1.5 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-[color:var(--color-surface-strong)] file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-[color:var(--color-accent)]"
-          />
-        </label>
+        <DirectStorageUploader
+          journalSlug={journalSlug}
+          category="manuscript"
+          namePrefix="production"
+          label="Final Production File (PDF / DOCX)"
+          accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+          required={false}
+          helpText="Upload camera-ready article directly to storage."
+          requestUploadUrlAction={requestSubmissionPublishingUploadUrlAction}
+          onUploadStateChange={setProductionUploadState}
+        />
+
+        <DirectStorageUploader
+          journalSlug={journalSlug}
+          category="cover"
+          namePrefix="cover"
+          label="Article Cover Page (Optional)"
+          accept="image/png,image/jpeg,image/webp,.pdf,application/pdf"
+          required={false}
+          helpText="Optional cover page image."
+          requestUploadUrlAction={requestSubmissionPublishingUploadUrlAction}
+          onUploadStateChange={setCoverUploadState}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
@@ -422,7 +443,16 @@ export function PublishArticleForm({
         </label>
       </div>
 
-      <SubmitButton pendingLabel="Publishing…">Publish Article</SubmitButton>
+      <SubmitButton
+        pendingLabel="Publishing…"
+        disabled={
+          productionUploadState.isUploading || coverUploadState.isUploading
+        }
+      >
+        {productionUploadState.isUploading || coverUploadState.isUploading
+          ? "Uploading to Storage…"
+          : "Publish Article"}
+      </SubmitButton>
       <Message state={state} />
     </form>
   );

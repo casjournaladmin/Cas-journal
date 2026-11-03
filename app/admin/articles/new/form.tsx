@@ -4,8 +4,10 @@ import { useActionState, useState } from "react";
 
 import {
   createDirectLegacyArticleAction,
+  requestLegacyPublishingUploadUrlAction,
   type AdminArticleFormState,
 } from "../actions";
+import { DirectStorageUploader } from "@/components/admin/direct-storage-uploader";
 
 type JournalOption = {
   id: string;
@@ -25,6 +27,22 @@ export function AdminLegacyUploadForm({
     createDirectLegacyArticleAction,
     initialState,
   );
+
+  const [selectedJournalSlug, setSelectedJournalSlug] = useState<string>(
+    journals.length === 1 ? journals[0].slug : "",
+  );
+
+  const [manuscriptUploadState, setManuscriptUploadState] = useState({
+    isUploading: false,
+    isUploaded: false,
+    hasError: false,
+  });
+
+  const [coverUploadState, setCoverUploadState] = useState({
+    isUploading: false,
+    isUploaded: false,
+    hasError: false,
+  });
 
   const [authors, setAuthors] = useState<
     Array<{
@@ -94,7 +112,8 @@ export function AdminLegacyUploadForm({
             name="journalSlug"
             className="app-field mt-1.5"
             required
-            defaultValue=""
+            value={selectedJournalSlug}
+            onChange={(e) => setSelectedJournalSlug(e.target.value)}
           >
             <option value="" disabled>
               Select Journal…
@@ -321,36 +340,46 @@ export function AdminLegacyUploadForm({
       </label>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <label className="block text-xs font-semibold text-[color:var(--color-foreground)]">
-          Upload Manuscript PDF (Required) *
-          <input
-            name="manuscriptPdf"
-            type="file"
-            accept=".pdf,application/pdf"
-            className="app-field mt-1.5"
-            required
-          />
-        </label>
+        <DirectStorageUploader
+          journalSlug={selectedJournalSlug}
+          category="manuscript"
+          namePrefix="manuscript"
+          label="Upload Manuscript PDF"
+          accept=".pdf,application/pdf"
+          required
+          helpText="Upload final camera-ready PDF directly to secure storage."
+          requestUploadUrlAction={requestLegacyPublishingUploadUrlAction}
+          onUploadStateChange={setManuscriptUploadState}
+        />
 
-        <label className="block text-xs font-semibold text-[color:var(--color-foreground)]">
-          Upload Article Cover Image (Optional)
-          <input
-            name="coverImage"
-            type="file"
-            accept="image/*"
-            className="app-field mt-1.5"
-          />
-        </label>
+        <DirectStorageUploader
+          journalSlug={selectedJournalSlug}
+          category="cover"
+          namePrefix="coverImage"
+          label="Upload Article Cover Image (Optional)"
+          accept="image/jpeg,image/png,image/webp,.pdf,application/pdf"
+          helpText="Optional cover page or article title card."
+          requestUploadUrlAction={requestLegacyPublishingUploadUrlAction}
+          onUploadStateChange={setCoverUploadState}
+        />
       </div>
 
       <div className="flex items-center justify-end gap-3 border-t border-[color:var(--color-border)] pt-6">
         <button
           type="submit"
-          disabled={pending}
+          disabled={
+            pending ||
+            manuscriptUploadState.isUploading ||
+            coverUploadState.isUploading ||
+            !manuscriptUploadState.isUploaded
+          }
           className="button-primary inline-flex items-center gap-2"
         >
           {pending ? (
             <span>Publishing Manuscript...</span>
+          ) : manuscriptUploadState.isUploading ||
+            coverUploadState.isUploading ? (
+            <span>Uploading to Storage...</span>
           ) : (
             <span>Publish Manuscript to Archives</span>
           )}
