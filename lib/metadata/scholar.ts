@@ -90,6 +90,12 @@ export interface ScholarArticleInput {
  * 4. citation_issn is emitted when registered for the journal.
  * 5. citation_firstpage and citation_lastpage are discrete values.
  */
+export function formatIsoIssn(raw?: string | null): string | null {
+  if (!raw) return null;
+  const match = raw.match(/\b\d{4}-\d{3}[\dX]\b/i);
+  return match ? match[0].toUpperCase() : null;
+}
+
 export function buildGoogleScholarMetadata(
   article: ScholarArticleInput,
   baseUrl: string,
@@ -143,8 +149,9 @@ export function buildGoogleScholarMetadata(
     otherMeta.citation_author = authorNames;
   }
 
-  const issn =
+  const rawIssn =
     journalMeta?.issnPrint || journalMeta?.issnOnline || journalMeta?.issnL;
+  const issn = formatIsoIssn(rawIssn) || rawIssn;
   if (issn) {
     otherMeta.citation_issn = issn;
   }

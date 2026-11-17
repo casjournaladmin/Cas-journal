@@ -71,7 +71,13 @@ export async function createDirectArticleSubmission(input: {
   abstract: string;
   keywords: string[];
   authors: SubmissionAuthorInput[];
-  file: File;
+  file?: File;
+  uploadedFile?: {
+    objectPath: string;
+    originalFileName: string;
+    sizeBytes: number;
+    mimeType: string;
+  };
 }) {
   if (process.env.NODE_ENV !== "production") {
     try {
@@ -169,44 +175,86 @@ export async function createDirectArticleSubmission(input: {
     );
   }
 
-  const fileError = validateInitialManuscriptFile(input.file);
-  if (fileError) {
-    throw new DirectSubmissionError(fileError, { file: fileError });
-  }
-
-  const extension = input.file.name.split(".").pop()?.toLowerCase() ?? "";
-  const signature = new Uint8Array(await input.file.slice(0, 8).arrayBuffer());
-  if (!matchesWordUploadSignature(input.file.type, signature, extension)) {
-    throw new DirectSubmissionError(
-      "Uploaded file does not match a valid Microsoft Word document.",
-      { file: "Invalid file format." },
-    );
-  }
-
-  // Upload manuscript to Supabase Storage
   const bucket = storageBuckets.privateAcademicFiles;
-  const tempSubmissionId = randomUUID();
-  const objectPath = createSubmissionObjectPath({
-    journalId: journal.id,
-    submissionId: tempSubmissionId,
-    originalFileName: input.file.name,
-  });
+  let finalObjectPath = "";
+  let finalOriginalFileName = "";
+  let finalMimeType = "";
+  let finalSizeBytes = 0;
 
-  const supabase = createAdminClient();
-  const fileArrayBuffer = await input.file.arrayBuffer();
-  const fileBuffer = Buffer.from(fileArrayBuffer);
+  if (input.uploadedFile) {
+    const { objectPath, originalFileName, sizeBytes, mimeType } =
+      input.uploadedFile;
+    if (!objectPath || !objectPath.startsWith(`journal/${journal.id}/`)) {
+      throw new DirectSubmissionError("Invalid manuscript storage path.");
+    }
+    const ext = originalFileName.split(".").pop()?.toLowerCase() ?? "";
+    if (!["docx", "doc", "pdf"].includes(ext)) {
+      throw new DirectSubmissionError(
+        "Only Word (.docx, .doc) or PDF manuscripts are supported.",
+      );
+    }
+    const supabase = createAdminClient();
+    const pathParts = objectPath.split("/");
+    const fileName = pathParts.pop() || "";
+    const folder = pathParts.join("/");
+    const { data: listData, error: listError } = await supabase.storage
+      .from(bucket)
+      .list(folder, { search: fileName });
 
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(objectPath, fileBuffer, {
-      contentType: input.file.type || "application/octet-stream",
-      upsert: false,
-    });
+    if (listError || !listData || !listData.some((f) => f.name === fileName)) {
+      throw new DirectSubmissionError(
+        "Uploaded manuscript was not found in storage. Please re-select the file.",
+      );
+    }
+    finalObjectPath = objectPath;
+    finalOriginalFileName = originalFileName;
+    finalMimeType = mimeType || "application/octet-stream";
+    finalSizeBytes = sizeBytes;
+  } else if (input.file) {
+    const fileError = validateInitialManuscriptFile(input.file);
+    if (fileError) {
+      throw new DirectSubmissionError(fileError, { file: fileError });
+    }
 
-  if (uploadError) {
-    throw new DirectSubmissionError(
-      `Private file upload failed: ${uploadError.message}. Please try again.`,
+    const extension = input.file.name.split(".").pop()?.toLowerCase() ?? "";
+    const signature = new Uint8Array(
+      await input.file.slice(0, 8).arrayBuffer(),
     );
+    if (!matchesWordUploadSignature(input.file.type, signature, extension)) {
+      throw new DirectSubmissionError(
+        "Uploaded file does not match a valid Microsoft Word document.",
+        { file: "Invalid file format." },
+      );
+    }
+
+    const tempSubmissionId = randomUUID();
+    finalObjectPath = createSubmissionObjectPath({
+      journalId: journal.id,
+      submissionId: tempSubmissionId,
+      originalFileName: input.file.name,
+    });
+    finalOriginalFileName = input.file.name;
+    finalMimeType = input.file.type || "application/octet-stream";
+    finalSizeBytes = input.file.size;
+
+    const supabase = createAdminClient();
+    const fileArrayBuffer = await input.file.arrayBuffer();
+    const fileBuffer = Buffer.from(fileArrayBuffer);
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(finalObjectPath, fileBuffer, {
+        contentType: finalMimeType,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new DirectSubmissionError(
+        `Private file upload failed: ${uploadError.message}. Please try again.`,
+      );
+    }
+  } else {
+    throw new DirectSubmissionError("Please provide a manuscript document.");
   }
 
   const now = new Date();
@@ -216,10 +264,10 @@ export async function createDirectArticleSubmission(input: {
     const storedFile = await prisma.storedFile.create({
       data: {
         bucket,
-        objectPath,
-        originalFileName: input.file.name,
-        mimeType: input.file.type || "application/octet-stream",
-        sizeBytes: BigInt(input.file.size),
+        objectPath: finalObjectPath,
+        originalFileName: finalOriginalFileName,
+        mimeType: finalMimeType,
+        sizeBytes: BigInt(finalSizeBytes),
         uploaderId: author.id,
       },
       select: { id: true },
@@ -306,8 +354,15 @@ export async function createDirectArticleSubmission(input: {
 
     return { submissionId: submission.id };
   } catch (err: unknown) {
-    // Cleanup uploaded storage file if DB write fails
-    await supabase.storage.from(bucket).remove([objectPath]);
+    // Cleanup uploaded storage file if DB write fails on raw file upload
+    if (finalObjectPath && input.file) {
+      try {
+        const supabase = createAdminClient();
+        await supabase.storage.from(bucket).remove([finalObjectPath]);
+      } catch {
+        // Ignore cleanup failure
+      }
+    }
     if (err instanceof DirectSubmissionError) throw err;
     const message =
       err instanceof Error

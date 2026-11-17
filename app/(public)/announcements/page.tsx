@@ -32,6 +32,9 @@ export const metadata: Metadata = {
   title: "Announcements & Call for Papers | CASJOURNALS",
   description:
     "Official calls for papers, special issue deadlines, and publishing updates across CASJOURNALS.",
+  alternates: {
+    canonical: "/announcements",
+  },
 };
 
 export default async function AnnouncementsPage({

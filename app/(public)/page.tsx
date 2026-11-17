@@ -1,7 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
-import { activeJournalsConfig } from "@/lib/config/site";
+import { activeJournalsConfig, siteConfig } from "@/lib/config/site";
 import { prisma } from "@/lib/db/prisma";
 import {
   CANONICAL_JOURNAL_ORDER,
@@ -9,7 +10,15 @@ import {
 } from "@/lib/editorial/editorial-board-data";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: `${siteConfig.name} — Open Access Academic Publishing Platform`,
+  description: siteConfig.description,
+  alternates: {
+    canonical: "/",
+  },
+};
+
+export const revalidate = 3600;
 
 const JOURNAL_CARD_META: Record<
   string,

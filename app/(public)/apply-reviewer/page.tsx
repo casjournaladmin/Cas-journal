@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Become a Reviewer | CAS Journals",
   description:
     "Application portal for qualified scholars to serve as independent peer reviewers across CAS Journals.",
+  alternates: {
+    canonical: "/apply-reviewer",
+  },
 };
 
 /**

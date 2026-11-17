@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -400,6 +401,96 @@ export async function submitAuthorCorrectionAction(
   }
 }
 
+export async function requestAuthorSubmissionUploadUrlAction(input: {
+  journalSlug: string;
+  originalFileName: string;
+  sizeBytes: number;
+  mimeType?: string;
+}): Promise<{
+  success?: boolean;
+  data?: {
+    signedUrl: string;
+    token: string;
+    objectPath: string;
+    bucket: string;
+    maxSizeBytes: number;
+  };
+  error?: string;
+}> {
+  try {
+    await requireGlobalRole("AUTHOR");
+    const journalSlug = input.journalSlug.trim();
+    if (!journalSlug) {
+      return { success: false, error: "Please select a target journal." };
+    }
+
+    const journal = await prisma.journal.findFirst({
+      where: {
+        slug: journalSlug,
+        isActive: true,
+        OR: [{ departmentId: null }, { department: { isActive: true } }],
+      },
+      select: { id: true, slug: true },
+    });
+
+    if (!journal) {
+      return { success: false, error: "Selected journal is unavailable." };
+    }
+
+    const maxSizeBytes = 35 * 1024 * 1024; // 35 MB
+    if (input.sizeBytes <= 0) {
+      return { success: false, error: "File is empty." };
+    }
+    if (input.sizeBytes > maxSizeBytes) {
+      return {
+        success: false,
+        error:
+          "File exceeds maximum permitted size of 35 MB. Please compress or optimize the file.",
+      };
+    }
+
+    const ext = input.originalFileName.split(".").pop()?.toLowerCase() || "";
+    if (!["docx", "doc", "pdf"].includes(ext)) {
+      return {
+        success: false,
+        error: "Only Word (.docx, .doc) or PDF documents are permitted.",
+      };
+    }
+
+    const tempSubmissionId = randomUUID();
+    const objectPath = `journal/${journal.id}/submission/${tempSubmissionId}/${randomUUID()}.${ext}`;
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.storage
+      .from(storageBuckets.privateAcademicFiles)
+      .createSignedUploadUrl(objectPath);
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: error?.message || "Failed to create upload authorization.",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        signedUrl: data.signedUrl,
+        token: data.token,
+        objectPath,
+        bucket: storageBuckets.privateAcademicFiles,
+        maxSizeBytes,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to authorize upload.",
+    };
+  }
+}
+
 export async function submitDirectArticleAction(
   _previousState: ActionState,
   formData: FormData,
@@ -410,6 +501,16 @@ export async function submitDirectArticleAction(
   const abstract = String(formData.get("abstract") ?? "").trim();
   const keywordsStr = String(formData.get("keywords") ?? "").trim();
   const manuscriptFile = formData.get("manuscriptFile") as File | null;
+  const manuscriptObjectPath = String(
+    formData.get("manuscriptObjectPath") ?? "",
+  ).trim();
+  const manuscriptOriginalFileName = String(
+    formData.get("manuscriptOriginalFileName") ?? "",
+  ).trim();
+  const manuscriptSizeBytes = Number(formData.get("manuscriptSizeBytes") ?? 0);
+  const manuscriptMimeType = String(
+    formData.get("manuscriptMimeType") ?? "",
+  ).trim();
 
   let authors: SubmissionAuthorInput[] = [];
   try {
@@ -421,7 +522,10 @@ export async function submitDirectArticleAction(
     return { error: "The author details could not be parsed." };
   }
 
-  if (!manuscriptFile || manuscriptFile.size === 0) {
+  const hasDirectUpload = Boolean(manuscriptObjectPath);
+  const hasMultipartFile = Boolean(manuscriptFile && manuscriptFile.size > 0);
+
+  if (!hasDirectUpload && !hasMultipartFile) {
     return {
       error: "Please choose a manuscript file (.docx or .pdf) to upload.",
     };
@@ -436,7 +540,20 @@ export async function submitDirectArticleAction(
       abstract,
       keywords: normalizeKeywords(keywordsStr),
       authors,
-      file: manuscriptFile,
+      ...(hasDirectUpload
+        ? {
+            uploadedFile: {
+              objectPath: manuscriptObjectPath,
+              originalFileName: manuscriptOriginalFileName || "manuscript.docx",
+              sizeBytes: manuscriptSizeBytes,
+              mimeType:
+                manuscriptMimeType ||
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            },
+          }
+        : {
+            file: manuscriptFile as File,
+          }),
     });
     submissionId = result.submissionId;
   } catch (error) {

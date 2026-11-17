@@ -243,3 +243,36 @@ test("validatePublishingStorageObjectPath decomposes valid object paths into fol
   assert.equal(result.folder, "published-legacy/cjmr");
   assert.equal(result.fileName, "12345_paper.pdf");
 });
+
+test("evaluateIfRange and parseRangeHeader comply with RFC 9110", async () => {
+  const { evaluateIfRange, parseRangeHeader } =
+    await import("@/lib/editorial/article-pdf-stream");
+
+  // ETag match
+  assert.equal(evaluateIfRange('"etag-123"', '"etag-123"'), true);
+  assert.equal(evaluateIfRange('W/"etag-123"', '"etag-123"'), true);
+  assert.equal(evaluateIfRange('"other"', '"etag-123"'), false);
+
+  // Range parser
+  const parsed = parseRangeHeader("bytes=0-499", 1000);
+  assert.deepEqual(parsed, { start: 0, end: 499 });
+
+  const suffix = parseRangeHeader("bytes=-500", 1000);
+  assert.deepEqual(suffix, { start: 500, end: 999 });
+
+  const unsatisfiable = parseRangeHeader("bytes=1500-2000", 1000);
+  assert.equal(unsatisfiable, "unsatisfiable");
+});
+
+test("formatIsoIssn extracts strict ISO 3297 8-digit ISSN", async () => {
+  const { formatIsoIssn } = await import("@/lib/metadata/scholar");
+
+  assert.equal(formatIsoIssn("3093-0650"), "3093-0650");
+  assert.equal(
+    formatIsoIssn("3093-0650 (Online) / E-3093-0650 (Online)"),
+    "3093-0650",
+  );
+  assert.equal(formatIsoIssn("ISSN: 1595-9287 (Online)"), "1595-9287");
+  assert.equal(formatIsoIssn("2141-209X"), "2141-209X");
+  assert.equal(formatIsoIssn("invalid-string"), null);
+});

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { PublicSearchBar } from "@/components/public-search-bar";
@@ -13,7 +14,16 @@ import {
   resolveCanonicalJournalSlug,
 } from "@/lib/editorial/editorial-board-data";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Journal Archives — CAS Journals",
+  description:
+    "Complete academic archives, published volumes, issues, and peer-reviewed scholarly articles across CAS Journals.",
+  alternates: {
+    canonical: "/archives",
+  },
+};
+
+export const revalidate = 3600;
 
 type CatalogJournalItem = {
   id: string;

@@ -13,7 +13,7 @@ import { getBaseUrl } from "@/lib/config/site";
 
 import { buildGoogleScholarMetadata } from "@/lib/metadata/scholar";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 type ArticleDetailAuthor = {
   id: string;

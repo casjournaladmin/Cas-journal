@@ -17,7 +17,7 @@ import {
 import { getJournalEditorialBoard } from "@/lib/editorial/editorial-board-store";
 import { isJournalActivated } from "@/lib/editorial/journal-activation";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 const JOURNAL_HERO_MAP: Record<string, string> = {
   existentia: "/assets/images/journal-arts-humanities.jpg",

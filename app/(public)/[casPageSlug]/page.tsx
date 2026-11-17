@@ -39,6 +39,9 @@ export async function generateMetadata({
   return {
     title: `${page.title.replace(/&amp;/g, "&")} | CAS Journals`,
     description: page.description,
+    alternates: {
+      canonical: `/${casPageSlug}`,
+    },
   };
 }
 

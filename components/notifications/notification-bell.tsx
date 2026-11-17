@@ -7,7 +7,7 @@ import { NotificationDrawer } from "./notification-drawer";
 
 let cachedUnreadCount: number | null = null;
 let lastUnreadFetchTime = 0;
-const UNREAD_THROTTLE_MS = 30000;
+const UNREAD_THROTTLE_MS = 60000;
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState<number>(

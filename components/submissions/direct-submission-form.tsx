@@ -1,7 +1,10 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { submitDirectArticleAction } from "@/app/author/submissions/actions";
+import {
+  requestAuthorSubmissionUploadUrlAction,
+  submitDirectArticleAction,
+} from "@/app/author/submissions/actions";
 import { SubmissionConfirmationDialog } from "@/components/submissions/submission-confirmation-dialog";
 import type {
   ActionState,
@@ -72,7 +75,145 @@ export function DirectArticleSubmissionForm({
   ]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string>("");
+  const [uploadedData, setUploadedData] = useState<{
+    objectPath: string;
+    originalFileName: string;
+    sizeBytes: number;
+    mimeType: string;
+  } | null>(null);
+
+  const activeXhrRef = useRef<XMLHttpRequest | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const startDirectUpload = async (file: File) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError("");
+    setUploadedData(null);
+
+    try {
+      const authResult = await requestAuthorSubmissionUploadUrlAction({
+        journalSlug: selectedJournalSlug,
+        originalFileName: file.name,
+        sizeBytes: file.size,
+        mimeType:
+          file.type ||
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      if (!authResult.success || !authResult.data) {
+        throw new Error(authResult.error || "Upload authorization failed.");
+      }
+
+      const { signedUrl, objectPath } = authResult.data;
+
+      const xhr = new XMLHttpRequest();
+      activeXhrRef.current = xhr;
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.min(
+            99,
+            Math.round((event.loaded / event.total) * 100),
+          );
+          setUploadProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        activeXhrRef.current = null;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100);
+          setIsUploading(false);
+          setUploadedData({
+            objectPath,
+            originalFileName: file.name,
+            sizeBytes: file.size,
+            mimeType:
+              file.type ||
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          });
+        } else {
+          setIsUploading(false);
+          setUploadError(
+            `Storage upload failed (HTTP ${xhr.status}). Click to retry.`,
+          );
+        }
+      };
+
+      xhr.onerror = () => {
+        activeXhrRef.current = null;
+        setIsUploading(false);
+        setUploadError(
+          "Network connection interrupted during upload. Please check your internet and click to retry.",
+        );
+      };
+
+      xhr.onabort = () => {
+        activeXhrRef.current = null;
+        setIsUploading(false);
+      };
+
+      xhr.open("PUT", signedUrl, true);
+      xhr.setRequestHeader(
+        "Content-Type",
+        file.type || "application/octet-stream",
+      );
+      xhr.send(file);
+    } catch (err: unknown) {
+      setIsUploading(false);
+      setUploadError(
+        err instanceof Error ? err.message : "Failed to initiate upload.",
+      );
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (activeXhrRef.current) {
+      activeXhrRef.current.abort();
+      activeXhrRef.current = null;
+    }
+
+    setSelectedFile(file);
+    setUploadError("");
+    setUploadedData(null);
+
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!["docx", "doc"].includes(ext)) {
+      setUploadError(
+        "Only Word documents (.docx) are permitted. PDF is not accepted.",
+      );
+      return;
+    }
+
+    if (file.size > 35 * 1024 * 1024) {
+      setUploadError("File exceeds maximum permitted size of 35 MB.");
+      return;
+    }
+
+    await startDirectUpload(file);
+  };
+
+  const handleResetFile = () => {
+    if (activeXhrRef.current) {
+      activeXhrRef.current.abort();
+      activeXhrRef.current = null;
+    }
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setIsUploading(false);
+    setUploadError("");
+    setUploadedData(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const addAuthor = () => {
     setAuthors((prev) => [
@@ -127,10 +268,11 @@ export function DirectArticleSubmissionForm({
         e.currentTarget.reportValidity();
         return;
       }
-      if (!selectedFile) {
-        if (fileInputRef.current) {
-          fileInputRef.current.reportValidity();
-        }
+      if (!uploadedData && !selectedFile) {
+        setUploadError("Please upload a manuscript document first.");
+        return;
+      }
+      if (isUploading) {
         return;
       }
       setIsConfirmOpen(true);
@@ -168,6 +310,31 @@ export function DirectArticleSubmissionForm({
       ) : null}
 
       <input type="hidden" name="authors" value={JSON.stringify(authors)} />
+
+      {uploadedData ? (
+        <>
+          <input
+            type="hidden"
+            name="manuscriptObjectPath"
+            value={uploadedData.objectPath}
+          />
+          <input
+            type="hidden"
+            name="manuscriptOriginalFileName"
+            value={uploadedData.originalFileName}
+          />
+          <input
+            type="hidden"
+            name="manuscriptSizeBytes"
+            value={uploadedData.sizeBytes}
+          />
+          <input
+            type="hidden"
+            name="manuscriptMimeType"
+            value={uploadedData.mimeType}
+          />
+        </>
+      ) : null}
 
       {/* Target Journal */}
       <section className="space-y-2">
@@ -389,38 +556,73 @@ export function DirectArticleSubmissionForm({
           <input
             ref={fileInputRef}
             type="file"
-            name="manuscriptFile"
+            name={uploadedData ? undefined : "manuscriptFile"}
             accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
             className="sr-only"
-            required
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              setSelectedFile(file || null);
-            }}
+            disabled={isUploading}
+            onChange={handleFileSelect}
           />
 
-          {selectedFile ? (
+          {isUploading ? (
+            <div className="space-y-2 p-3 text-left">
+              <div className="flex items-center justify-between text-xs font-medium text-[color:var(--color-accent)]">
+                <span className="flex items-center gap-2">
+                  <span className="inline-block size-3 animate-spin rounded-full border-2 border-[color:var(--color-accent)] border-t-transparent" />
+                  Uploading directly to storage: {selectedFile?.name}
+                </span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-surface-raised)]">
+                <div
+                  className="h-full bg-[color:var(--color-accent)] transition-all duration-150 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : uploadedData ? (
             <div className="flex items-center justify-between gap-3 rounded-md bg-[color:var(--color-surface-raised)] p-3 text-left">
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="text-xl">📄</span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-bold text-emerald-400">
+                  ✓
+                </span>
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-[color:var(--color-foreground)]">
-                    {selectedFile.name}
+                    {uploadedData.originalFileName}
                   </p>
-                  <p className="text-[10px] text-[color:var(--color-subtle)]">
-                    {Math.round(selectedFile.size / 1024)} KB
+                  <p className="text-[10px] font-medium text-emerald-400">
+                    Uploaded securely (
+                    {(uploadedData.sizeBytes / (1024 * 1024)).toFixed(2)} MB)
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
+                onClick={handleResetFile}
                 className="shrink-0 text-xs font-semibold text-[color:var(--color-danger)] hover:underline"
               >
                 ✕ Change
+              </button>
+            </div>
+          ) : uploadError ? (
+            <div className="space-y-2 p-3 text-left">
+              <div className="flex items-center justify-between gap-2 rounded border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-400">
+                <span>{uploadError}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    selectedFile && startDirectUpload(selectedFile)
+                  }
+                  className="shrink-0 rounded bg-red-500/20 px-2 py-0.5 font-semibold text-red-300 hover:bg-red-500/30"
+                >
+                  Retry
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleResetFile}
+                className="text-xs text-[color:var(--color-muted)] hover:underline"
+              >
+                Choose a different file
               </button>
             </div>
           ) : (
@@ -430,8 +632,8 @@ export function DirectArticleSubmissionForm({
                   Upload Microsoft Word manuscript (.docx)
                 </p>
                 <p className="text-[11px] text-[color:var(--color-muted)]">
-                  Accepted format: Microsoft Word (.docx). PDF is not accepted.
-                  Max size 20 MB
+                  Accepted format: Microsoft Word (.docx). Direct signed upload
+                  up to 35 MB.
                 </p>
               </div>
               <button
@@ -455,7 +657,9 @@ export function DirectArticleSubmissionForm({
         </p>
         <button
           type="submit"
-          disabled={isPending || !selectedFile}
+          disabled={
+            isPending || isUploading || (!uploadedData && !selectedFile)
+          }
           className="button-primary w-full justify-center py-3 text-sm font-semibold disabled:opacity-50"
         >
           {isPending ? (
@@ -481,6 +685,8 @@ export function DirectArticleSubmissionForm({
               </svg>
               <span>Submitting Manuscript to Journal…</span>
             </span>
+          ) : isUploading ? (
+            <span>Uploading to Storage ({uploadProgress}%)…</span>
           ) : (
             "Submit Manuscript to Editorial Secretariat"
           )}

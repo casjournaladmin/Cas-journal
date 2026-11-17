@@ -12,7 +12,7 @@ import {
 } from "@/lib/editorial/editorial-board-data";
 import { getJournalEditorialBoard } from "@/lib/editorial/editorial-board-store";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 const JOURNAL_HERO_MAP: Record<string, string> = {
   existentia: "/assets/images/journal-arts-humanities.jpg",

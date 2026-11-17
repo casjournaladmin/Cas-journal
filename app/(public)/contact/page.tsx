@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "Contact Editorial Office | CASJOURNALS",
   description:
     "Direct communication channels, editorial helpdesk, and author support inquiry portal for CASJOURNALS.",
+  alternates: {
+    canonical: "/contact",
+  },
 };
 
 export default async function ContactPage({

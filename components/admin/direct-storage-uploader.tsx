@@ -60,6 +60,7 @@ export function DirectStorageUploader({
   } | null>(null);
 
   const activeXhrRef = useRef<XMLHttpRequest | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const maxSizeBytes =
     category === "manuscript"
@@ -199,6 +200,22 @@ export function DirectStorageUploader({
     }
   };
 
+  const handleReset = () => {
+    if (activeXhrRef.current) {
+      activeXhrRef.current.abort();
+      activeXhrRef.current = null;
+    }
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setIsUploading(false);
+    setIsUploaded(false);
+    setUploadError("");
+    setUploadedData(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const formattedFileSize = (bytes: number) => {
     if (bytes >= 1024 * 1024) {
       return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -244,6 +261,7 @@ export function DirectStorageUploader({
       <div className="relative rounded-[var(--radius-md)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <input
+            ref={fileInputRef}
             type="file"
             accept={accept}
             onChange={handleFileSelect}
@@ -257,13 +275,23 @@ export function DirectStorageUploader({
               <span>Uploading directly to storage ({uploadProgress}%)</span>
             </div>
           ) : isUploaded && (uploadedData || initialFileName) ? (
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
-              <span aria-hidden="true">✓</span>
-              <span>
-                {uploadedData
-                  ? `Uploaded: ${uploadedData.originalFileName} (${formattedFileSize(uploadedData.sizeBytes)})`
-                  : `Existing: ${initialFileName}`}
-              </span>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
+                <span aria-hidden="true">✓</span>
+                <span>
+                  {uploadedData
+                    ? `Uploaded: ${uploadedData.originalFileName} (${formattedFileSize(uploadedData.sizeBytes)})`
+                    : `Existing: ${initialFileName}`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="rounded border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-2 py-0.5 text-xs text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                title="Choose different file"
+              >
+                Change
+              </button>
             </div>
           ) : null}
         </div>

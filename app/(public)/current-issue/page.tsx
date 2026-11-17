@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { JournalNavigation } from "@/components/journal/journal-navigation";
 import { CrawlableArticleDirectory } from "@/components/public/crawlable-article-directory";
@@ -15,7 +16,16 @@ import {
 } from "@/lib/editorial/editorial-board-data";
 import { getJournalActivationMap } from "@/lib/editorial/journal-activation";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Current Issues — CAS Journals",
+  description:
+    "Explore the latest peer-reviewed volumes and newly published academic research papers.",
+  alternates: {
+    canonical: "/current-issue",
+  },
+};
+
+export const revalidate = 3600;
 
 export default async function CurrentIssuePage({
   searchParams,

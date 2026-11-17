@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: "Submit Your Paper | CASJOURNALS",
   description:
     "Online manuscript submission portal, preparation checklist, and transparent open-access publication policies for CASJOURNALS.",
+  alternates: {
+    canonical: "/submissions",
+  },
 };
 
 export default async function SubmissionsPage({

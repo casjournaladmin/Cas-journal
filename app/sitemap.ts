@@ -4,7 +4,7 @@ import { getBaseUrl } from "@/lib/config/site";
 import { CAS_STATIC_PAGES } from "@/lib/config/cas-pages";
 import { CANONICAL_JOURNAL_ORDER } from "@/lib/editorial/editorial-board-data";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl();

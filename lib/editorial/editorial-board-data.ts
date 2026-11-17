@@ -100,9 +100,9 @@ export const CANONICAL_JOURNAL_METADATA: Record<string, JournalMetadata> = {
     faculty: "Faculty of Humanities",
     institution: "Imo State University, Nigeria",
     frequency: "Six issues per year (rolling continuous publication)",
-    issnOnline: "1595-9287 (Online) / E-3093-0650 (Online)",
+    issnOnline: "1595-9287",
     issnPreservedNote:
-      "ISSN strings supplied: 1595-9287 and E-3093-0650 (retained as supplied pending editorial verification)",
+      "ISSN: 1595-9287 (Online) / Historical supplied note: E-3093-0650",
     aimsAndScope:
       "A platform for innovative, interdisciplinary scholarship bridging gaps between academic disciplines and fostering comprehensive discussions that advance knowledge across traditional boundaries. The journal publishes high-quality research integrating perspectives from different disciplines to address complex issues and contribute to holistic understanding.",
     subjectAreas: [
@@ -158,9 +158,9 @@ export const CANONICAL_JOURNAL_METADATA: Record<string, JournalMetadata> = {
     faculty: "Faculty of Humanities",
     institution: "Imo State University, Nigeria",
     frequency: "Six issues per year (rolling continuous publication)",
-    issnOnline: "3093-0650 (Online) / E-3093-0650 (Online)",
+    issnOnline: "3093-0650",
     issnPreservedNote:
-      "ISSN strings supplied: 3093-0650 and E-3093-0650 (retained as supplied pending editorial verification)",
+      "ISSN: 3093-0650 (Online) / Historical supplied note: E-3093-0650",
     aimsAndScope:
       "An online peer-reviewed journal publishing research at the intersection of humanities disciplines and real-world challenges and practices. Focuses on applied humanities and encourages innovative discussion and analysis connecting theoretical insights with practical applications.",
     subjectAreas: [
@@ -214,9 +214,9 @@ export const CANONICAL_JOURNAL_METADATA: Record<string, JournalMetadata> = {
     faculty: "Faculty of Humanities",
     institution: "Imo State University, Nigeria",
     frequency: "Four issues per year (March, June, September, December)",
-    issnOnline: "3093-0650 (Online) / E-3093-0650 (Online)",
+    issnOnline: "3093-0650",
     issnPreservedNote:
-      "ISSN strings supplied: 3093-0650 and E-3093-0650 (retained as supplied pending editorial verification)",
+      "ISSN: 3093-0650 (Online) / Historical supplied note: E-3093-0650",
     aimsAndScope:
       "A double-blind peer-reviewed online academic journal dedicated to advancing understanding of contemporary issues through rigorous scholarship. Welcomes original research and critical analyses from diverse fields that address pressing questions and offer innovative perspectives to stimulate intellectual engagement and societal impact.",
     subjectAreas: [
@@ -269,9 +269,9 @@ export const CANONICAL_JOURNAL_METADATA: Record<string, JournalMetadata> = {
     faculty: "Faculty of Humanities",
     institution: "Imo State University, Nigeria",
     frequency: "Four issues per year (March, June, September, December)",
-    issnOnline: "3092-9113 (Online) / E-3093-0650 (Online)",
+    issnOnline: "3092-9113",
     issnPreservedNote:
-      "ISSN strings supplied: 3092-9113 and E-3093-0650 (retained as supplied pending editorial verification)",
+      "ISSN: 3092-9113 (Online) / Historical supplied note: E-3093-0650",
     aimsAndScope:
       "An international, peer-reviewed, open-access journal dedicated to political research, social discussion, humanities, and related fields. Provides a platform for research that stimulates intellectual engagement and societal impact, connecting political thought with social and human questions shaping public life.",
     subjectAreas: [

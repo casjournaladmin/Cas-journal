@@ -88,16 +88,18 @@ export async function publishDirectLegacyArticle(
 
   const slug = `art-${baseSlug}-${Date.now().toString(36)}`;
 
-  const storedFile = await prisma.storedFile.create({
-    data: {
-      bucket: input.manuscriptFile.bucket,
-      objectPath: input.manuscriptFile.objectPath,
-      originalFileName: input.manuscriptFile.originalFileName,
-      mimeType: input.manuscriptFile.mimeType,
-      sizeBytes: BigInt(input.manuscriptFile.sizeBytes),
-      uploaderId: input.adminId,
-    },
-  });
+  // Validate DOI uniqueness upfront if provided
+  if (input.doi?.trim()) {
+    const existingDoi = await prisma.article.findFirst({
+      where: { doi: input.doi.trim() },
+      select: { id: true },
+    });
+    if (existingDoi) {
+      throw new Error(
+        `DOI "${input.doi.trim()}" is already assigned to another article.`,
+      );
+    }
+  }
 
   const occupiedArticles = await prisma.article.findMany({
     where: { issueId: issue.id },
@@ -123,50 +125,69 @@ export async function publishDirectLegacyArticle(
     finalOrder = maxOrder + 1;
   }
 
-  const article = await prisma.article.create({
+  const storedFile = await prisma.storedFile.create({
     data: {
-      issueId: issue.id,
-      title: input.title,
-      slug,
-      abstract: input.abstract,
-      keywords: input.keywords ?? [],
-      doi: input.doi || null,
-      pageStart: input.pageStart,
-      pageEnd: input.pageEnd,
-      issueOrder: finalOrder,
-      coverImageUrl: input.coverImageUrl,
-      isPublished: true,
-      publishedAt: input.publishedAt ?? new Date(),
+      bucket: input.manuscriptFile.bucket,
+      objectPath: input.manuscriptFile.objectPath,
+      originalFileName: input.manuscriptFile.originalFileName,
+      mimeType: input.manuscriptFile.mimeType,
+      sizeBytes: BigInt(input.manuscriptFile.sizeBytes),
+      uploaderId: input.adminId,
+    },
+  });
 
-      authors: {
-        create: input.authors.map((author, index) => ({
-          position: index + 1,
-          fullName: author.fullName,
-          email: author.email || null,
-          affiliation: author.affiliation || null,
-          orcid: author.orcid ? normalizeOrcid(author.orcid) : null,
-        })),
-      },
-      files: {
-        create: {
-          storedFileId: storedFile.id,
-          type: "PUBLISHED_PDF",
+  let article;
+  try {
+    article = await prisma.article.create({
+      data: {
+        issueId: issue.id,
+        title: input.title,
+        slug,
+        abstract: input.abstract,
+        keywords: input.keywords ?? [],
+        doi: input.doi || null,
+        pageStart: input.pageStart,
+        pageEnd: input.pageEnd,
+        issueOrder: finalOrder,
+        coverImageUrl: input.coverImageUrl,
+        isPublished: true,
+        publishedAt: input.publishedAt ?? new Date(),
+
+        authors: {
+          create: input.authors.map((author, index) => ({
+            position: index + 1,
+            fullName: author.fullName,
+            email: author.email || null,
+            affiliation: author.affiliation || null,
+            orcid: author.orcid ? normalizeOrcid(author.orcid) : null,
+          })),
+        },
+        files: {
+          create: {
+            storedFileId: storedFile.id,
+            type: "PUBLISHED_PDF",
+          },
         },
       },
-    },
-    include: {
-      authors: true,
-      issue: {
-        include: {
-          volume: {
-            include: {
-              journal: true,
+      include: {
+        authors: true,
+        issue: {
+          include: {
+            volume: {
+              include: {
+                journal: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+  } catch (createError) {
+    await prisma.storedFile
+      .delete({ where: { id: storedFile.id } })
+      .catch(() => {});
+    throw createError;
+  }
 
   return article;
 }

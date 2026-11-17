@@ -4,12 +4,15 @@ import { Container } from "@/components/ui/container";
 import { activeJournalsConfig } from "@/lib/config/site";
 import { getJournalEditorialBoard } from "@/lib/editorial/editorial-board-store";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: "Editorial Team & Governance | CASJOURNALS",
   description:
     "Editorial board leadership, governance structure, and call for expressions of interest across CASJOURNALS.",
+  alternates: {
+    canonical: "/editorial-board",
+  },
 };
 
 export default async function EditorialBoardPage() {

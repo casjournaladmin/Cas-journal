@@ -51,7 +51,7 @@ export const JOURNAL_ABOUT_DATA: Record<string, JournalAboutData> = {
     slug: "existentia",
     title: "EXISTENTIA: Concrescence Journal of Arts and Humanities",
     shortName: "EXISTENTIA",
-    issnOnline: "ISSN: 3093-0650 (Online) / ISSN E-3093-0650 (Online)",
+    issnOnline: "ISSN: 3093-0650 (Online)",
     affiliation: "Faculty of Humanity, Imo State University, Nigeria",
     aimsAndScope:
       "The EXISTENTIA: Concrescence Journal of Art and Humanities (ECOJAH) is an online peer-reviewed journal that publishes cutting-edge research examining the intersection of humanities disciplines with real-world challenges and practices. As a journal dedicated to the exploration and advancement of applied humanities, Existentia Journal seeks to foster innovative discussions and analysis that bridge theoretical insights with practical applications in various fields. The journal welcomes original research, review articles, and critical essays that bring humanities perspectives to bear on contemporary questions.",
@@ -169,7 +169,7 @@ export const JOURNAL_ABOUT_DATA: Record<string, JournalAboutData> = {
     slug: "cjmr",
     title: "Concrescence Journal of Multi-Disciplinary Research",
     shortName: "CJMR",
-    issnOnline: "ISSN: 1595-9287 (Online) / ISSN E-3093-0650 (Online)",
+    issnOnline: "ISSN: 1595-9287 (Online)",
     affiliation: "Faculty of Humanity, Imo State University, Nigeria",
     aimsAndScope:
       "The Concrescence Journal of Multi-Disciplinary Research (Cojomure) is an esteemed online platform for innovative and interdisciplinary scholarship. It seeks to bridge the gaps between various academic disciplines and foster comprehensive discussions that advance knowledge across traditional boundaries. Concrescence Journal is dedicated to publishing high-quality research that integrates perspectives from different disciplines to address complex issues and contribute to the advancement of holistic understanding. The objective is to encourage dialogue and collaboration among researchers from diverse fields, thereby promoting interdisciplinary solutions to contemporary challenges.",
@@ -247,7 +247,7 @@ export const JOURNAL_ABOUT_DATA: Record<string, JournalAboutData> = {
     slug: "izu",
     title: "Izu: Journal of Critical Perspectives",
     shortName: "IZU",
-    issnOnline: "ISSN: 3093-0650 (Online) / ISSN E-3093-0650 (Online)",
+    issnOnline: "ISSN: 3093-0650 (Online)",
     affiliation: "Department of Philosophy, Imo State University, Nigeria",
     aimsAndScope:
       "IZU: Journal of Critical Perspectives (IJCP) is a double-blind peer-reviewed online academic journal dedicated to advancing the understanding of contemporary issues through rigorous scholarship. The Journal welcomes original research and critical analyses from diverse fields that address pressing questions and offer innovative perspectives. The Journal is committed to publishing high-quality papers that address pressing questions, offer innovative perspectives and contribute to the ongoing discourse in various academic and practical domains. Our goal is to provide a platform for thought-provoking research that stimulates intellectual engagement and societal impact.",
@@ -324,7 +324,7 @@ export const JOURNAL_ABOUT_DATA: Record<string, JournalAboutData> = {
     slug: "polis",
     title: "The Polis: Journal of Political Studies",
     shortName: "POLIS",
-    issnOnline: "ISSN: 3092-9113 (Online) / ISSN E-3093-0650 (Online)",
+    issnOnline: "ISSN: 3092-9113 (Online)",
     affiliation: "Department of Philosophy, Imo State University, Nigeria",
     aimsAndScope:
       "The Polis: Journal of Political Studies (PJPS) is an online international, peer-reviewed, open-access journal dedicated to studies on political research, social discussions, humanities and related fields. PJPS provides a platform for thought-provoking research that stimulates intellectual engagement and societal impact for scholars, institutions, researchers and professionals. The Journal welcomes original research and critical analyses from diverse fields that address pressing political issues. The journal values rigorous, intellectually engaged scholarship that connects political thought with the social and human questions that shape public life.",

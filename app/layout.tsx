@@ -13,9 +13,6 @@ const geist = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseUrl()),
-  alternates: {
-    canonical: "/",
-  },
   title: siteConfig.name,
   description: siteConfig.description,
   icons: {

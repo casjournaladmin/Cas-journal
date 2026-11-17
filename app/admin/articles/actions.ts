@@ -345,19 +345,21 @@ export async function createDirectLegacyArticleAction(
       authors,
     });
   } catch (err: unknown) {
-    const uploadedPaths = [pdfPath, coverImagePath].filter(Boolean);
-    if (uploadedPaths.length > 0) {
-      const { error } = await supabase.storage
-        .from("published-articles")
-        .remove(uploadedPaths);
-      if (error) console.error("Legacy upload cleanup failed:", error.message);
-    }
     let message = "Failed to publish legacy manuscript. Please try again.";
+    let isRecoverableConflict = false;
+
     if (err instanceof Error) {
       if (
+        err.message.includes("is already used in this volume/issue") ||
+        err.message.includes("already assigned to another article")
+      ) {
+        isRecoverableConflict = true;
+        message = err.message;
+      } else if (
         err.message.includes("Unique constraint failed") ||
         err.message.includes("invocation")
       ) {
+        isRecoverableConflict = true;
         message =
           "A unique record conflict was encountered. Please check the volume, issue, or DOI.";
       } else if (
@@ -368,6 +370,21 @@ export async function createDirectLegacyArticleAction(
         message = err.message;
       }
     }
+
+    // Only purge uploaded binary objects if failure is unrecoverable.
+    // For recoverable form validation conflicts (order/DOI), preserve the file
+    // so the admin can adjust the form input and retry without re-uploading.
+    if (!isRecoverableConflict) {
+      const uploadedPaths = [pdfPath, coverImagePath].filter(Boolean);
+      if (uploadedPaths.length > 0) {
+        const { error } = await supabase.storage
+          .from("published-articles")
+          .remove(uploadedPaths);
+        if (error)
+          console.error("Legacy upload cleanup failed:", error.message);
+      }
+    }
+
     return { error: message };
   }
 

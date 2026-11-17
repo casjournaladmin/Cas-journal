@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { publicSubmissionEntryPath } from "@/lib/auth/submission-entry";
 import { activeJournalsConfig } from "@/lib/config/site";
+
+export const metadata: Metadata = {
+  title: "About Us — CAS Journals",
+  description:
+    "Learn about CAS Journals mission, peer-review standards, open access publishing philosophy, and indexing.",
+  alternates: {
+    canonical: "/about",
+  },
+};
 
 export default function AboutPage() {
   return (
