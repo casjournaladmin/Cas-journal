@@ -109,7 +109,7 @@ function JournalNavigationContent({
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-sky-600 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:from-sky-700 hover:to-teal-700 hover:shadow-sm sm:text-[13px]"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-sky-600 to-teal-600 px-4 py-2 text-xs font-bold !text-white shadow-xs transition hover:from-sky-700 hover:to-teal-700 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 sm:text-[13px]"
                 >
                   {item.label}
                 </Link>
@@ -120,9 +120,9 @@ function JournalNavigationContent({
               <Link
                 key={item.label}
                 href={item.href}
-                className={`inline-flex shrink-0 items-center justify-center rounded-lg px-3.5 py-2 text-xs font-semibold transition sm:text-[13px] ${
+                className={`inline-flex shrink-0 items-center justify-center rounded-lg px-3.5 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 sm:text-[13px] ${
                   isCurrent
-                    ? "border border-sky-600 bg-[#032b45] text-white shadow-xs ring-2 ring-sky-500/30 dark:border-sky-400 dark:bg-sky-600"
+                    ? "border border-sky-600 bg-[#032b45] !text-white shadow-xs ring-2 ring-sky-500/30 dark:border-sky-400 dark:bg-sky-600"
                     : "border border-slate-200 bg-[color:var(--color-surface-raised)] text-slate-700 shadow-2xs hover:border-sky-400 hover:bg-sky-50 hover:text-sky-800 dark:border-slate-800 dark:text-slate-200 dark:hover:border-sky-600 dark:hover:bg-sky-950/50 dark:hover:text-sky-300"
                 }`}
                 aria-current={isCurrent ? "page" : undefined}

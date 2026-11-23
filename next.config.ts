@@ -20,6 +20,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "25mb",

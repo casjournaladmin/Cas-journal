@@ -64,7 +64,12 @@ class CdpClient {
   }
 }
 
-async function capture(cdp, url, outPath, { width = 1280, height = 900, isMobile = false } = {}) {
+async function capture(
+  cdp,
+  url,
+  outPath,
+  { width = 1280, height = 900, isMobile = false } = {},
+) {
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width,
     height,
@@ -82,7 +87,9 @@ async function capture(cdp, url, outPath, { width = 1280, height = 900, isMobile
 
   const buffer = Buffer.from(screenshot.data, "base64");
   await fs.writeFile(outPath, buffer);
-  console.log(`Saved screenshot: ${path.basename(outPath)} (${width}x${height})`);
+  console.log(
+    `Saved screenshot: ${path.basename(outPath)} (${width}x${height})`,
+  );
 }
 
 async function main() {
@@ -107,30 +114,90 @@ async function main() {
   console.log("Capturing Phase 1 verification views...");
 
   // 1. Homepage desktop & mobile
-  await capture(cdp, `${baseUrl}/#journals`, path.join(ARTIFACT_DIR, "01_homepage_journals_desktop.png"), { width: 1280, height: 900 });
-  await capture(cdp, `${baseUrl}/#journals`, path.join(ARTIFACT_DIR, "01_homepage_journals_mobile.png"), { width: 390, height: 844, isMobile: true });
+  await capture(
+    cdp,
+    `${baseUrl}/#journals`,
+    path.join(ARTIFACT_DIR, "01_homepage_journals_desktop.png"),
+    { width: 1280, height: 900 },
+  );
+  await capture(
+    cdp,
+    `${baseUrl}/#journals`,
+    path.join(ARTIFACT_DIR, "01_homepage_journals_mobile.png"),
+    { width: 390, height: 844, isMobile: true },
+  );
 
   // 2. POLIS landing page desktop & mobile
-  await capture(cdp, `${baseUrl}/journals/polis`, path.join(ARTIFACT_DIR, "02_polis_landing_desktop.png"), { width: 1280, height: 950 });
-  await capture(cdp, `${baseUrl}/journals/polis`, path.join(ARTIFACT_DIR, "02_polis_landing_mobile.png"), { width: 390, height: 844, isMobile: true });
+  await capture(
+    cdp,
+    `${baseUrl}/journals/polis`,
+    path.join(ARTIFACT_DIR, "02_polis_landing_desktop.png"),
+    { width: 1280, height: 950 },
+  );
+  await capture(
+    cdp,
+    `${baseUrl}/journals/polis`,
+    path.join(ARTIFACT_DIR, "02_polis_landing_mobile.png"),
+    { width: 390, height: 844, isMobile: true },
+  );
 
   // 3. EXISTENTIA, CJMR, IZU landing pages
-  await capture(cdp, `${baseUrl}/journals/existentia`, path.join(ARTIFACT_DIR, "03_existentia_landing_desktop.png"), { width: 1280, height: 950 });
-  await capture(cdp, `${baseUrl}/journals/cjmr`, path.join(ARTIFACT_DIR, "04_cjmr_landing_desktop.png"), { width: 1280, height: 950 });
-  await capture(cdp, `${baseUrl}/journals/izu`, path.join(ARTIFACT_DIR, "05_izu_landing_desktop.png"), { width: 1280, height: 950 });
+  await capture(
+    cdp,
+    `${baseUrl}/journals/existentia`,
+    path.join(ARTIFACT_DIR, "03_existentia_landing_desktop.png"),
+    { width: 1280, height: 950 },
+  );
+  await capture(
+    cdp,
+    `${baseUrl}/journals/cjmr`,
+    path.join(ARTIFACT_DIR, "04_cjmr_landing_desktop.png"),
+    { width: 1280, height: 950 },
+  );
+  await capture(
+    cdp,
+    `${baseUrl}/journals/izu`,
+    path.join(ARTIFACT_DIR, "05_izu_landing_desktop.png"),
+    { width: 1280, height: 950 },
+  );
 
   // 4. Current Issue pages
-  await capture(cdp, `${baseUrl}/current-issue?journal=polis`, path.join(ARTIFACT_DIR, "06_current_issue_polis.png"), { width: 1280, height: 850 });
-  await capture(cdp, `${baseUrl}/current-issue?journal=cjmr`, path.join(ARTIFACT_DIR, "07_current_issue_cjmr.png"), { width: 1280, height: 850 });
+  await capture(
+    cdp,
+    `${baseUrl}/current-issue?journal=polis`,
+    path.join(ARTIFACT_DIR, "06_current_issue_polis.png"),
+    { width: 1280, height: 850 },
+  );
+  await capture(
+    cdp,
+    `${baseUrl}/current-issue?journal=cjmr`,
+    path.join(ARTIFACT_DIR, "07_current_issue_cjmr.png"),
+    { width: 1280, height: 850 },
+  );
 
   // 5. Announcements with no cross-journal selector
-  await capture(cdp, `${baseUrl}/announcements?journal=polis`, path.join(ARTIFACT_DIR, "08_announcements_polis_no_selector.png"), { width: 1280, height: 850 });
+  await capture(
+    cdp,
+    `${baseUrl}/announcements?journal=polis`,
+    path.join(ARTIFACT_DIR, "08_announcements_polis_no_selector.png"),
+    { width: 1280, height: 850 },
+  );
 
   // 6. Archives with no cross-journal selector
-  await capture(cdp, `${baseUrl}/archives?journal=polis`, path.join(ARTIFACT_DIR, "09_archives_polis_no_selector.png"), { width: 1280, height: 850 });
+  await capture(
+    cdp,
+    `${baseUrl}/archives?journal=polis`,
+    path.join(ARTIFACT_DIR, "09_archives_polis_no_selector.png"),
+    { width: 1280, height: 850 },
+  );
 
   // 7. Main Archives page with preserved selector
-  await capture(cdp, `${baseUrl}/archives`, path.join(ARTIFACT_DIR, "10_archives_main_with_selector.png"), { width: 1280, height: 850 });
+  await capture(
+    cdp,
+    `${baseUrl}/archives`,
+    path.join(ARTIFACT_DIR, "10_archives_main_with_selector.png"),
+    { width: 1280, height: 850 },
+  );
 
   ws.close();
   chromeProc.kill();

@@ -250,3 +250,8 @@ html[data-theme="dark"] .cas-paper-bg {
   outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
+
+/* Development overlay guard: ensure dev tools portal never obstructs clickable page elements */
+nextjs-portal {
+  pointer-events: none !important;
+}
