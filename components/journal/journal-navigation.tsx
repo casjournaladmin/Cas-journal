@@ -60,7 +60,9 @@ function JournalNavigationContent({
     },
     {
       label: "Author Guidelines",
-      href: `/journals/${journalSlug}#guidelines`,
+      href: `/author-guidelines?journal=${journalSlug}`,
+      isActive:
+        pathname.startsWith("/author-guidelines") && isCurrentJournalActive,
     },
     {
       label: "Current Issue",
@@ -92,10 +94,10 @@ function JournalNavigationContent({
   return (
     <nav
       aria-label={`${shortName || "Journal"} Section Navigation`}
-      className="sticky top-0 z-20 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)]/95 shadow-xs backdrop-blur-md"
+      className="sticky top-0 z-20 border-b border-sky-100 bg-[color:var(--color-surface)]/95 shadow-xs backdrop-blur-md dark:border-sky-950/80"
     >
       <Container>
-        <div className="flex [scrollbar-width:none] items-center gap-1 overflow-x-auto py-2.5 [-webkit-overflow-scrolling:touch]">
+        <div className="flex [scrollbar-width:none] items-center gap-2 overflow-x-auto py-3 [-webkit-overflow-scrolling:touch]">
           {navItems.map((item) => {
             const isCurrent =
               item.isActive !== undefined
@@ -107,7 +109,7 @@ function JournalNavigationContent({
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="inline-flex shrink-0 items-center rounded-full bg-[color:var(--color-accent)] px-3.5 py-1 text-xs font-semibold text-white shadow-xs transition hover:opacity-90"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-sky-600 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:from-sky-700 hover:to-teal-700 hover:shadow-sm sm:text-[13px]"
                 >
                   {item.label}
                 </Link>
@@ -118,10 +120,10 @@ function JournalNavigationContent({
               <Link
                 key={item.label}
                 href={item.href}
-                className={`inline-flex shrink-0 items-center rounded-md px-3 py-1 text-xs font-medium transition ${
+                className={`inline-flex shrink-0 items-center justify-center rounded-lg px-3.5 py-2 text-xs font-semibold transition sm:text-[13px] ${
                   isCurrent
-                    ? "bg-[color:var(--color-surface-strong)] font-semibold text-[color:var(--color-accent)]"
-                    : "text-[color:var(--color-muted)] hover:bg-[color:var(--color-surface-raised)] hover:text-[color:var(--color-foreground)]"
+                    ? "border border-sky-600 bg-[#032b45] text-white shadow-xs ring-2 ring-sky-500/30 dark:border-sky-400 dark:bg-sky-600"
+                    : "border border-slate-200 bg-[color:var(--color-surface-raised)] text-slate-700 shadow-2xs hover:border-sky-400 hover:bg-sky-50 hover:text-sky-800 dark:border-slate-800 dark:text-slate-200 dark:hover:border-sky-600 dark:hover:bg-sky-950/50 dark:hover:text-sky-300"
                 }`}
                 aria-current={isCurrent ? "page" : undefined}
               >
@@ -141,11 +143,11 @@ export function JournalNavigation(props: JournalNavigationProps) {
       fallback={
         <nav
           aria-label={`${props.shortName || "Journal"} Section Navigation`}
-          className="sticky top-0 z-20 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface)]/95 shadow-xs backdrop-blur-md"
+          className="sticky top-0 z-20 border-b border-sky-100 bg-[color:var(--color-surface)]/95 shadow-xs backdrop-blur-md dark:border-sky-950/80"
         >
           <Container>
-            <div className="flex items-center gap-1 py-2.5">
-              <span className="text-xs text-[color:var(--color-muted)]">
+            <div className="flex items-center gap-2 py-3">
+              <span className="text-xs font-semibold text-[color:var(--color-muted)]">
                 {props.shortName} Navigation
               </span>
             </div>

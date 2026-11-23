@@ -125,26 +125,28 @@ export default async function AnnouncementsPage({
 
       <Container>
         <div className="mx-auto max-w-4xl space-y-8">
-          {/* Journal Filter Tabs */}
-          <div className="flex gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-3">
-            {filterTabs.map((j: JournalOptionItem) => (
-              <Link
-                key={j.slug}
-                href={
-                  j.slug === "ALL"
-                    ? "/announcements"
-                    : `/announcements?journal=${j.slug}`
-                }
-                className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                  activeJournal === j.slug
-                    ? "bg-[color:var(--color-accent)] text-white"
-                    : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
-                }`}
-              >
-                {j.name}
-              </Link>
-            ))}
-          </div>
+          {/* Journal Filter Tabs (Only shown on main CASJOURNALS announcements page) */}
+          {!activeJournalMeta ? (
+            <div className="flex gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-3">
+              {filterTabs.map((j: JournalOptionItem) => (
+                <Link
+                  key={j.slug}
+                  href={
+                    j.slug === "ALL"
+                      ? "/announcements"
+                      : `/announcements?journal=${j.slug}`
+                  }
+                  className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                    activeJournal === j.slug
+                      ? "bg-[color:var(--color-accent)] text-white"
+                      : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                  }`}
+                >
+                  {j.name}
+                </Link>
+              ))}
+            </div>
+          ) : null}
 
           {/* Open Call Banner */}
           <div className="rounded-2xl border border-sky-200 bg-[#f0f9ff] p-6 sm:p-8">

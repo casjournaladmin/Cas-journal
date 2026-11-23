@@ -120,8 +120,8 @@ export default async function CurrentIssuePage({
           </div>
           <h1 className="cas-page-title">
             {journalMeta
-              ? `${journalMeta.shortName} Current Issue &mdash; Volume 1 (2026)`
-              : "Current Issue &mdash; Inaugural Volume 1 (2026)"}
+              ? `${journalMeta.shortName} Current Issue`
+              : "Current Issue"}
           </h1>
           <p className="cas-page-desc">
             {journalMeta

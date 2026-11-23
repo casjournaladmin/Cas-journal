@@ -14,7 +14,6 @@ import {
   type JournalMetadata,
   resolveCanonicalJournalSlug,
 } from "@/lib/editorial/editorial-board-data";
-import { getJournalEditorialBoard } from "@/lib/editorial/editorial-board-store";
 import { isJournalActivated } from "@/lib/editorial/journal-activation";
 
 export const revalidate = 3600;
@@ -100,8 +99,7 @@ export default async function JournalLandingPage({
   const { meta, isSubmissionOpen } = resolved;
   const dbSlugs = getJournalDbSlugs(meta.slug);
 
-  const [boardMembers, publishedArticles, journalVolumes] = await Promise.all([
-    getJournalEditorialBoard(meta.slug),
+  const [publishedArticles, journalVolumes] = await Promise.all([
     prisma.article.findMany({
       where: {
         isPublished: true,
@@ -142,10 +140,6 @@ export default async function JournalLandingPage({
       },
     }),
   ]);
-
-  const chiefEditor = boardMembers.find(
-    (m) => m.category === "CHIEF_EDITOR" || m.category === "EDITOR_IN_CHIEF",
-  );
 
   const submissionHref = `/author/submissions/new?journal=${meta.slug}`;
   const institutionalAffiliation = [meta.faculty, meta.institution]
@@ -247,6 +241,12 @@ export default async function JournalLandingPage({
               className="cas-btn-secondary"
             >
               Browse {meta.shortName} Archive
+            </Link>
+            <Link
+              href={`/journals/${meta.slug}/editorial-board`}
+              className="cas-btn-secondary"
+            >
+              Editorial Board
             </Link>
             <Link
               href={`/apply-reviewer?journal=${meta.slug}`}
@@ -396,297 +396,7 @@ export default async function JournalLandingPage({
           </div>
         </Container>
       </section>
-
-      {/* ── SECTION 2: AUTHOR GUIDELINES & ACCEPTED ARTICLE TYPES ── */}
-      <section className="border-b border-[color:var(--color-border)] py-12">
-        <Container>
-          <div className="border-b border-[color:var(--color-border)] pb-4">
-            <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-              Author Instructions &amp; Standards
-            </p>
-            <h2 className="mt-1.5 font-serif text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-3xl">
-              Submission Guidelines &amp; Accepted Article Types
-            </h2>
-          </div>
-
-          <div className="mt-8 grid gap-12 lg:grid-cols-2">
-            {/* Accepted Article Types */}
-            <div>
-              <h3 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                Accepted Article Types
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                {meta.shortName} considers original manuscripts that meet
-                rigorous scholarly standards, offer innovative critical
-                insights, and contribute to ongoing academic and societal
-                discourse.
-              </p>
-              <div className="mt-5 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60">
-                {(
-                  meta.articleTypes || [
-                    "Original Research Articles",
-                    "Review Articles",
-                    "Critical Essays",
-                  ]
-                ).map((type, idx) => (
-                  <div key={idx} className="py-3.5">
-                    <p className="flex items-center gap-2 text-xs font-bold text-[color:var(--color-foreground)]">
-                      <span className="size-1.5 rounded-full bg-[color:var(--color-accent)]" />
-                      {type}
-                    </p>
-                    <p className="mt-1 pl-3.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                      {type === "Original Research Articles" &&
-                        "Full-length empirical, qualitative, or theoretical investigations presenting novel scholarship and robust methodological frameworks."}
-                      {type === "Review Articles" &&
-                        "Systematic, critical evaluations of existing literature, synthesizing disciplinary developments and identifying conceptual frontiers."}
-                      {(type === "Critical Essays" ||
-                        type === "Critical Analyses") &&
-                        "Rigorous analytical essays engaging with theoretical controversies, policy discourses, or philosophical debates."}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Manuscript Requirements */}
-            <div>
-              <h3 className="font-serif text-lg font-semibold text-[color:var(--color-foreground)]">
-                Manuscript Structure &amp; Requirements
-              </h3>
-              <dl className="mt-5 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60 text-xs">
-                {meta.guidelines?.wordCount ? (
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      Manuscript Length:
-                    </dt>
-                    <dd className="font-semibold text-[color:var(--color-foreground)]">
-                      {meta.guidelines.wordCount}
-                    </dd>
-                  </div>
-                ) : null}
-                {meta.guidelines?.abstractLength ? (
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      Abstract:
-                    </dt>
-                    <dd className="font-semibold text-[color:var(--color-foreground)]">
-                      {meta.guidelines.abstractLength}
-                    </dd>
-                  </div>
-                ) : null}
-                {meta.guidelines?.keywordsCount ? (
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      Keywords:
-                    </dt>
-                    <dd className="font-semibold text-[color:var(--color-foreground)]">
-                      {meta.guidelines.keywordsCount}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                  <dt className="font-medium text-[color:var(--color-subtle)]">
-                    Referencing Style:
-                  </dt>
-                  <dd className="font-semibold text-[color:var(--color-foreground)]">
-                    {meta.referencingStyle || "APA 7th Edition"}
-                  </dd>
-                </div>
-                {meta.guidelines?.formatting ? (
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      File Format:
-                    </dt>
-                    <dd className="font-semibold text-[color:var(--color-foreground)]">
-                      {meta.guidelines.formatting}
-                    </dd>
-                  </div>
-                ) : null}
-                {meta.guidelines?.deadline ? (
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      Submissions Intake:
-                    </dt>
-                    <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {meta.guidelines.deadline}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap items-baseline justify-between gap-1 py-3">
-                  <dt className="font-medium text-[color:var(--color-subtle)]">
-                    Editorial Desk:
-                  </dt>
-                  <dd className="font-mono text-[11px] font-semibold text-[color:var(--color-accent)]">
-                    {meta.contactEmail}
-                  </dd>
-                </div>
-              </dl>
-
-              <div className="pt-6">
-                <Link
-                  href={submissionHref}
-                  className="button-primary inline-flex w-full items-center justify-center gap-2 py-2.5 text-xs font-semibold"
-                >
-                  <span>Submit to {meta.shortName} via CAS Portal</span>
-                  <span>→</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── SECTION 3: PUBLICATION ETHICS & CONTACT SECRETARIAT ── */}
-      <section className="border-b border-[color:var(--color-border)] py-12">
-        <Container>
-          <div className="grid gap-12 lg:grid-cols-2">
-            {/* Ethics & Peer Review Standards */}
-            <div>
-              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                Academic Integrity
-              </p>
-              <h3 className="mt-1.5 font-serif text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
-                Peer Review &amp; Publication Ethics
-              </h3>
-              <p className="mt-3 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                {meta.shortName} follows the rigorous standards established by
-                the Committee on Publication Ethics (COPE). Every manuscript is
-                initially reviewed by the editorial desk for alignment and
-                quality, then subjected to double-blind evaluation by at least
-                two independent expert referees.
-              </p>
-              <div className="mt-5 space-y-4 border-l-2 border-[color:var(--color-border)] pl-4 text-xs">
-                <div>
-                  <p className="font-semibold text-[color:var(--color-foreground)]">
-                    Double-Blind Review
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                    Author identities and reviewer identities are mutually
-                    concealed throughout the review cycle.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-[color:var(--color-foreground)]">
-                    Plagiarism Screening
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-[color:var(--color-muted)]">
-                    Manuscripts undergo anti-plagiarism verification.
-                    Falsification, fabricated data, and duplicate submissions
-                    are strictly prohibited.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Editorial Secretariat & Office */}
-            <div>
-              <p className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                Correspondence
-              </p>
-              <h3 className="mt-1.5 font-serif text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
-                Editorial Secretariat &amp; Office
-              </h3>
-              <dl className="mt-5 divide-y divide-[color:var(--color-border)]/60 border-y border-[color:var(--color-border)]/60 text-xs">
-                {meta.officeAddress ? (
-                  <div className="py-2.5">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      Physical Address:
-                    </dt>
-                    <dd className="mt-0.5 font-medium text-[color:var(--color-foreground)]">
-                      {meta.officeAddress}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap items-baseline justify-between gap-1 py-2.5">
-                  <dt className="font-medium text-[color:var(--color-subtle)]">
-                    Editorial Email:
-                  </dt>
-                  <dd className="font-mono font-medium text-[color:var(--color-accent)]">
-                    {meta.contactEmail}
-                  </dd>
-                </div>
-                {meta.contactPhone ? (
-                  <div className="flex flex-wrap items-baseline justify-between gap-1 py-2.5">
-                    <dt className="font-medium text-[color:var(--color-subtle)]">
-                      Telephone Inquiries:
-                    </dt>
-                    <dd className="font-mono font-medium text-[color:var(--color-foreground)]">
-                      {meta.contactPhone}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap items-baseline justify-between gap-1 py-2.5">
-                  <dt className="font-medium text-[color:var(--color-subtle)]">
-                    Online Operations:
-                  </dt>
-                  <dd className="font-medium text-[color:var(--color-foreground)]">
-                    CAS Journals Digital Operating Center
-                  </dd>
-                </div>
-              </dl>
-              {meta.issnPreservedNote ? (
-                <p className="mt-3 text-[11px] leading-relaxed text-[color:var(--color-subtle)] italic">
-                  {meta.issnPreservedNote}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── SECTION 4: EDITORIAL BOARD & GOVERNANCE HIGHLIGHT ── */}
-      <section className="border-b border-[color:var(--color-border)] py-12">
-        <Container>
-          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-8 sm:p-10">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="max-w-2xl space-y-2">
-                <span className="font-mono text-xs font-semibold tracking-wider text-[color:var(--color-accent)] uppercase">
-                  Scholarly Governance &amp; Leadership
-                </span>
-                <h2 className="font-serif text-2xl font-bold text-[color:var(--color-foreground)] sm:text-3xl">
-                  Editorial Board &amp; Referees
-                </h2>
-                <p className="text-xs leading-relaxed text-[color:var(--color-muted)] sm:text-sm">
-                  {meta.title} operates under an independent editorial
-                  governance board of recognized professors, scholars, and
-                  disciplinary specialists. All manuscript reviews follow
-                  rigorous double-blind evaluation in accordance with COPE
-                  standards.
-                </p>
-                {chiefEditor ? (
-                  <p className="pt-2 text-xs text-[color:var(--color-foreground)]">
-                    <strong className="text-[color:var(--color-accent)]">
-                      {chiefEditor.role}:
-                    </strong>{" "}
-                    {chiefEditor.name}{" "}
-                    {chiefEditor.affiliation ? (
-                      <span className="text-[color:var(--color-muted)]">
-                        ({chiefEditor.affiliation})
-                      </span>
-                    ) : null}
-                  </p>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 flex-col gap-3">
-                <Link
-                  href={`/journals/${meta.slug}/editorial-board`}
-                  className="cas-btn-primary text-center"
-                >
-                  Meet the Editorial Board →
-                </Link>
-                <Link
-                  href={`/apply-reviewer?journal=${meta.slug}`}
-                  className="cas-btn-secondary text-center"
-                >
-                  Apply as Reviewer
-                </Link>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── SECTION 3: CURRENT ISSUE & ARTICLES ── */}
+      {/* ── SECTION 2: CURRENT ISSUE & ARTICLES ── */}
       <section>
         <Container>
           <div className="flex flex-col gap-3 border-b border-[color:var(--color-border)] pb-4 sm:flex-row sm:items-end sm:justify-between">

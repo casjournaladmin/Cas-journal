@@ -217,40 +217,42 @@ export default async function ArchivesPage({
             <PublicSearchBar />
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-4">
-            <Link
-              href={
-                trimmedQ
-                  ? `/archives?q=${encodeURIComponent(trimmedQ)}`
-                  : "/archives"
-              }
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                !journal
-                  ? "bg-[color:var(--color-accent)] text-white"
-                  : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
-              }`}
-            >
-              All Journals
-            </Link>
-            {catalogJournals.map((j: CatalogJournalItem) => {
-              const href = trimmedQ
-                ? `/archives?journal=${j.slug}&q=${encodeURIComponent(trimmedQ)}`
-                : `/archives?journal=${j.slug}`;
-              return (
-                <Link
-                  key={j.id}
-                  href={href}
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                    journal === j.slug
-                      ? "bg-[color:var(--color-accent)] text-white"
-                      : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
-                  }`}
-                >
-                  {j.shortName || j.name}
-                </Link>
-              );
-            })}
-          </div>
+          {!canonical ? (
+            <div className="flex items-center gap-2 overflow-x-auto border-b border-[color:var(--color-border)] pb-4">
+              <Link
+                href={
+                  trimmedQ
+                    ? `/archives?q=${encodeURIComponent(trimmedQ)}`
+                    : "/archives"
+                }
+                className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                  !journal
+                    ? "bg-[color:var(--color-accent)] text-white"
+                    : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                }`}
+              >
+                All Journals
+              </Link>
+              {catalogJournals.map((j: CatalogJournalItem) => {
+                const href = trimmedQ
+                  ? `/archives?journal=${j.slug}&q=${encodeURIComponent(trimmedQ)}`
+                  : `/archives?journal=${j.slug}`;
+                return (
+                  <Link
+                    key={j.id}
+                    href={href}
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                      journal === j.slug
+                        ? "bg-[color:var(--color-accent)] text-white"
+                        : "border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-muted)] hover:text-[color:var(--color-foreground)]"
+                    }`}
+                  >
+                    {j.shortName || j.name}
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
         </Container>
       </section>
 
