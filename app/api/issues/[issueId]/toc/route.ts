@@ -165,7 +165,6 @@ export async function GET(
 <body>
   <div class="container">
     <div class="header">
-      <div class="institution">Concrescence Academic Society · CAS Journals</div>
       <h1 class="journal-title">${escapeHtml(journalName)}</h1>
       <div class="meta">Volume ${volNum}, Issue ${issueNum} (${year}) · Table of Contents</div>
     </div>
@@ -184,7 +183,7 @@ export async function GET(
     </table>
 
     <div class="footer">
-      Official Publication of CAS Journals · Generated ${new Date().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}
+      CASJOURNALS · Generated ${new Date().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" })}
     </div>
   </div>
 </body>

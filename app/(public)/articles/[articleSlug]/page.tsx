@@ -291,7 +291,7 @@ export default async function PublicArticlePage({
                 ? formatLongDate(article.publishedAt)
                 : "Recently"}
             </span>
-            <span>CAS Journals · Open Access Academic Publishing</span>
+            <span>CASJOURNALS</span>
           </div>
         </div>
       </div>

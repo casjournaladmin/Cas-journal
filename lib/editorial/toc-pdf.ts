@@ -26,13 +26,25 @@ export type IssueTOCData = {
   }>;
 };
 
+function sanitizePdfText(text: string): string {
+  if (!text) return "";
+  const decomposed = text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  return decomposed
+    .replace(/[\u2018\u2019\u0091\u0092\u00B4`]/g, "'")
+    .replace(/[\u201C\u201D\u0093\u0094]/g, '"')
+    .replace(/[\u2013\u2014\u0096\u0097]/g, "-")
+    .replace(/[\u2026]/g, "...")
+    .replace(/[^\x00-\xFF]/g, "");
+}
+
 function wrapText(
   text: string,
   font: PDFFont,
   fontSize: number,
   maxWidth: number,
 ): string[] {
-  const words = text.split(/\s+/);
+  const safeText = sanitizePdfText(text);
+  const words = safeText.split(/\s+/);
   const lines: string[] = [];
   let currentLine = "";
 
@@ -73,23 +85,9 @@ export async function generateIssueTOCPdf(
   const colorMuted = rgb(0.39, 0.45, 0.55); // #64748b
   const colorBorder = rgb(0.89, 0.91, 0.94); // #e2e8f0
 
-  // 1. Institution Header
-  page.drawText("CONCRESCENCE ACADEMIC SOCIETY · CAS JOURNALS", {
-    x: margin,
-    y,
-    size: 9,
-    font: fontBold,
-    color: colorAccent,
-  });
-  y -= 22;
-
-  // 2. Journal Title
-  const journalTitleLines = wrapText(
-    issue.volume.journal.name,
-    fontBold,
-    18,
-    contentWidth,
-  );
+  // 1. Journal Title (Publication Header)
+  const journalTitle = issue.volume.journal.name;
+  const journalTitleLines = wrapText(journalTitle, fontBold, 18, contentWidth);
   for (const line of journalTitleLines) {
     page.drawText(line, {
       x: margin,
@@ -189,7 +187,8 @@ export async function generateIssueTOCPdf(
       }
 
       // Draw Order Number
-      page.drawText(orderNum, {
+      const safeOrderNum = sanitizePdfText(orderNum);
+      page.drawText(safeOrderNum, {
         x: margin,
         y,
         size: 10,
@@ -239,8 +238,9 @@ export async function generateIssueTOCPdf(
       }
 
       // Draw Pages (right aligned)
-      const pageTextWidth = fontBold.widthOfTextAtSize(pageRange, 10);
-      page.drawText(pageRange, {
+      const safePageRange = sanitizePdfText(pageRange);
+      const pageTextWidth = fontBold.widthOfTextAtSize(safePageRange, 10);
+      page.drawText(safePageRange, {
         x: pageWidth - margin - pageTextWidth,
         y,
         size: 10,
@@ -265,7 +265,7 @@ export async function generateIssueTOCPdf(
   const totalPages = doc.getPageCount();
   for (let idx = 0; idx < totalPages; idx++) {
     const p = doc.getPage(idx);
-    const footerText = `Official Publication of CAS Journals · Page ${idx + 1} of ${totalPages}`;
+    const footerText = `CASJOURNALS · Page ${idx + 1} of ${totalPages}`;
     p.drawText(footerText, {
       x: margin,
       y: margin - 20,
